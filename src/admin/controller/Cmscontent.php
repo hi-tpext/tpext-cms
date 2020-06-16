@@ -84,7 +84,7 @@ class Cmscontent extends Controller
 
         $this->table = $builder->table('10 right-list');
 
-        $builder->addStyleSheet(`
+        $builder->addStyleSheet('
             .left-tree
             {
                 widht:15%;
@@ -94,7 +94,7 @@ class Cmscontent extends Controller
             {
                 widht:85%;
             }
-        `);
+        ');
 
         $this->table->pk($this->getPk());
         $this->search = $this->table->getSearch();
@@ -119,11 +119,11 @@ class Cmscontent extends Controller
         $table = $this->table;
 
         $table->show('id', 'ID');
+        $table->image('logo', '封面')->default(url('/admin/upload/ext', ['type' => '暂无']))->thumbSize(50, 50);
         $table->text('title', '标题')->autoPost()->getWrapper()->addStyle('max-width:200px');
         $table->show('category', '栏目');
         $table->show('author', '作者')->default('暂无');
         $table->show('source', '来源')->default('暂无');
-        $table->image('logo', '封面')->default(url('/admin/upload/ext', ['type' => '暂无']))->thumbSize(50, 50);
         $table->show('description', '摘要')->default('暂无')->getWrapper()->addStyle('max-width:200px');
         $table->match('status', '状态')->options([1 => '待审核', 2 => '已审核', 3 => '已拒绝']);
         $table->switchBtn('is_show', '显示')->default(1)->autoPost();
