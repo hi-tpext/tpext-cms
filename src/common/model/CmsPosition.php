@@ -1,10 +1,10 @@
 <?php
 
-namespace tpext\cms\admin\model;
+namespace tpext\cms\common\model;
 
 use think\Model;
 
-class CmsBanner extends Model
+class CmsPosition extends Model
 {
     protected $autoWriteTimestamp = 'dateTime';
 
@@ -15,11 +15,5 @@ class CmsBanner extends Model
                 $data['sort'] = static::max('sort') + 1;
             }
         });
-    }
-
-    public function getPositionAttr($value, $data)
-    {
-        $position = CmsPosition::get($data['position_id']);
-        return $position ? $position['name'] : '--';
     }
 }

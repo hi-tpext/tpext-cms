@@ -4,8 +4,8 @@ namespace tpext\cms\admin\controller;
 
 use think\Controller;
 use tpext\builder\traits\HasBuilder;
-use tpext\cms\admin\model\CmsCategory;
-use tpext\cms\admin\model\CmsContent as ContentModel;
+use tpext\cms\common\model\CmsCategory;
+use tpext\cms\common\model\CmsContent as ContentModel;
 use tpext\myadmin\admin\model\AdminUser;
 use tpext\cms\common\Module;
 
@@ -36,6 +36,7 @@ class Cmscontent extends Controller
         $this->categoryModel = new CmsCategory;
         $this->pageTitle = '内容管理';
         $this->enableField = 'is_show';
+        $this->pagesize = 6;
     }
 
     protected function filterWhere()
@@ -85,14 +86,14 @@ class Cmscontent extends Controller
         $this->table = $builder->table('10 right-list');
 
         $builder->addStyleSheet('
-            .left-tree
+            .col-md-2.left-tree
             {
-                widht:15%;
+                width:12%;
             }
 
-            .right-list
+            .col-md-10.right-list
             {
-                widht:85%;
+                width:88%;
             }
         ');
 
@@ -119,17 +120,22 @@ class Cmscontent extends Controller
         $table = $this->table;
 
         $table->show('id', 'ID');
-        $table->image('logo', '封面')->default(url('/admin/upload/ext', ['type' => '暂无']))->thumbSize(50, 50);
+        $table->image('logo', '封面图')->default(url('/admin/upload/ext', ['type' => '暂无']))->thumbSize(80, 80);
         $table->text('title', '标题')->autoPost()->getWrapper()->addStyle('max-width:200px');
         $table->show('category', '栏目');
         $table->show('author', '作者')->default('暂无');
         $table->show('source', '来源')->default('暂无');
-        $table->show('description', '摘要')->default('暂无')->getWrapper()->addStyle('max-width:200px');
-        $table->match('status', '状态')->options([1 => '待审核', 2 => '已审核', 3 => '已拒绝']);
         $table->switchBtn('is_show', '显示')->default(1)->autoPost();
+        $table->checkbox('attr', '属性')->autoPost(url('editAttr'))->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶'])->inline(false);
+        $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:80px');
         $table->show('publish_time', '发布时间')->getWrapper()->addStyle('width:180px');
-        $table->show('create_time', '添加时间')->getWrapper()->addStyle('width:180px');
-        $table->show('update_time', '修改时间')->getWrapper()->addStyle('width:180px');
+        $table->raw('times', '添加/修改时间')->getWrapper()->addStyle('width:180px');
+
+        foreach ($data as &$d) {
+            $d['times'] = $d['create_time'] . '<br>' . $d['update_time'];
+        }
+
+        unset($d);
 
         $table->getToolbar()
             ->btnAdd()
@@ -140,6 +146,44 @@ class Cmscontent extends Controller
         $table->getActionbar()
             ->btnEdit()
             ->btnDelete();
+    }
+
+    /**
+     * Undocumented function
+     * @title 属性修改
+     *
+     * @return mixed
+     */
+    public function editAttr()
+    {
+        $id = input('post.id/d', '');
+        $value = input('post.value', '');
+
+        if (empty($id)) {
+            $this->error('参数有误');
+        }
+
+        $attr = explode(',', $value);
+
+        $data = [];
+
+        if (!empty($attr)) {
+            $data['is_recommend'] = in_array('is_recommend', $attr);
+            $data['is_hot'] = in_array('is_hot', $attr);
+            $data['is_top'] = in_array('is_top', $attr);
+        } else {
+            $data['is_recommend'] = 0;
+            $data['is_hot'] = 0;
+            $data['is_top'] = 0;
+        }
+
+        $res = $this->dataModel->update($data, [$this->getPk() => $id]);
+
+        if ($res) {
+            $this->success('修改成功');
+        } else {
+            $this->error('修改失败，或无更改');
+        }
     }
 
     /**
@@ -160,7 +204,7 @@ class Cmscontent extends Controller
         $form->select('category_id', '栏目')->required()->options([0 => '请选择'] + $this->categoryModel->buildTree());
         $form->tags('tags', '标签');
         $form->textarea('description', '摘要')->maxlength(555);
-        $form->image('logo', '封面')->mediumSize();
+        $form->image('logo', '封面图')->mediumSize();
 
         $editor = 'editor';
         if (!empty($config['editor'])) {
@@ -172,7 +216,7 @@ class Cmscontent extends Controller
         $form->text('source', '来源')->maxlength(55)->default($admin ? $admin['group_name'] : '');
         $form->datetime('publish_time', '发布时间')->required()->default(date('Y-m-d H:i:s'));
         $form->number('sort', '排序')->default(0);
-        $form->radio('status', '状态')->options([1 => '待审核', 2 => '已审核', 3 => '已拒绝'])->default(1);
+        $form->checkbox('attr', '属性')->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶']);
         $form->switchBtn('is_show', '显示')->default(1);
         if ($isEdit) {
             $form->show('create_time', '添加时间');
@@ -198,9 +242,9 @@ class Cmscontent extends Controller
             'source',
             'publish_time',
             'sort',
-            'status',
             'is_show',
             'content',
+            'attr'
         ], 'post');
 
         $result = $this->validate($data, [
@@ -214,6 +258,16 @@ class Cmscontent extends Controller
             $this->error($result);
         }
 
+        if (isset($data['attr']) && !empty($data['attr'])) {
+            $data['is_recommend'] = in_array('is_recommend', $data['attr']);
+            $data['is_hot'] = in_array('is_hot', $data['attr']);
+            $data['is_top'] = in_array('is_top', $data['attr']);
+        } else {
+            $data['is_recommend'] = 0;
+            $data['is_hot'] = 0;
+            $data['is_top'] = 0;
+        }
+
         if ($data['category_id']) {
             $parent = $this->categoryModel->get($data['category_id']);
             if ($parent && $parent['type'] == 2) {
@@ -224,6 +278,7 @@ class Cmscontent extends Controller
         if ($id) {
             $res = $this->dataModel->update($data, ['id' => $id]);
         } else {
+            $data['create_user'] = session('admin_id');
             $res = $this->dataModel->create($data);
         }
 

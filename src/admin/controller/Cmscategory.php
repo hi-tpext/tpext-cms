@@ -5,7 +5,7 @@ namespace tpext\cms\admin\controller;
 use think\Controller;
 use tpext\builder\traits\actions\HasAutopost;
 use tpext\builder\traits\actions\HasIAED;
-use tpext\cms\admin\model\CmsCategory as Category;
+use tpext\cms\common\model\CmsCategory as Category;
 
 /**
  * Undocumented class
@@ -29,6 +29,7 @@ class Cmscategory extends Controller
 
         $this->pageTitle = '栏目管理';
         $this->sortOrder = 'id desc';
+        $this->pagesize = 8;
     }
 
     /**
@@ -48,7 +49,7 @@ class Cmscategory extends Controller
         $form->text('name', '名称')->required();
         $form->select('parent_id', '上级')->required()->options($tree);
         $form->text('link', '链接');
-        $form->image('logo', '封面图片');
+        $form->image('logo', '封面图');
         $form->switchBtn('is_show', '显示')->default(1);
         $form->radio('type', '类型')->default(1)->options([1 => '不限', 2 => '目录', 3 => '分类'])->required()->help('目录有下级，不能存文章。分类无下级，只能存文章');
         $form->text('sort', '排序')->default(0)->required();
@@ -85,12 +86,13 @@ class Cmscategory extends Controller
     {
         $table = $this->table;
         $table->show('id', 'ID');
-        $table->image('logo', '封面')->default(url('/admin/upload/ext', ['type' => 'empty'], '', false))->thumbSize(50, 50);
         $table->raw('title_show', '名称')->getWrapper()->addStyle('text-align:left;');
+        $table->image('logo', '封面图')->default(url('/admin/upload/ext', ['type' => 'empty'], '', false))->thumbSize(50, 50);
         $table->show('link', '链接')->default('暂无');
-        $table->text('name', '名称')->autoPost('', true)->getWrapper()->addStyle('max-width:80px');
-        $table->switchBtn('is_show', '显示')->default(1)->autoPost()->getWrapper()->addStyle('max-width:120px');
-        $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('max-width:40px');
+        $table->text('name', '名称')->autoPost('', true);
+        $table->switchBtn('is_show', '显示')->default(1)->autoPost()->getWrapper()->addStyle('width:80px');
+        $table->match('type', '类型')->default(1)->options([1 => '不限', 2 => '目录', 3 => '分类'])->getWrapper()->addStyle('width:80px');
+        $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:80px');
         $table->show('create_time', '添加时间')->getWrapper()->addStyle('width:180px');
         $table->show('update_time', '修改时间')->getWrapper()->addStyle('width:180px');
 

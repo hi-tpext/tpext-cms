@@ -1,6 +1,6 @@
 <?php
 
-namespace tpext\cms\admin\model;
+namespace tpext\cms\common\model;
 
 use think\Model;
 
@@ -21,5 +21,21 @@ class CmsContent extends Model
     {
         $category = CmsCategory::get($data['category_id']);
         return $category ? $category['name'] : '--';
+    }
+
+    public function getAttrAttr($value, $data)
+    {
+        $attr = [];
+        if ($data['is_recommend']) {
+            $attr[] = 'is_recommend';
+        }
+        if ($data['is_hot']) {
+            $attr[] = 'is_hot';
+        }
+        if ($data['is_top']) {
+            $attr[] = 'is_top';
+        }
+
+        return $attr;
     }
 }

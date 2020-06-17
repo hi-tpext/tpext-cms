@@ -25,7 +25,7 @@ class Module extends baseModule
         [
             'title' => '内容管理',
             'sort' => 1,
-            'url' => '/admin/cmscategory/index',
+            'url' => '＃',
             'icon' => 'mdi mdi-library-books',
             'children' => [
                 [
