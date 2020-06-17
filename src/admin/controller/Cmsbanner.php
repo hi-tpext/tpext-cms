@@ -6,7 +6,6 @@ use think\Controller;
 use tpext\builder\traits\HasBuilder;
 use tpext\cms\admin\model\CmsPosition;
 use tpext\cms\admin\model\CmsBanner as BannerModel;
-use tpext\myadmin\admin\model\AdminUser;
 
 /**
  * Undocumented class
@@ -108,7 +107,8 @@ class Cmsbanner extends Controller
 
         $form->text('title', '标题')->required()->maxlength(55);
         $form->select('position_id', '位置')->required()->optionsData($this->positionModel->all());
-        $form->textarea('description', '摘要')->maxlength(555);
+        $form->textarea('description', '摘要')->maxlength(255);
+        $form->text('link', '链接')->maxlength(255)->default('#');
         $form->image('image', '图片')->mediumSize();
         $form->number('sort', '排序')->default(0);
         $form->switchBtn('is_show', '显示')->default(1);
@@ -130,6 +130,7 @@ class Cmsbanner extends Controller
             'title',
             'position_id',
             'description',
+            'link',
             'image',
             'sort',
             'is_show',
