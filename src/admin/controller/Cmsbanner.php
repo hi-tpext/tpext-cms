@@ -85,6 +85,8 @@ class Cmsbanner extends Controller
         $table->show('create_time', '添加时间')->getWrapper()->addStyle('width:180px');
         $table->show('update_time', '修改时间')->getWrapper()->addStyle('width:180px');
 
+        $table->sortable('id,sort');
+
         $table->getToolbar()
             ->btnAdd()
             ->btnEnableAndDisable('显示', '隐藏')

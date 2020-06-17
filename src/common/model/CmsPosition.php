@@ -12,8 +12,12 @@ class CmsPosition extends Model
     {
         self::beforeInsert(function ($data) {
             if (empty($data['sort'])) {
-                $data['sort'] = static::max('sort') + 1;
+                $data['sort'] = static::max('sort') + 5;
             }
+        });
+
+        self::afterDelete(function ($data) {
+            CmsBanner::where(['position_id' => $data['id']])->update(['position_id' => 0]);
         });
     }
 }

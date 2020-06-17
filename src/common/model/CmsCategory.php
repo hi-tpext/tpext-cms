@@ -27,12 +27,13 @@ class CmsCategory extends Model
 
         self::beforeInsert(function ($data) {
             if (empty($data['sort'])) {
-                $data['sort'] = static::where(['parent_id' => $data['parent_id']])->max('sort') + 1;
+                $data['sort'] = static::where(['parent_id' => $data['parent_id']])->max('sort') + 5;
             }
         });
 
         self::afterDelete(function ($data) {
             static::where(['parent_id' => $data['id']])->update(['parent_id' => $data['parent_id']]);
+            CmsContent::where(['category_id' => $data['id']])->update(['category_id' => $data['parent_id']]);
         });
     }
 

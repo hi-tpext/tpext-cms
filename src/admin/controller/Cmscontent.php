@@ -128,6 +128,7 @@ class Cmscontent extends Controller
         $table->switchBtn('is_show', '显示')->default(1)->autoPost();
         $table->checkbox('attr', '属性')->autoPost(url('editAttr'))->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶'])->inline(false);
         $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:80px');
+        $table->text('click', '点击量')->autoPost('', true)->getWrapper()->addStyle('width:80px');
         $table->show('publish_time', '发布时间')->getWrapper()->addStyle('width:180px');
         $table->raw('times', '添加/修改时间')->getWrapper()->addStyle('width:180px');
 
@@ -137,14 +138,16 @@ class Cmscontent extends Controller
 
         unset($d);
 
+        $table->sortable('id,sort,click');
+
         $table->getToolbar()
-            ->btnAdd()
+            ->btnAdd('', '添加', 'btn-primary', 'mdi-plus', 'data-layer-size="98%,98%"')
             ->btnEnableAndDisable('显示', '隐藏')
             ->btnDelete()
             ->btnRefresh();
 
         $table->getActionbar()
-            ->btnEdit()
+            ->btnEdit('', '', 'btn-primary', 'mdi-lead-pencil', 'data-layer-size="98%,98%"')
             ->btnDelete();
     }
 
@@ -200,28 +203,41 @@ class Cmscontent extends Controller
 
         $admin = !$isEdit ? AdminUser::current() : null;
 
+        $form->fields('', '', 8)->size(0, 12)->showLabel(false);
+        $form->defaultDisplayerSize(2, 10);
+
         $form->text('title', '标题')->required()->maxlength(55);
         $form->select('category_id', '栏目')->required()->options([0 => '请选择'] + $this->categoryModel->buildTree());
         $form->tags('tags', '标签');
         $form->textarea('description', '摘要')->maxlength(555);
-        $form->image('logo', '封面图')->mediumSize();
 
         $editor = 'editor';
         if (!empty($config['editor'])) {
             $editor = $config['editor'];
         }
+        $form->$editor('content', '内容');
 
-        $form->$editor('content', '内容')->size(2, 10);
-        $form->text('author', '作者')->maxlength(33)->default($admin ? $admin['name'] : '');
-        $form->text('source', '来源')->maxlength(55)->default($admin ? $admin['group_name'] : '');
-        $form->datetime('publish_time', '发布时间')->required()->default(date('Y-m-d H:i:s'));
-        $form->number('sort', '排序')->default(0);
-        $form->checkbox('attr', '属性')->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶']);
-        $form->switchBtn('is_show', '显示')->default(1);
         if ($isEdit) {
             $form->show('create_time', '添加时间');
             $form->show('update_time', '修改时间');
         }
+
+        $form->fieldsEnd();
+
+        $form->fields('', '', 4)->size(0, 12)->showLabel(false);
+        $form->defaultDisplayerSize(12, 12);
+
+        $form->image('logo', '封面图')->mediumSize();
+        $form->text('author', '作者')->maxlength(33)->default($admin ? $admin['name'] : '');
+        $form->text('source', '来源')->maxlength(55)->default($admin ? $admin['group_name'] : '');
+        $form->datetime('publish_time', '发布时间')->required()->default(date('Y-m-d H:i:s'));
+        $form->number('click', '点击量', 6)->default(0);
+        $form->number('sort', '排序', 6)->default(0);
+
+        $form->checkbox('attr', '属性')->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶']);
+        $form->switchBtn('is_show', '显示', 6)->default(1);
+
+        
     }
 
     /**
@@ -244,7 +260,8 @@ class Cmscontent extends Controller
             'sort',
             'is_show',
             'content',
-            'attr'
+            'attr',
+            'click'
         ], 'post');
 
         $result = $this->validate($data, [

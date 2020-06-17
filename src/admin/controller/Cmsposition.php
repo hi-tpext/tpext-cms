@@ -70,6 +70,8 @@ class Cmsposition extends Controller
         $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:120px');
         $table->show('start_time', '开始时间')->getWrapper()->addStyle('width:180px');
         $table->show('end_time', '结束时间')->getWrapper()->addStyle('width:180px');
+
+        $table->sortable('id,sort');
     }
 
     private function save($id = 0)

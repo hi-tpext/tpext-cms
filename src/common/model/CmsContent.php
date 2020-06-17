@@ -12,7 +12,7 @@ class CmsContent extends Model
     {
         self::beforeInsert(function ($data) {
             if (empty($data['sort'])) {
-                $data['sort'] = static::max('sort') + 1;
+                $data['sort'] = static::max('sort') + 5;
             }
         });
     }
