@@ -51,12 +51,18 @@ class Module extends baseModule
                     'sort' => 4,
                     'url' => '/admin/cmsbanner/index',
                     'icon' => 'mdi mdi-image-multiple'
+                ],
+                [
+                    'title' => '标签管理',
+                    'sort' => 5,
+                    'url' => '/admin/cmstag/index',
+                    'icon' => 'mdi mdi-tag-outline'
                 ]
             ]
         ]
     ];
 
     protected $modules = [
-        'admin' => ['cmscategory', 'cmscontent', 'cmsposition', 'cmsbanner'],
+        'admin' => ['cmscategory', 'cmscontent', 'cmsposition', 'cmsbanner', 'cmstag'],
     ];
 }

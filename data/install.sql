@@ -25,12 +25,14 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_content`  (
   `is_hot` tinyint(1) unsigned NOT NULL DEFAULT 0 COMMENT '热门',
   `is_top` tinyint(1) unsigned NOT NULL DEFAULT 0 COMMENT '置顶',
   `tags` varchar(255) NOT NULL DEFAULT '' COMMENT '文章标签',
+  `keyword` varchar(255) NOT NULL DEFAULT '' COMMENT '关键字',
   `logo` varchar(255) NOT NULL DEFAULT '' COMMENT '封面图',
+  `attachment` varchar(255) NOT NULL DEFAULT '' COMMENT '附件',
   `description` varchar(255) NOT NULL DEFAULT '' COMMENT '摘要',
   `content` text DEFAULT NULL COMMENT '文章内容',
   `publish_time` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '发布时间',
   `sort` mediumint(8) unsigned NOT NULL DEFAULT 0 COMMENT '排序',
-  `is_show` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否显示',
+  `is_show` tinyint(1) unsigned NOT NULL DEFAULT 1 COMMENT '是否显示',
   `click` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '点击量',
   `create_user` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '添加人',
   `create_time` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '添加时间',
@@ -43,8 +45,8 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_position`  (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '位置ID',
   `name` varchar(55) NOT NULL COMMENT '类目名称',
   `logo` varchar(255) NOT NULL DEFAULT '' COMMENT '封面图',
-  `type` tinyint(1) NOT NULL DEFAULT '1' COMMENT '类型',
-  `is_show` tinyint(1) NOT NULL DEFAULT '1' COMMENT '是否显示',
+  `type` tinyint(1) unsigned NOT NULL DEFAULT '1' COMMENT '类型',
+  `is_show` tinyint(1) unsigned NOT NULL DEFAULT '1' COMMENT '是否显示',
   `sort` mediumint(8) unsigned NOT NULL DEFAULT '0' COMMENT '排序',
   `start_time` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '开始时间',
   `end_time` datetime NOT NULL DEFAULT '2030-01-01 00:00:00' COMMENT '结束时间',
@@ -67,4 +69,17 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_banner` (
   PRIMARY KEY (`id`),
   KEY `position_id` (`position_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='CMS轮播';
+
+CREATE TABLE IF NOT EXISTS `__PREFIX__cms_tag` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '轮播ID',
+  `name` varchar(55) NOT NULL DEFAULT '' COMMENT '轮播名称',
+  `description` varchar(255) NOT NULL DEFAULT '' COMMENT '摘要',
+  `logo` varchar(255) NOT NULL DEFAULT '' COMMENT '封面图',
+  `link` varchar(255) NOT NULL DEFAULT '' COMMENT '链接地址',
+  `sort` mediumint(8) unsigned NOT NULL DEFAULT 0 COMMENT '排序',
+  `is_show` tinyint(1) unsigned NOT NULL DEFAULT 1 COMMENT '是否显示',
+  `create_time` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '添加时间',
+  `update_time` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='标签';
 

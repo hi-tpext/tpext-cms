@@ -38,4 +38,13 @@ class CmsContent extends Model
 
         return $attr;
     }
+
+    public function setTagsAttr($value)
+    {
+        if (empty($value)) {
+            return '';
+        }
+
+        return is_array($value) ? implode(',', $value) : $value;
+    }
 }

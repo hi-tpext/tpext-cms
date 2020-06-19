@@ -5,13 +5,13 @@ namespace tpext\cms\admin\controller;
 use think\Controller;
 use tpext\builder\traits\actions\HasAutopost;
 use tpext\builder\traits\actions\HasIAED;
-use tpext\cms\common\model\CmsPosition as Position;
+use tpext\cms\common\model\CmsTag as Tag;
 
 /**
  * Undocumented class
- * @title 广告位置
+ * @title 标签管理
  */
-class Cmsposition extends Controller
+class Cmstag extends Controller
 {
     use HasIAED;
     use HasAutopost;
@@ -19,15 +19,15 @@ class Cmsposition extends Controller
     /**
      * Undocumented variable
      *
-     * @var Position
+     * @var Tag
      */
     protected $dataModel;
 
     protected function initialize()
     {
-        $this->dataModel = new Position;
+        $this->dataModel = new Tag;
 
-        $this->pageTitle = '广告位置';
+        $this->pageTitle = '标签管理';
         $this->sortOrder = 'id desc';
         $this->pagesize = 8;
     }
@@ -44,9 +44,9 @@ class Cmsposition extends Controller
 
         $form->text('name', '名称')->required();
         $form->image('logo', '封面图片');
+        $form->textarea('description', '描述');
+        $form->text('link', '链接');
         $form->switchBtn('is_show', '显示')->default(1);
-        $form->datetime('start_time', '开始时间')->required()->default(date('Y-m-d 00:00:00'));
-        $form->datetime('end_time', '结束时间')->required()->default(date('Y-m-d 00:00:00', strtotime('+1year')));
         $form->number('sort', '排序')->default(0)->required();
 
         if ($isEdit) {
@@ -66,10 +66,9 @@ class Cmsposition extends Controller
         $table->show('id', 'ID');
         $table->image('logo', '封面')->default(url('/admin/upload/ext', ['type' => 'empty'], '', false))->thumbSize(50, 50);
         $table->text('name', '名称')->autoPost('', true);
+        $table->show('description', '描述')->getWrapper()->addStyle('width:30%;');
         $table->switchBtn('is_show', '显示')->default(1)->autoPost()->getWrapper()->addStyle('width:120px');
         $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:120px');
-        $table->show('start_time', '开始时间')->getWrapper()->addStyle('width:180px');
-        $table->show('end_time', '结束时间')->getWrapper()->addStyle('width:180px');
 
         $table->sortable('id,sort');
     }
@@ -79,17 +78,15 @@ class Cmsposition extends Controller
         $data = request()->only([
             'name',
             'logo',
+            'description',
+            'link',
             'is_show',
-            'start_time',
-            'end_time',
             'sort',
         ], 'post');
 
         $result = $this->validate($data, [
             'name|名称' => 'require',
             'sort|排序' => 'require|number',
-            'start_time|开始时间' => 'require|date',
-            'end_time|结束时间' => 'require|date',
             'is_show' => 'require',
         ]);
 

@@ -52,7 +52,7 @@ class Cmscategory extends Controller
         $form->image('logo', '封面图');
         $form->switchBtn('is_show', '显示')->default(1);
         $form->radio('type', '类型')->default(1)->options([1 => '不限', 2 => '目录', 3 => '分类'])->required()->help('目录有下级，不能存文章。分类无下级，只能存文章');
-        $form->text('sort', '排序')->default(0)->required();
+        $form->number('sort', '排序')->default(0)->required();
 
         if ($isEdit) {
             $form->show('create_time', '添加时间');

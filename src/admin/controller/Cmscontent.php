@@ -5,6 +5,7 @@ namespace tpext\cms\admin\controller;
 use think\Controller;
 use tpext\builder\traits\HasBuilder;
 use tpext\cms\common\model\CmsCategory;
+use tpext\cms\common\model\CmsTag;
 use tpext\cms\common\model\CmsContent as ContentModel;
 use tpext\myadmin\admin\model\AdminUser;
 use tpext\cms\common\Module;
@@ -56,6 +57,22 @@ class Cmscontent extends Controller
             $where[] = ['category_id', 'eq', $searchData['category_id']];
         }
 
+        if (isset($searchData['is_show']) && $searchData['is_show'] != '') {
+            $where[] = ['is_show', 'eq', $searchData['is_show']];
+        }
+
+        if (isset($searchData['attr'])) {
+            if (in_array('is_recommend', $searchData['attr'])) {
+                $where[] = ['is_recommend', 'eq', 1];
+            }
+            if (in_array('is_hot', $searchData['attr'])) {
+                $where[] = ['is_hot', 'eq', 1];
+            }
+            if (in_array('is_top', $searchData['attr'])) {
+                $where[] = ['is_top', 'eq', 1];
+            }
+        }
+
         return $where;
     }
 
@@ -68,32 +85,36 @@ class Cmscontent extends Controller
     {
         $search = $this->search;
 
-        $search->text('title', '标题', 3)->maxlength(20);
-        $search->text('author', '作者', 3)->maxlength(20);
-        $search->select('category_id', '栏目', 3)->options([0 => '请选择'] + $this->categoryModel->buildTree());
+        $search->text('title', '标题', 4)->maxlength(20);
+        $search->text('author', '作者', 4)->maxlength(20);
+        $search->select('category_id', '栏目', 4)->options([0 => '请选择'] + $this->categoryModel->buildTree());
+        $search->select('is_show', '显示', 4)->options([1 => '是', 0 => '否']);
+        $search->checkbox('attr', '属性', 4)->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶']);
     }
 
     public function index()
     {
         $builder = $this->builder($this->pageTitle, $this->indexText);
 
-        $tree = $builder->tree('2 left-tree');
+        $tree = $builder->tree('1 left-tree');
 
         $tree->fill($this->categoryModel->all());
 
         $tree->trigger('.row-category_id');
 
-        $this->table = $builder->table('10 right-list');
+        $this->table = $builder->table('1 right-list');
 
         $builder->addStyleSheet('
-            .col-md-2.left-tree
+            .left-tree
             {
                 width:12%;
+                float:left;
             }
 
-            .col-md-10.right-list
+            .right-list
             {
                 width:88%;
+                float:right;
             }
         ');
 
@@ -125,6 +146,7 @@ class Cmscontent extends Controller
         $table->show('category', '栏目');
         $table->show('author', '作者')->default('暂无');
         $table->show('source', '来源')->default('暂无');
+        $table->matches('tags', '标签')->optionsData(CmsTag::all());
         $table->switchBtn('is_show', '显示')->default(1)->autoPost();
         $table->checkbox('attr', '属性')->autoPost(url('editAttr'))->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶'])->inline(false);
         $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:80px');
@@ -204,40 +226,39 @@ class Cmscontent extends Controller
         $admin = !$isEdit ? AdminUser::current() : null;
 
         $form->fields('', '', 8)->size(0, 12)->showLabel(false);
-        $form->defaultDisplayerSize(2, 10);
+        $form->defaultDisplayerSize(12, 12);
 
         $form->text('title', '标题')->required()->maxlength(55);
         $form->select('category_id', '栏目')->required()->options([0 => '请选择'] + $this->categoryModel->buildTree());
-        $form->tags('tags', '标签');
-        $form->textarea('description', '摘要')->maxlength(555);
+        $form->multipleSelect('tags', '标签')->optionsData(CmsTag::all(), 'name');
+        $form->tags('keyword', '关键字')->maxlength(255);
+        $form->textarea('description', '摘要')->maxlength(255);
 
         $editor = 'editor';
         if (!empty($config['editor'])) {
             $editor = $config['editor'];
         }
-        $form->$editor('content', '内容');
+        $form->$editor('content', '内容')->required();
+
+        $form->fieldsEnd();
+
+        $form->fields('', '', 4)->size(0, 12)->showLabel(false);
+
+        $form->image('logo', '封面图')->mediumSize();
+        $form->file('attachment', '附件')->mediumSize();
+        $form->text('author', '作者')->maxlength(33)->default($admin ? $admin['name'] : '');
+        $form->text('source', '来源')->maxlength(55)->default($admin ? $admin['group_name'] : '');
+        $form->datetime('publish_time', '发布时间')->required()->default(date('Y-m-d H:i:s'));
+        $form->number('click', '点击量')->default(0);
+        $form->number('sort', '排序')->default(0);
+
+        $form->checkbox('attr', '属性')->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶']);
+        $form->switchBtn('is_show', '显示')->default(1);
 
         if ($isEdit) {
             $form->show('create_time', '添加时间');
             $form->show('update_time', '修改时间');
         }
-
-        $form->fieldsEnd();
-
-        $form->fields('', '', 4)->size(0, 12)->showLabel(false);
-        $form->defaultDisplayerSize(12, 12);
-
-        $form->image('logo', '封面图')->mediumSize();
-        $form->text('author', '作者')->maxlength(33)->default($admin ? $admin['name'] : '');
-        $form->text('source', '来源')->maxlength(55)->default($admin ? $admin['group_name'] : '');
-        $form->datetime('publish_time', '发布时间')->required()->default(date('Y-m-d H:i:s'));
-        $form->number('click', '点击量', 6)->default(0);
-        $form->number('sort', '排序', 6)->default(0);
-
-        $form->checkbox('attr', '属性')->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶']);
-        $form->switchBtn('is_show', '显示', 6)->default(1);
-
-        
     }
 
     /**
@@ -252,8 +273,10 @@ class Cmscontent extends Controller
             'title',
             'category_id',
             'tags',
+            'keyword',
             'description',
             'logo',
+            'attachment',
             'author',
             'source',
             'publish_time',
@@ -283,6 +306,10 @@ class Cmscontent extends Controller
             $data['is_recommend'] = 0;
             $data['is_hot'] = 0;
             $data['is_top'] = 0;
+        }
+
+        if (!isset($data['tags'])) {
+            $data['tags'] = '';
         }
 
         if ($data['category_id']) {
