@@ -45,6 +45,6 @@ class CmsContent extends Model
             return '';
         }
 
-        return is_array($value) ? implode(',', $value) : $value;
+        return is_array($value) ? ',' . implode(',', $value) . ',' : ',' . trim($value, ',') . ',';
     }
 }

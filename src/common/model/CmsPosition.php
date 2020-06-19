@@ -20,4 +20,9 @@ class CmsPosition extends Model
             CmsBanner::where(['position_id' => $data['id']])->update(['position_id' => 0]);
         });
     }
+
+    public function getBannerCountAttr($value, $data)
+    {
+        return CmsBanner::where('position_id', $data['id'])->count();
+    }
 }

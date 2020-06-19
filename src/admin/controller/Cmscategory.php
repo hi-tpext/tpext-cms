@@ -93,6 +93,7 @@ class Cmscategory extends Controller
         $table->switchBtn('is_show', '显示')->default(1)->autoPost()->getWrapper()->addStyle('width:80px');
         $table->match('type', '类型')->default(1)->options([1 => '不限', 2 => '目录', 3 => '分类'])->getWrapper()->addStyle('width:80px');
         $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:80px');
+        $table->show('content_count', '内容统计')->getWrapper()->addStyle('width:80px');
         $table->show('create_time', '添加时间')->getWrapper()->addStyle('width:180px');
         $table->show('update_time', '修改时间')->getWrapper()->addStyle('width:180px');
 

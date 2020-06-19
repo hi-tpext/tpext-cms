@@ -68,10 +68,19 @@ class Cmsposition extends Controller
         $table->text('name', '名称')->autoPost('', true);
         $table->switchBtn('is_show', '显示')->default(1)->autoPost()->getWrapper()->addStyle('width:120px');
         $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:120px');
+        $table->show('banner_count', '内容统计')->getWrapper()->addStyle('width:80px');
         $table->show('start_time', '开始时间')->getWrapper()->addStyle('width:180px');
         $table->show('end_time', '结束时间')->getWrapper()->addStyle('width:180px');
 
         $table->sortable('id,sort');
+
+        $table->getActionbar()
+            ->btnEdit()
+            ->btnLink('price', url('edit', ['id' => '__data.pk__', 'tab' => 4]), '库存', 'btn-info', 'mdi mdi-coin', 'title="库存价格管理" data-layer-size="98%,98%"')
+            ->btnDelete()
+            ->mapClass([
+                'price' => ['hidden' => '__h_price__'],
+            ]);
     }
 
     private function save($id = 0)

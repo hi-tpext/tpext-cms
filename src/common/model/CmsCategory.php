@@ -19,7 +19,7 @@ class CmsCategory extends Model
                     $parent = static::get($data['parent_id']);
                     if ($parent) {
                         $data['deep'] = $parent['deep'] + 1;
-                        $data['path'] = $parent['path']  . $data['parent_id'] . ',';
+                        $data['path'] = $parent['path'] . $data['parent_id'] . ',';
                     }
                 }
             }
@@ -47,7 +47,7 @@ class CmsCategory extends Model
         foreach ($roots as $root) {
 
             if ($parent == 0) {
-                $root['title_show'] = $root['name'];
+                $root['title_show'] = '├─' .$root['name'];
             } else {
                 $root['title_show'] = str_repeat('&nbsp;', ($deep - 1) * 6) . '├─' . $root['name'];
             }
@@ -83,5 +83,10 @@ class CmsCategory extends Model
         }
 
         return $data;
+    }
+
+    public function getContentCountAttr($value, $data)
+    {
+        return CmsContent::where('category_id', $data['id'])->count();
     }
 }

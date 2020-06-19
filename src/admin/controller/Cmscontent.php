@@ -5,10 +5,10 @@ namespace tpext\cms\admin\controller;
 use think\Controller;
 use tpext\builder\traits\HasBuilder;
 use tpext\cms\common\model\CmsCategory;
-use tpext\cms\common\model\CmsTag;
 use tpext\cms\common\model\CmsContent as ContentModel;
-use tpext\myadmin\admin\model\AdminUser;
+use tpext\cms\common\model\CmsTag;
 use tpext\cms\common\Module;
+use tpext\myadmin\admin\model\AdminUser;
 
 /**
  * Undocumented class
@@ -61,6 +61,10 @@ class Cmscontent extends Controller
             $where[] = ['is_show', 'eq', $searchData['is_show']];
         }
 
+        if (!empty($searchData['tags'])) {
+            $where[] = ['tags', 'like', '%' . $searchData['tags'] . '%'];
+        }
+
         if (isset($searchData['attr'])) {
             if (in_array('is_recommend', $searchData['attr'])) {
                 $where[] = ['is_recommend', 'eq', 1];
@@ -89,6 +93,7 @@ class Cmscontent extends Controller
         $search->text('author', '作者', 4)->maxlength(20);
         $search->select('category_id', '栏目', 4)->options([0 => '请选择'] + $this->categoryModel->buildTree());
         $search->select('is_show', '显示', 4)->options([1 => '是', 0 => '否']);
+        $search->select('tags', '标签', 4)->optionsData(CmsTag::all(), 'name');
         $search->checkbox('attr', '属性', 4)->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶']);
     }
 
@@ -151,8 +156,8 @@ class Cmscontent extends Controller
         $table->checkbox('attr', '属性')->autoPost(url('editAttr'))->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶'])->inline(false);
         $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:80px');
         $table->text('click', '点击量')->autoPost('', true)->getWrapper()->addStyle('width:80px');
-        $table->show('publish_time', '发布时间')->getWrapper()->addStyle('width:180px');
-        $table->raw('times', '添加/修改时间')->getWrapper()->addStyle('width:180px');
+        $table->show('publish_time', '发布时间')->getWrapper()->addStyle('width:160px');
+        $table->raw('times', '添加/修改时间')->getWrapper()->addStyle('width:160px');
 
         foreach ($data as &$d) {
             $d['times'] = $d['create_time'] . '<br>' . $d['update_time'];
@@ -230,7 +235,7 @@ class Cmscontent extends Controller
 
         $form->text('title', '标题')->required()->maxlength(55);
         $form->select('category_id', '栏目')->required()->options([0 => '请选择'] + $this->categoryModel->buildTree());
-        $form->multipleSelect('tags', '标签')->optionsData(CmsTag::all(), 'name');
+        $form->multipleSelect('tags', '标签')->optionsData(CmsTag::all(), 'name')->help('可到【标签管理】菜单添加标签');
         $form->tags('keyword', '关键字')->maxlength(255);
         $form->textarea('description', '摘要')->maxlength(255);
 
@@ -284,13 +289,13 @@ class Cmscontent extends Controller
             'is_show',
             'content',
             'attr',
-            'click'
+            'click',
         ], 'post');
 
         $result = $this->validate($data, [
             'title|标题' => 'require',
             'category_id|栏目' => 'require',
-            'content|内容' => 'require'
+            'content|内容' => 'require',
         ]);
 
         if (true !== $result) {
@@ -308,7 +313,9 @@ class Cmscontent extends Controller
             $data['is_top'] = 0;
         }
 
-        if (!isset($data['tags'])) {
+        if (isset($data['tags']) && !empty($data['tags'])) {
+            $data['tags'] = ',' . implode(',', $data['tags']) . ',';
+        } else {
             $data['tags'] = '';
         }
 
