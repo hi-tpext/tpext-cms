@@ -56,6 +56,29 @@ class Cmsposition extends Controller
         }
     }
 
+    protected function filterWhere()
+    {
+        $searchData = request()->post();
+
+        $where = [];
+        if (!empty($searchData['name'])) {
+            $where[] = ['name', 'like', '%' . $searchData['name'] . '%'];
+        }
+
+        return $where;
+    }
+
+    /**
+     * 构建搜索
+     *
+     * @return void
+     */
+    protected function builSearch()
+    {
+        $search = $this->search;
+        $search->text('name', '名称', 3)->maxlength(20);
+    }
+
     /**
      * 构建表格
      *

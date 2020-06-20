@@ -86,7 +86,7 @@ class Cmscategory extends Controller
     {
         $table = $this->table;
         $table->show('id', 'ID');
-        $table->raw('title_show', '名称')->getWrapper()->addStyle('text-align:left;');
+        $table->raw('title_show', '结构')->getWrapper()->addStyle('text-align:left;');
         $table->image('logo', '封面图')->default(url('/admin/upload/ext', ['type' => 'empty'], '', false))->thumbSize(50, 50);
         $table->show('link', '链接')->default('暂无');
         $table->text('name', '名称')->autoPost('', true);
