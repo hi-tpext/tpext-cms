@@ -5,6 +5,7 @@ namespace tpext\cms\admin\controller;
 use think\Controller;
 use tpext\builder\traits\actions\HasAutopost;
 use tpext\builder\traits\actions\HasIAED;
+use tpext\cms\common\model\CmsBanner;
 use tpext\cms\common\model\CmsPosition as Position;
 
 /**
@@ -72,15 +73,51 @@ class Cmsposition extends Controller
         $table->show('start_time', '开始时间')->getWrapper()->addStyle('width:180px');
         $table->show('end_time', '结束时间')->getWrapper()->addStyle('width:180px');
 
+        foreach ($data as &$d) {
+            $d['__h_pv__'] = !$d['banner_count'];
+        }
+
+        unset($d);
+
         $table->sortable('id,sort');
 
         $table->getActionbar()
             ->btnEdit()
-            ->btnLink('price', url('edit', ['id' => '__data.pk__', 'tab' => 4]), '库存', 'btn-info', 'mdi mdi-coin', 'title="库存价格管理" data-layer-size="98%,98%"')
+            ->btnLink('preview', url('preview', ['id' => '__data.pk__']), '预览', 'btn-info', 'mdi mdi-eye-outline', 'title="预览" data-layer-size="580px,460px"')
             ->btnDelete()
             ->mapClass([
-                'price' => ['hidden' => '__h_price__'],
+                'preview' => ['hidden' => '__h_pv__'],
             ]);
+    }
+
+    /**
+     * Undocumented function
+     * @title 预览
+     *
+     * @return mixed
+     */
+    public function preview($id)
+    {
+        $list = CmsBanner::where('position_id', $id)->select();
+
+        $tpl = '<div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
+                  <ol class="carousel-indicators">
+                  {volist name="list" id="vo"}
+                    <li data-target="#carouselExampleIndicators" data-slide-to="{$key}" {if condition="$key eq 0"}class="active"{/if}></li>
+                  {/volist}
+                  </ol>
+                  <div class="carousel-inner">
+                    {volist name="list" id="vo"}
+                    <div class="item {if condition="$key eq 0"}active{/if}"><img style="width:100%;height:380px;" src="{$vo.image}" alt="{$vo.title}"></div>
+                    {/volist}
+                  </div>
+                  <a class="left carousel-control" href="#carouselExampleIndicators" role="button" data-slide="prev"><span class="icon-left-open-big icon-prev" aria-hidden="true"></span><span class="sr-only">上一个</span></a>
+                  <a class="right carousel-control" href="#carouselExampleIndicators" role="button" data-slide="next"><span class="icon-right-open-big icon-next" aria-hidden="true"></span><span class="sr-only">下一个</span></a>
+                </div>';
+
+        $builder = $this->builder('');
+        $builder->content()->display($tpl, ['list' => $list]);
+        return $builder;
     }
 
     private function save($id = 0)

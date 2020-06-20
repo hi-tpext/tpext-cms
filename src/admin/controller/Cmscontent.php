@@ -89,12 +89,12 @@ class Cmscontent extends Controller
     {
         $search = $this->search;
 
-        $search->text('title', '标题', 4)->maxlength(20);
-        $search->text('author', '作者', 4)->maxlength(20);
-        $search->select('category_id', '栏目', 4)->options([0 => '请选择'] + $this->categoryModel->buildTree());
-        $search->select('is_show', '显示', 4)->options([1 => '是', 0 => '否']);
-        $search->select('tags', '标签', 4)->optionsData(CmsTag::all(), 'name');
-        $search->checkbox('attr', '属性', 4)->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶']);
+        $search->text('title', '标题', 3)->maxlength(20);
+        $search->text('author', '作者', 3)->maxlength(20);
+        $search->select('category_id', '栏目', 3)->options([0 => '请选择'] + $this->categoryModel->buildTree());
+        $search->select('is_show', '显示', 3)->options([1 => '是', 0 => '否']);
+        $search->select('tags', '标签', 3)->optionsData(CmsTag::all(), 'name');
+        $search->checkbox('attr', '属性', 3)->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶']);
     }
 
     public function index()
@@ -146,7 +146,7 @@ class Cmscontent extends Controller
         $table = $this->table;
 
         $table->show('id', 'ID');
-        $table->image('logo', '封面图')->default(url('/admin/upload/ext', ['type' => '暂无']))->thumbSize(80, 80);
+        $table->image('logo', '封面图')->default(url('/admin/upload/ext', ['type' => '暂无']))->thumbSize(60, 60);
         $table->text('title', '标题')->autoPost()->getWrapper()->addStyle('max-width:200px');
         $table->show('category', '栏目');
         $table->show('author', '作者')->default('暂无');
@@ -230,7 +230,7 @@ class Cmscontent extends Controller
 
         $admin = !$isEdit ? AdminUser::current() : null;
 
-        $form->fields('', '', 8)->size(0, 12)->showLabel(false);
+        $form->fields('', '', 7)->size(0, 12)->showLabel(false);
         $form->defaultDisplayerSize(12, 12);
 
         $form->text('title', '标题')->required()->maxlength(55);
@@ -247,22 +247,22 @@ class Cmscontent extends Controller
 
         $form->fieldsEnd();
 
-        $form->fields('', '', 4)->size(0, 12)->showLabel(false);
+        $form->fields('', '', 5)->size(0, 12)->showLabel(false);
 
         $form->image('logo', '封面图')->mediumSize();
         $form->file('attachment', '附件')->mediumSize();
-        $form->text('author', '作者')->maxlength(33)->default($admin ? $admin['name'] : '');
-        $form->text('source', '来源')->maxlength(55)->default($admin ? $admin['group_name'] : '');
+        $form->text('author', '作者', 6)->maxlength(33)->default($admin ? $admin['name'] : '');
+        $form->text('source', '来源', 6)->maxlength(55)->default($admin ? $admin['group_name'] : '');
         $form->datetime('publish_time', '发布时间')->required()->default(date('Y-m-d H:i:s'));
-        $form->number('click', '点击量')->default(0);
-        $form->number('sort', '排序')->default(0);
+        $form->number('click', '点击量', 6)->default(0);
+        $form->number('sort', '排序', 6)->default(0);
 
         $form->checkbox('attr', '属性')->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶']);
         $form->switchBtn('is_show', '显示')->default(1);
 
         if ($isEdit) {
-            $form->show('create_time', '添加时间');
-            $form->show('update_time', '修改时间');
+            $form->show('create_time', '添加时间', 6);
+            $form->show('update_time', '修改时间', 6);
         }
     }
 

@@ -29,16 +29,16 @@ class Module extends baseModule
             'icon' => 'mdi mdi-library-books',
             'children' => [
                 [
-                    'title' => '栏目管理',
-                    'sort' => 1,
-                    'url' => '/admin/cmscategory/index',
-                    'icon' => 'mdi mdi-file-tree'
-                ],
-                [
                     'title' => '内容管理',
-                    'sort' => 2,
+                    'sort' => 1,
                     'url' => '/admin/cmscontent/index',
                     'icon' => 'mdi mdi-book-open'
+                ],
+                [
+                    'title' => '栏目管理',
+                    'sort' => 2,
+                    'url' => '/admin/cmscategory/index',
+                    'icon' => 'mdi mdi-file-tree'
                 ],
                 [
                     'title' => '广告位置',

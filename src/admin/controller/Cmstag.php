@@ -44,7 +44,7 @@ class Cmstag extends Controller
 
         $form->text('name', '名称')->required();
         $form->image('logo', '封面图片');
-        $form->textarea('description', '描述');
+        $form->textarea('description', '描述')->maxlength(255);
         $form->text('link', '链接');
         $form->switchBtn('is_show', '显示')->default(1);
         $form->number('sort', '排序')->default(0)->required();
@@ -53,6 +53,29 @@ class Cmstag extends Controller
             $form->show('create_time', '添加时间');
             $form->show('update_time', '修改时间');
         }
+    }
+
+    protected function filterWhere()
+    {
+        $searchData = request()->post();
+
+        $where = [];
+        if (!empty($searchData['name'])) {
+            $where[] = ['name', 'like', '%' . $searchData['name'] . '%'];
+        }
+
+        return $where;
+    }
+
+    /**
+     * 构建搜索
+     *
+     * @return void
+     */
+    protected function builSearch()
+    {
+        $search = $this->search;
+        $search->text('name', '名称', 3)->maxlength(20);
     }
 
     /**
