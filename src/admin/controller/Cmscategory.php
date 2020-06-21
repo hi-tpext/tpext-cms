@@ -73,6 +73,20 @@ class Cmscategory extends Controller
         $table->sortable([]);
 
         $data = $this->dataModel->buildList(0, 0);
+        if ($this->isExporting) {
+            $__ids__ = input('post.__ids__');
+            if (!empty($__ids__)) {
+                $ids = explode(',', $__ids__);
+                $newd = [];
+                foreach ($data as $d) {
+                    if (in_array($d['id'], $ids)) {
+                        $newd[] = $d;
+                    }
+                }
+                $data = $newd;
+            }
+        }
+
         $this->buildTable($data);
         $table->fill($data);
     }
