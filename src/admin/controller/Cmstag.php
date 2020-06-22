@@ -87,7 +87,7 @@ class Cmstag extends Controller
     {
         $table = $this->table;
         $table->show('id', 'ID');
-        $table->image('logo', '封面')->default(url('/admin/upload/ext', ['type' => 'empty'], '', false))->thumbSize(50, 50);
+        $table->image('logo', '封面')->thumbSize(50, 50);
         $table->text('name', '名称')->autoPost('', true);
         $table->show('description', '描述')->getWrapper()->addStyle('width:30%;');
         $table->switchBtn('is_show', '显示')->default(1)->autoPost()->getWrapper()->addStyle('width:120px');

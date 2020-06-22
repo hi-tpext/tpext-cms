@@ -76,7 +76,7 @@ class Cmsbanner extends Controller
         $table = $this->table;
 
         $table->show('id', 'ID');
-        $table->image('image', '图片')->default(url('/admin/upload/ext', ['type' => '暂无']))->thumbSize(70, 70);
+        $table->image('image', '图片')->thumbSize(70, 70);
         $table->text('title', '标题')->autoPost()->getWrapper()->addStyle('max-width:200px');
         $table->show('position', '位置');
         $table->show('description', '摘要')->default('暂无')->getWrapper()->addStyle('max-width:200px');

@@ -88,7 +88,7 @@ class Cmsposition extends Controller
     {
         $table = $this->table;
         $table->show('id', 'ID');
-        $table->image('logo', '封面')->default(url('/admin/upload/ext', ['type' => 'empty'], '', false))->thumbSize(50, 50);
+        $table->image('logo', '封面')->thumbSize(50, 50);
         $table->text('name', '名称')->autoPost('', true);
         $table->switchBtn('is_show', '显示')->default(1)->autoPost()->getWrapper()->addStyle('width:120px');
         $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:120px');

@@ -146,7 +146,7 @@ class Cmscontent extends Controller
         $table = $this->table;
 
         $table->show('id', 'ID');
-        $table->image('logo', '封面图')->default(url('/admin/upload/ext', ['type' => '暂无']))->thumbSize(60, 60);
+        $table->image('logo', '封面图')->thumbSize(60, 60);
         $table->text('title', '标题')->autoPost()->getWrapper()->addStyle('max-width:200px');
         $table->show('category', '栏目');
         $table->show('author', '作者')->default('暂无');
