@@ -32,6 +32,34 @@ class Cmscategory extends Controller
         $this->pagesize = 8;
     }
 
+     /**
+     * Undocumented function
+     *
+     * @title 下拉选择产品分类
+     * @return mixed
+     */
+    public function selectPage()
+    {
+
+        $list = $this->dataModel->buildTree(0, 0, 0);
+
+        $data = [];
+
+        foreach ($list as $k => $v) {
+            $data[] = [
+                'id' => $k,
+                'text' => $v,
+            ];
+        }
+
+        return json(
+            [
+                'data' => $data,
+                'has_more' => 0,
+            ]
+        );
+    }
+
     /**
      * 构建表单
      *

@@ -5,7 +5,7 @@ namespace tpext\cms\admin\controller;
 use think\Controller;
 use tpext\builder\traits\actions\HasAutopost;
 use tpext\builder\traits\actions\HasIAED;
-use tpext\cms\common\model\CmsTag as Tag;
+use tpext\cms\common\model\CmsTag as TagModel;
 
 /**
  * Undocumented class
@@ -19,17 +19,56 @@ class Cmstag extends Controller
     /**
      * Undocumented variable
      *
-     * @var Tag
+     * @var TagModel
      */
     protected $dataModel;
 
     protected function initialize()
     {
-        $this->dataModel = new Tag;
+        $this->dataModel = new TagModel;
 
         $this->pageTitle = '标签管理';
         $this->sortOrder = 'id desc';
         $this->pagesize = 8;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @title 下拉选择标签
+     * @return mixed
+     */
+    public function selectPage()
+    {
+        $q = input('q');
+        $page = input('page/d');
+
+        $page = $page < 1 ? 1 : $page;
+        $pagesize = 20;
+
+        $where = [];
+
+        if ($q) {
+            $where[] = ['name', 'like', '%' . $q . '%'];
+        }
+
+        $list = $this->dataModel->where($where)->order('sort')->limit(($page - 1) * $pagesize, $pagesize)->select();
+
+        $data = [];
+
+        foreach ($list as $li) {
+            $data[] = [
+                'id' => $li['id'],
+                'text' => $li['name'],
+            ];
+        }
+
+        return json(
+            [
+                'data' => $data,
+                'has_more' => count($data) >= $pagesize,
+            ]
+        );
     }
 
     /**

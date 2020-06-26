@@ -91,7 +91,7 @@ class Cmscontent extends Controller
 
         $search->text('title', '标题', 3)->maxlength(20);
         $search->text('author', '作者', 3)->maxlength(20);
-        $search->select('category_id', '栏目', 3)->options([0 => '请选择'] + $this->categoryModel->buildTree());
+        $search->select('category_id', '栏目', 3)->dataUrl(url('/admin/cmscategory/selectPage'));
         $search->select('is_show', '显示', 3)->options([1 => '是', 0 => '否']);
         $search->select('tags', '标签', 3)->optionsData(CmsTag::all(), 'name');
         $search->checkbox('attr', '属性', 3)->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶']);
@@ -234,8 +234,10 @@ class Cmscontent extends Controller
         $form->defaultDisplayerSize(12, 12);
 
         $form->text('title', '标题')->required()->maxlength(55);
-        $form->select('category_id', '栏目')->required()->options([0 => '请选择'] + $this->categoryModel->buildTree());
-        $form->multipleSelect('tags', '标签')->optionsData(CmsTag::all(), 'name')->help('可到【标签管理】菜单添加标签');
+        $form->select('category_id', '栏目')->required()->optionsData($isEdit ? $this->categoryModel->where(['id' => $data['category_id']])->select() : [])
+            ->dataUrl(url('/admin/cmscategory/selectPage'));
+        $form->multipleSelect('tags', '标签')->optionsData($isEdit ? CmsTag::where('id', 'in', $data['tags'])->select() : [])
+            ->dataUrl(url('/admin/cmstag/selectPage'))->help('可到【标签管理】菜单添加标签');
         $form->tags('keyword', '关键字')->maxlength(255);
         $form->textarea('description', '摘要')->maxlength(255);
 
