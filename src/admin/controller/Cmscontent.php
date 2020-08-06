@@ -85,7 +85,7 @@ class Cmscontent extends Controller
      *
      * @return void
      */
-    protected function builSearch()
+    protected function buildSearch()
     {
         $search = $this->search;
 
@@ -126,7 +126,7 @@ class Cmscontent extends Controller
         $this->table->pk($this->getPk());
         $this->search = $this->table->getSearch();
 
-        $this->builSearch();
+        $this->buildSearch();
         $this->buildDataList();
 
         if (request()->isAjax()) {
@@ -222,7 +222,7 @@ class Cmscontent extends Controller
      * @param boolean $isEdit
      * @param array $data
      */
-    protected function builForm($isEdit, &$data = [])
+    protected function buildForm($isEdit, &$data = [])
     {
         $config = Module::getInstance()->getConfig();
 

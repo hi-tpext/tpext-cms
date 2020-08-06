@@ -77,7 +77,7 @@ class Cmstag extends Controller
      * @param boolean $isEdit
      * @param array $data
      */
-    protected function builForm($isEdit, &$data = [])
+    protected function buildForm($isEdit, &$data = [])
     {
         $form = $this->form;
 
@@ -111,7 +111,7 @@ class Cmstag extends Controller
      *
      * @return void
      */
-    protected function builSearch()
+    protected function buildSearch()
     {
         $search = $this->search;
         $search->text('name', '名称', 3)->maxlength(20);
