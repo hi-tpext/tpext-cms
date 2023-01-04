@@ -6,7 +6,7 @@ use think\Model;
 use tpext\think\App;
 use tpext\cms\common\DirFilter;
 
-class CmsTemplatePage extends Model
+class CmsTemplateHtml extends Model
 {
     protected $autoWriteTimestamp = 'dateTime';
 
@@ -67,20 +67,23 @@ class CmsTemplatePage extends Model
                 $key = md5(strtolower($path));
 
                 $page = static::where('template_id', $templateId)->where('key', $key)->find();
+
+                $isDefault = preg_match('/theme\/[\w\-]+?\/(content|channel)\/default\.html$/i', $path) || preg_match('/theme\/[\w\-]+?\/index.html$/i', $path);
+
                 if (!$page) {
                     $page = new static;
                     $type = 'single';
                     $description = '单页';
                     if (stripos($path, 'channel') !== false) {
                         $type = 'channel';
-                        $description = '栏目页';
+                        $description = '栏目页' . ($isDefault ? '[默认模板]' : '');
                     } else if (stripos($path, 'content') !== false) {
                         $type = 'content';
-                        $description = '详情页';
+                        $description = '详情页' . ($isDefault ? '[默认模板]' : '');
                     } else if (stripos($path, 'common') !== false) {
                         $type = 'common';
-                        $description = '公共页面';
-                    } else if (preg_match('/theme\/.+?\/index.html$/i', $path)) {
+                        $description = '公共模板';
+                    } else if (preg_match('/theme\/[\w\-]+?\/index.html$/i', $path)) {
                         $type = 'index';
                         $description = '首页';
                     }
@@ -96,6 +99,7 @@ class CmsTemplatePage extends Model
                         'filectime' => date('Y-m-d H:i:s', filectime($file->getPathname())),
                         'filemtime' => date('Y-m-d H:i:s', filemtime($file->getPathname())),
                         'size' => round(filesize($file->getPathname()) / 1024, 2),
+                        'is_default' => $isDefault,
                     ]);
                 } else {
                     $page->save([
@@ -104,6 +108,7 @@ class CmsTemplatePage extends Model
                         'update_time' => date('Y-m-d H:i:s'),
                         'filectime' => date('Y-m-d H:i:s', filectime($file->getPathname())),
                         'filemtime' => date('Y-m-d H:i:s', filemtime($file->getPathname())),
+                        'is_default' => $isDefault,
                     ]);
                 }
             }

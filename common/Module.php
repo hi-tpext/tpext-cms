@@ -71,7 +71,7 @@ class Module extends baseModule
     ];
 
     protected $modules = [
-        'admin' => ['cmschannel', 'cmscontent', 'cmsposition', 'cmsbanner', 'cmstag', 'cmstemplate', 'cmstemplatepage', 'cmstemplatestatic', 'cmstemplatemake'],
+        'admin' => ['cmschannel', 'cmscontent', 'cmsposition', 'cmsbanner', 'cmstag', 'cmstemplate', 'cmstemplatehtml', 'cmstemplatestatic', 'cmstemplatemake'],
     ];
 
     public function install()

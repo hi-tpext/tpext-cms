@@ -85,10 +85,9 @@ class Cmstemplate extends Controller
         $table->match('platform', '类型')->options(self::$platforms)->mapClassGroup([['pc', 'info'], ['mobile', 'success']]);
         $table->raw('view_path', '模板路径')->to('<code>theme/{val}</code>');
         $table->raw('prefix', '生成路径前缀')->to('<a href="{val}" target="_blank">{val}</a>');
-        $table->raw('tepm_prefix', '临时路径前缀')->to('<a href="{val}" target="_blank">{val}</a>')->default('/未生成');
         $table->show('description', '描述')->default('暂无')->getWrapper()->addStyle('max-width:200px');
         $table->show('pages_count', '页面数量');
-        $table->raw('pages_manage', '模板页面')->to('<a class="label label-secondary" data-title="[{name}]文件管理" onclick="top.$.fn.multitabs().create(this, true); return false;" href="/admin/cmstemplatepage/index?template_id={id}">[管理<i title="打开文件管理页面" class="mdi mdi-arrow-top-right"></i>]</a>');
+        $table->raw('pages_manage', '模板页面')->to('<a class="label label-secondary" data-title="[{name}]文件管理" onclick="top.$.fn.multitabs().create(this, true); return false;" href="/admin/cmstemplatehtml/index?template_id={id}">[管理<i title="打开文件管理页面" class="mdi mdi-arrow-top-right"></i>]</a>');
         $table->raw('static_manage', '静态资源')->to('<a class="label label-secondary" data-title="[{name}]静态文件管理" onclick="top.$.fn.multitabs().create(this, true); return false;" href="/admin/cmstemplatestatic/index?template_id={id}">[管理<i title="打开静态文件管理页面" class="mdi mdi-arrow-top-right"></i>]</a>');
 
         $table->fields('times', '添加/修改时间')->with(
@@ -138,7 +137,7 @@ class Cmstemplate extends Controller
             $form->raw('channel', '栏目默认模板')->value('<code>/channel/default.html</code>：' . (is_file($view_path . '/channel/default.html') ? '<label class="label label-success">存在</label>' : '<label class="label label-danger">不存在</label>'));
             $form->raw('content', '内容默认模板')->value('<code>/content/default.html</code>：' . (is_file($view_path . '/content/default.html') ? '<label class="label label-success">存在</label>' : '<label class="label label-danger">不存在</label>'));
             $form->raw('common', '共用目录')->value('<code>/common/</code>：' . (is_dir($view_path . '/common') ? '<label class="label label-success">存在</label>' : '<label class="label label-danger">不存在</label>'));
-            $form->raw('assets', '静态资源目录')->value('<code>/assets/</code>：' . (is_dir($view_path . '/assets') ? '<label class="label label-success">存在</label>' : '<label class="label label-danger">不存在</label>'));
+            $form->raw('static', '静态资源目录')->value('<code>/static/</code>：' . (is_dir($view_path . '/static') ? '<label class="label label-success">存在</label>' : '<label class="label label-danger">不存在</label>'));
         }
     }
 

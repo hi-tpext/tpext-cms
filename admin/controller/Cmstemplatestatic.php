@@ -4,7 +4,7 @@ namespace tpext\cms\admin\controller;
 
 use think\Controller;
 use tpext\builder\traits\actions;
-use tpext\cms\common\model\CmsTemplatePage as TemplatePageModel;
+use tpext\cms\common\model\CmsTemplateHtml;
 use tpext\cms\common\model\CmsTemplate;
 use tpext\think\App;
 
@@ -66,9 +66,9 @@ class Cmstemplatestatic extends Controller
             $this->error('模板不存在');
         }
 
-        $this->files = TemplatePageModel::scanStaticFiles($template_id,  App::getRootPath() . 'theme/' . $template['view_path']);
+        $this->files = CmsTemplateHtml::scanStaticFiles($template_id,  App::getRootPath() . 'theme/' . $template['view_path']);
 
-        $data = TemplatePageModel::scanStaticFiles($template_id,  App::getRootPath() . 'theme/' . $template['view_path']);
+        $data = CmsTemplateHtml::scanStaticFiles($template_id,  App::getRootPath() . 'theme/' . $template['view_path']);
         $total = count($data);
 
         return $data;
@@ -223,7 +223,7 @@ class Cmstemplatestatic extends Controller
 
             $dir = $data['type'] . '/';
 
-            $path = 'theme/' . $templatePath . '/assets/' . $dir . $data['name'] . '.' . $data['type'];
+            $path = 'theme/' . $templatePath . '/static/' . $dir . $data['name'] . '.' . $data['type'];
 
             if ($data['type'] == 'css') {
                 $newTpl = '/*网站样式*/' . PHP_EOL;

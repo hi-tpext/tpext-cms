@@ -28,7 +28,7 @@ class CmsTemplate extends Model
 
     public function getPagesCountAttr($value, $data)
     {
-        return CmsTemplatePage::where('template_id', $data['id'])->count();
+        return CmsTemplateHtml::where('template_id', $data['id'])->count();
     }
 
     public static function initPath($view_path)
@@ -37,25 +37,39 @@ class CmsTemplate extends Model
 
         if (!is_dir($view_path . '/channel')) {
             if (mkdir($view_path . '/channel', 0775, true)) {
-                file_put_contents($view_path . '/channel/default.html', str_replace('__content__', '栏目默认模板', $newTpl));
+                $text = <<<EOT
+    {articles num="10"}
+    <div>
+    <a href="{\$item.url}">{\$item.title}</a>
+    </div>
+    {/articles}
+EOT;
+
+                file_put_contents($view_path . '/channel/default.html', str_replace('__content__', $text, $newTpl));
             }
         }
 
         if (!is_dir($view_path . '/content')) {
             if (mkdir($view_path . '/content', 0775, true)) {
-                file_put_contents($view_path . '/content/default.html', str_replace('__content__', '内容默认模板', $newTpl));
+                $text = <<<EOT
+    {article}
+    <div>{\$data.title}</div>
+    <div>{\$data.content|raw}</div>
+    {/article}
+EOT;
+                file_put_contents($view_path . '/content/default.html', str_replace('__content__', $text, $newTpl));
             }
         }
 
-        if (!is_dir($view_path . '/assets')) {
-            if (mkdir($view_path . '/assets/css', 0775, true)) {
-                file_put_contents($view_path . '/assets/css/site.css', '/*网站样式*/' . PHP_EOL);
+        if (!is_dir($view_path . '/static')) {
+            if (mkdir($view_path . '/static/css', 0775, true)) {
+                file_put_contents($view_path . '/static/css/site.css', '/*网站样式*/' . PHP_EOL);
             }
-            if (mkdir($view_path . '/assets/js', 0775, true)) {
-                file_put_contents($view_path . '/assets/js/site.js', '/*网站js*/' . PHP_EOL);
+            if (mkdir($view_path . '/static/js', 0775, true)) {
+                file_put_contents($view_path . '/static/js/site.js', '/*网站js*/' . PHP_EOL);
             }
-            mkdir($view_path . '/assets/fonts', 0775, true);
-            mkdir($view_path . '/assets/images', 0775, true);
+            mkdir($view_path . '/static/fonts', 0775, true);
+            mkdir($view_path . '/static/images', 0775, true);
         }
 
         if (!is_dir($view_path . '/common')) {
@@ -70,13 +84,27 @@ class CmsTemplate extends Model
         }
 
         if (!is_dir($view_path . '/index.html')) {
-            file_put_contents($view_path . '/index.html', str_replace(['__content__', '../assets'], ['网站首页', './assets'], $newTpl));
+            file_put_contents($view_path . '/index.html', str_replace(['__content__', '../static'], ['网站首页', './static'], $newTpl));
         }
         if (!is_dir($view_path . '/about.html')) {
-            file_put_contents($view_path . '/about.html', str_replace(['__content__', '../assets'], ['单页(示例)：关于我们', './assets'], $newTpl));
+            $text = <<<EOT
+    !--单页(示例)：关于我们-->
+    {article}
+    <div>{\$data.title}</div>
+    <div>{\$data.content|raw}</div>
+    {/article}
+EOT;
+            file_put_contents($view_path . '/about.html', str_replace(['__content__', '../static'], [$text, './static'], $newTpl));
         }
         if (!is_dir($view_path . '/contact.html')) {
-            file_put_contents($view_path . '/contact.html', str_replace(['__content__', '../assets'], ['单页(示例)：联系我们', './assets'], $newTpl));
+            $text = <<<EOT
+    !--单页(示例)：联系我们-->
+    {article}
+    <div>{\$data.title}</div>
+    <div>{\$data.content|raw}</div>
+    {/article}
+EOT;
+            file_put_contents($view_path . '/contact.html', str_replace(['__content__', '../static'], [$text, './static'], $newTpl));
         }
     }
 }

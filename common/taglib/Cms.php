@@ -160,7 +160,6 @@ class Cms extends Taglib
         {
             \$__LI__ = \\tpext\\cms\\common\\taglib\\Cms::processItem('{$table}', \$__LI__, '{$fields}');
         }
-        trace(\$__LIST__);
         ?>
         {volist name="__LIST__" id="{$item}"}
         {$content}
@@ -178,7 +177,7 @@ EOT;
         }
 
         $pk = $tag['pk'] ?? $this->defaultPk($table);
-        $item = $tag['item'] ?? 'item';
+        $item = $tag['item'] ?? 'data';
         $fields = $tag['fields'] ?? $this->defaultFields($table);
         $where = $tag['where'] ?? '';
 
@@ -324,24 +323,20 @@ EOT;
             return $item;
         }
 
-        trace($table);
         if ($table == 'cms_channel') {
-            $item['url'] = self::$path . '/c' . $item['id'] . '.html';
+            $item['url'] = self::$path . 'channel/c' . $item['id'] . '.html';
             $item['parent'] = static::getData('cms_channel', $item['parent_id']);
         } else if ($table == 'cms_content') {
-            $item['url'] = self::$path . '/c' . $item['channel_id'] . '/a' . $item['id'] . '.html';
+            $item['url'] = self::$path . 'content/a' . $item['id'] . '.html';
             $item['channel'] = static::getData('cms_channel', $item['channel_id']);
-
-            trace(json_encode($item['channel']));
         } else if ($table == 'cms_position') {
-            $item['url'] = self::$path . '/p' . $item['id'] .   '.html';
+            //
         } else if ($table == 'cms_banner') {
-            $item['url'] = self::$path . '/p' . $item['position_id'] . '/b' . $item['id'] . '.html';
             $item['position'] = static::getData('cms_position', $item['position_id']);
         } else if ($table == 'cms_tag') {
-            $item['url'] = self::$path . '/t' . $item['id'] . '.html';
+            // 
         } else {
-            $item['url'] = self::$path . '/' . $table . $item['id'] . '.html';
+            // 
         }
 
         return $item;
@@ -369,6 +364,12 @@ EOT;
             $item['channel'] = static::getData('cms_channel', $item['channel_id']);
             $item['prev'] = Db::name($table)->where('channel_id', $item['channel_id'])->where('is_show', 1)->where('id', '<', $item['id'])->find();
             $item['next'] = Db::name($table)->where('channel_id', $item['channel_id'])->where('is_show', 1)->where('id', '>', $item['id'])->find();
+
+            $contentDetail = Db::name('cms_content_detail')->where('main_id', $item['id'])->find();
+            $item['content'] = $contentDetail ? $contentDetail['content'] : '--';
+
+            self::processItem($table, $item['prev']);
+            self::processItem($table, $item['next']);
         } else if ($table == 'cms_position') {
             //
         } else if ($table == 'cms_banner') {

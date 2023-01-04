@@ -97,7 +97,6 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_template` (
   `platform` varchar(25) NOT NULL DEFAULT '' COMMENT '平台类型',
   `view_path` varchar(25) NOT NULL DEFAULT '' COMMENT '模板基础路径',
   `prefix` varchar(25) NOT NULL DEFAULT '' COMMENT '生成路径前缀',
-  `tepm_prefix` varchar(25) NOT NULL DEFAULT '' COMMENT '临时路径前缀',
   `description` varchar(255) NOT NULL DEFAULT '' COMMENT '描述',
   `sort` mediumint(8) unsigned NOT NULL DEFAULT 0 COMMENT '排序',
   `is_open` tinyint(1) unsigned NOT NULL DEFAULT 1 COMMENT '是否启用',
@@ -110,8 +109,8 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_content_page` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
   `to_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '栏目/内容ID',
   `template_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '模板ID',
-  `page_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '页面ID',
-  `page_type` varchar(25) NOT NULL DEFAULT '' COMMENT '页面类型',
+  `html_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '页面ID',
+  `html_type` varchar(25) NOT NULL DEFAULT '' COMMENT '页面类型',
   `create_time` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '添加时间',
   `update_time` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '更新时间',
   PRIMARY KEY (`id`),
@@ -119,7 +118,7 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_content_page` (
   KEY `cid` (`cid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='内容模板页';
 
-CREATE TABLE IF NOT EXISTS `__PREFIX__cms_template_page` (
+CREATE TABLE IF NOT EXISTS `__PREFIX__cms_template_html` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '页面ID',
   `template_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '模板ID',
   `name` varchar(55) NOT NULL DEFAULT '' COMMENT '页面名称',
@@ -128,6 +127,7 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_template_page` (
   `type` varchar(25) NOT NULL DEFAULT '' COMMENT '页面类型',
   `ext` varchar(25) NOT NULL DEFAULT '' COMMENT '后缀',
   `size` varchar(25) NOT NULL DEFAULT '' COMMENT '大小',
+  `is_default` tinyint(1) unsigned NOT NULL DEFAULT 0 COMMENT '是否为默认模板',
   `description` varchar(255) NOT NULL DEFAULT '' COMMENT '描述',
   `filectime` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '创建时间',
   `filemtime` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '添加时间',
