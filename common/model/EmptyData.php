@@ -11,7 +11,14 @@ class EmptyData extends Model
         if ($name == '__not_found__') {
             return true;
         }
-        return '';
+        if ($name == 'title' || $name == 'name' || $name == 'content' || $name == 'description') {
+            return '无数据';
+        }
+        if ($name == 'url' || $name == 'link') {
+            return '#';
+        }
+
+        return '__not_found__';
     }
 
     public function offsetExists($name)
@@ -24,6 +31,23 @@ class EmptyData extends Model
         if ($name == '__not_found__') {
             return true;
         }
-        return '';
+        if ($name == 'title' || $name == 'name' || $name == 'content' || $name == 'description') {
+            return '无数据';
+        }
+        if ($name == 'url' || $name == 'link') {
+            return '#';
+        }
+
+        return '__not_found__';
+    }
+
+    public function __toString()
+    {
+        return '<!--无数据-->';
+    }
+
+    public function __call($name, $arguments = [])
+    {
+        return $this;
     }
 }

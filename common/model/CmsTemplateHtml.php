@@ -8,7 +8,7 @@ use tpext\cms\common\DirFilter;
 
 class CmsTemplateHtml extends Model
 {
-    protected $autoWriteTimestamp = 'dateTime';
+    protected $autoWriteTimestamp = 'datetime';
 
     protected static function init()
     {

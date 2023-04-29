@@ -127,7 +127,7 @@ class Cmscontent extends Controller
         $table->show('id', 'ID');
         $table->image('logo', '封面图')->thumbSize(60, 60);
         $table->text('title', '标题')->autoPost()->getWrapper()->addStyle('max-width:200px');
-        $table->show('channel.full_name', '栏目');
+        $table->show('channel_id', '栏目')->to('{channel.full_name}');
         $table->show('author', '作者')->default('暂无');
         $table->show('source', '来源')->default('暂无');
         $table->matches('tags', '标签')->optionsData(CmsTag::all());
@@ -136,12 +136,12 @@ class Cmscontent extends Controller
         $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:80px');
         $table->text('click', '点击量')->autoPost('', true)->getWrapper()->addStyle('width:80px');
         $table->show('publish_time', '发布时间')->getWrapper()->addStyle('width:160px');
-        $table->fields('times', '添加/修改时间')->with(
+        $table->fields('create_time', '添加/修改时间')->with(
             $table->show('create_time', '添加时间'),
             $table->show('update_time', '修改时间'),
         )->getWrapper()->addStyle('width:160px');
 
-        $table->sortable('id,sort,click');
+        $table->sortable('id,channel_id,author,source,is_show,publish_time,sort,click,create_time,update_time');
 
         $table->getToolbar()
             ->btnAdd('', '添加', 'btn-primary', 'mdi-plus', 'data-layer-size="98%,98%"')
@@ -215,6 +215,7 @@ class Cmscontent extends Controller
         $form->select('channel_id', '栏目')->required()->dataUrl(url('/admin/cmschannel/selectPage'));
         $form->multipleSelect('tags', '标签')->dataUrl(url('/admin/cmstag/selectPage'))->help('可到【标签管理】菜单添加标签');
         $form->tags('keyword', '关键字');
+        $form->text('link', '跳转链接')->help('设置后覆盖默认的页面地址');
         $form->textarea('description', '摘要')->maxlength(255);
 
         $editor = 'editor';

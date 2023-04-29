@@ -23,15 +23,23 @@ class View extends Response
      */
     protected $engine;
 
-    public function __construct($data = '', $vars = [])
+    public function __construct($data = '', $vars = [], $config = [])
     {
         $this->data = $data;
         $this->vars = $vars;
 
-        $config = [
+        $config = array_merge([
             'taglib_build_in' => '\\tpext\\cms\\common\\taglib\\Cms,cx',
             'taglib_pre_load' => '\\tpext\\cms\\common\\taglib\\Cms',
-        ];
+            'tpl_deny_func_list' => 'eval,echo,exit,exec,shell_exec',
+            'tpl_deny_php' => true,
+            'cache_prefix' => 'tpextcms',
+            'tpl_begin'          => '{',
+            'tpl_end'            => '}',
+            'taglib_begin'       => '{',
+            'taglib_end'         => '}',
+        ], $config);
+
 
         if (ExtLoader::isTP51()) {
             $this->app = app();

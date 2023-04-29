@@ -1,0 +1,25 @@
+{content@get id="$id"/}
+
+<!--文章详情(示例)-->
+<div>
+    当前位置：<a href="/">首页</a>
+    {channel@parents id="$content.channel_id"}
+    &gt;<a>{$channel.name}</a>
+    {/channel@parents}
+</div>
+<div>
+    <div>{$content.title}</div>
+    <div>{$content.content|raw}</div>
+</div>
+<div>
+    <div>
+        {content@get where="id !=$id and channel_id=$content.channel_id and sort>=$content.sort"
+        order="sort asc,id asc" assign="prev"/}
+        <p>上一篇：<a href="{$prev.url}">{$prev.title}</a></p>
+    </div>
+    <div>
+        {content@get where="id !=$id and channel_id=$content.channel_id and sort<=$content.sort"
+            order="sort desc,id desc" assign="next" /} 
+    <p>下一篇：<a href="{$next.url}">{$next.title}</a></p>
+    </div>
+</div>

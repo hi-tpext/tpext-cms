@@ -2,13 +2,15 @@
 
 namespace tpext\cms\admin\controller;
 
+use tpext\think\App;
 use think\Controller;
+use tpext\cms\common\Module;
+use tpext\builder\common\Builder;
 use tpext\builder\traits\actions;
-use tpext\cms\common\model\CmsTemplateHtml as TemplateHtmlModel;
+use tpext\cms\common\model\CmsChannel;
 use tpext\cms\common\model\CmsTemplate;
 use tpext\cms\common\model\CmsContentPage;
-use tpext\think\App;
-use tpext\cms\common\Module;
+use tpext\cms\common\model\CmsTemplateHtml as TemplateHtmlModel;
 
 /**
  * Undocumented class
@@ -112,8 +114,8 @@ class Cmstemplatehtml extends Controller
         $table->show('ext', '后缀');
         $table->show('size', '大小')->to('{val}kb');
         $table->show('conut', '统计');
-        $table->show('filectime', '创建时间')->getWrapper()->addStyle('width:180px');
-        $table->show('filemtime', '编辑时间')->getWrapper()->addStyle('width:180px');
+        $table->show('filectime', '创建时间')->getWrapper()->addStyle('width:140px');
+        $table->show('filemtime', '编辑时间')->getWrapper()->addStyle('width:140px');
 
         $table->sortable('size,name,path,ext,create_time,update_time');
 
@@ -175,21 +177,19 @@ class Cmstemplatehtml extends Controller
             $form->show('view_path', '模板基础路径')->value('theme/' . $template['view_path']);
             $form->radio('type', '页面类型')->default('channel')->inline(false)->options(['channel' => '栏目页：' . '/channel/newpage-xx.html', 'content' => '详情页：' . '/content/newpage-xx.html', 'single' => '单页：' . '/newpage-xx.html', 'common' => '公共页：' . '/common/newpage-xx.html']);
             $form->text('name', '文件名称')->required()->default('newpage-xx')->help('格式：只能包含英文数字-_，不支持多级目录')->afterSymbol('.html');
+            $form->textarea('description', '描述');
         }
     }
 
     public function apply()
     {
         $html_id = input('html_id/d');
-
         $page = $this->dataModel->where('id', $html_id)->find();
-
         if (!$page) {
             $this->error('模板页面不存在！');
         }
 
         $template = CmsTemplate::where('id', $page['template_id'])->find();
-
         if (!$template) {
             $this->error('模板类型不存在！');
         }
@@ -198,15 +198,12 @@ class Cmstemplatehtml extends Controller
         $relation_ids = [];
 
         if (request()->isGet()) {
-
             foreach ($pageList as $prow) {
                 $relation_ids[] = $prow['to_id'];
             }
 
             $builder = $this->builder('模板管理', '页面分配');
-
             $form = $builder->form();
-
             $form->show('path', '模板基础路径');
             $form->match('type', '页面类型')->options(['channel' => '栏目', 'content' => '详情', 'common' => '公共', 'single' => '单页']);
             if (str_replace('\\', '/',  'theme/' . $template['view_path'] . '/index.html') == str_replace('\\', '/', $page['path'])) {
@@ -220,9 +217,9 @@ class Cmstemplatehtml extends Controller
                 $form->readonly();
             } else {
                 if ($page['type'] == 'channel') {
-                    $form->multipleSelect('relation_ids', '选择栏目')->value($relation_ids)->help('可选择多个栏目')->dataUrl(url('/admin/cmschannel/selectpage', ['chose_html_id' => 1]), '{full_name}')->required();
+                    $form->tree('relation_ids', '选择栏目')->optionsData(CmsChannel::where('is_show', 1)->field('id,name,parent_id')->select())->value($relation_ids)->help('可选择多个栏目')->required();
                 } else if ($page['type'] == 'content') {
-                    $form->multipleSelect('relation_ids', '选择栏目')->value($relation_ids)->help('可选择多个栏目')->dataUrl(url('/admin/cmschannel/selectpage', ['chose_html_id' => 1]), '{full_name}')->required();
+                    $form->tree('relation_ids', '选择栏目')->optionsData(CmsChannel::where('is_show', 1)->field('id,name,parent_id')->select())->value($relation_ids)->help('可选择多个栏目')->required();
                 } else if ($page['type'] == 'single') {
                     $form->select('relation_id', '选择内容详情')->value($relation_ids)->help('选择一篇文章')->dataUrl(url('/admin/cmscontent/selectpage'), '{id}#{title}[所属栏目：{channel.full_name}]')->required();
                 } else {
@@ -255,6 +252,9 @@ class Cmstemplatehtml extends Controller
         $success = 0;
 
         foreach ($relation_ids as $to_id) {
+            if (empty($to_id)) {
+                continue;
+            }
             $perm = null;
             foreach ($pageList as $prow) {
                 if ($prow['to_id'] == $to_id) {
@@ -304,6 +304,7 @@ class Cmstemplatehtml extends Controller
         $data = request()->only([
             'content',
             'name',
+            'description',
             'template_id',
             'type',
         ], 'post');
@@ -338,22 +339,14 @@ class Cmstemplatehtml extends Controller
 
             if ($data['type'] == 'common') {
                 $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/common.html');
-            } else if ($data['type'] == 'content' || $data['type'] == 'single') {
-                $text = <<<EOT
-    {article}
-    <div>{\$data.title}</div>
-    <div>{\$data.content|raw}</div>
-    {/article}
-EOT;
+            } else if ($data['type'] == 'content') {
+                $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/content.html');
+                $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');
+            } else if ($data['type'] == 'single') {
+                $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/single.html');
                 $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');
             } else if ($data['type'] == 'channel') {
-                $text = <<<EOT
-    {articles num="10"}
-    <div>
-    <a href="{\$item.url}">{\$item.title}</a>
-    </div>
-    {/articles}
-EOT;
+                $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/channel.html');
                 $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');
             } else {
                 $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');

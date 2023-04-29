@@ -14,4 +14,4 @@ DROP TABLE IF EXISTS `__PREFIX__cms_template`;
 
 DROP TABLE IF EXISTS `__PREFIX__cms_content_page`;
 
-DROP TABLE IF EXISTS `__PREFIX__cms_template_page`;
+DROP TABLE IF EXISTS `__PREFIX__cms_template_html`;

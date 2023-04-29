@@ -3,10 +3,12 @@
 namespace tpext\cms\common\model;
 
 use think\Model;
+use think\model\concern\SoftDelete;
 
 class CmsContent extends Model
 {
-    protected $autoWriteTimestamp = 'dateTime';
+    use SoftDelete;
+    protected $autoWriteTimestamp = 'datetime';
 
     protected static function init()
     {

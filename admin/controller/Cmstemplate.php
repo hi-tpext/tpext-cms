@@ -129,7 +129,7 @@ class Cmstemplate extends Controller
             $form->show('update_time', '修改时间');
             $form->divider('模板信息');
 
-            $view_path = App::getRootPath() . 'theme/' . $data['view_path'];
+            $view_path = App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $data['view_path'];
 
             TemplateModel::initPath($view_path);
 
@@ -171,8 +171,13 @@ class Cmstemplate extends Controller
         }
 
         $data['view_path'] =  preg_replace('/[^\w\-]/', '', trim(strtolower($data['view_path']), '/\\'));
+        if ($data['prefix'] == '') {
+            $data['prefix'] = '/';
+        } else if ($data['prefix'] !== '/') {
+            $data['prefix'] = '/' . preg_replace('/[^\w\-]/', '',  trim(strtolower($data['prefix']), '/\\')) . '/';
+        }
 
-        $view_path = App::getRootPath() . 'theme/' . $data['view_path'];
+        $view_path = App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $data['view_path'];
 
         TemplateModel::initPath($view_path);
 

@@ -4,12 +4,14 @@ namespace tpext\cms\common\model;
 
 use think\Model;
 use tpext\builder\traits\TreeModel;
+use think\model\concern\SoftDelete;
 
 class CmsChannel extends Model
 {
     use TreeModel;
+    use SoftDelete;
 
-    protected $autoWriteTimestamp = 'dateTime';
+    protected $autoWriteTimestamp = 'datetime';
 
     protected static function init()
     {
@@ -42,7 +44,7 @@ class CmsChannel extends Model
         if (isset($data['parent_id'])) {
             if ($data['parent_id'] == 0) {
                 $data['deep'] = 1;
-                $data['path'] = ',';
+                $data['path'] = '0';
             } else {
                 $parent = static::find($data['parent_id']);
                 if ($parent) {
@@ -99,7 +101,7 @@ class CmsChannel extends Model
             return $list;
         }
 
-        $up = $this->getUper($node['parent_id']);
+        $up = $this->getUpper($node['parent_id']);
 
         if ($up) {
             $list = $this->getUpperNodes($up, $list, $limit);
@@ -108,7 +110,7 @@ class CmsChannel extends Model
         return $list;
     }
 
-    protected function getUper($parent_id)
+    protected function getUpper($parent_id)
     {
         if (empty($this->allTreeData)) {
             $this->allTreeData = static::select();

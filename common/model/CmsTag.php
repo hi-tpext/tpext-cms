@@ -6,7 +6,7 @@ use think\Model;
 
 class CmsTag extends Model
 {
-    protected $autoWriteTimestamp = 'dateTime';
+    protected $autoWriteTimestamp = 'datetime';
 
     protected static function init()
     {

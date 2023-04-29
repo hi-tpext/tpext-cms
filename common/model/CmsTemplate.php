@@ -7,7 +7,7 @@ use tpext\cms\common\Module;
 
 class CmsTemplate extends Model
 {
-    protected $autoWriteTimestamp = 'dateTime';
+    protected $autoWriteTimestamp = 'datetime';
 
     protected static function init()
     {
@@ -37,30 +37,16 @@ class CmsTemplate extends Model
 
         if (!is_dir($view_path . '/channel')) {
             if (mkdir($view_path . '/channel', 0775, true)) {
-                $text = <<<EOT
-    {articles num="10"}
-    <div>
-    <a href="{\$item.url}">{\$item.title}</a>
-    </div>
-    {/articles}
-EOT;
-
+                $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/channel.html');
                 file_put_contents($view_path . '/channel/default.html', str_replace('__content__', $text, $newTpl));
             }
         }
-
         if (!is_dir($view_path . '/content')) {
             if (mkdir($view_path . '/content', 0775, true)) {
-                $text = <<<EOT
-    {article}
-    <div>{\$data.title}</div>
-    <div>{\$data.content|raw}</div>
-    {/article}
-EOT;
+                $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/content.html');
                 file_put_contents($view_path . '/content/default.html', str_replace('__content__', $text, $newTpl));
             }
         }
-
         if (!is_dir($view_path . '/static')) {
             if (mkdir($view_path . '/static/css', 0775, true)) {
                 file_put_contents($view_path . '/static/css/site.css', '/*网站样式*/' . PHP_EOL);
@@ -71,39 +57,23 @@ EOT;
             mkdir($view_path . '/static/fonts', 0775, true);
             mkdir($view_path . '/static/images', 0775, true);
         }
-
         if (!is_dir($view_path . '/common')) {
             if (mkdir($view_path . '/common', 0775, true)) {
-
-                $newTplCommon = file_get_contents(Module::getInstance()->getRoot() . 'tpl/common.html');
-
-                file_put_contents($view_path . '/common/header.html', str_replace('__content__', '公共(示例)header', $newTplCommon));
-                file_put_contents($view_path . '/common/fotter.html', str_replace('__content__', '公共(示例)fotter', $newTplCommon));
-                file_put_contents($view_path . '/common/layout.html', str_replace('__content__', '主布局页面layout(可选)', $newTpl));
+                file_put_contents($view_path . '/common/header.html', file_get_contents(Module::getInstance()->getRoot() . 'tpl/header.html'));
+                file_put_contents($view_path . '/common/fotter.html', file_get_contents(Module::getInstance()->getRoot() . 'tpl/fotter.html'));
+                file_put_contents($view_path . '/common/layout.html', file_get_contents(Module::getInstance()->getRoot() . 'tpl/layout.html'));
             }
         }
-
         if (!is_dir($view_path . '/index.html')) {
-            file_put_contents($view_path . '/index.html', str_replace(['__content__', '../static'], ['网站首页', './static'], $newTpl));
+            $text = $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/index.html');
+            file_put_contents($view_path . '/index.html', str_replace(['__content__', '../static'], [$text, './static'], $newTpl));
         }
         if (!is_dir($view_path . '/about.html')) {
-            $text = <<<EOT
-    !--单页(示例)：关于我们-->
-    {article}
-    <div>{\$data.title}</div>
-    <div>{\$data.content|raw}</div>
-    {/article}
-EOT;
+            $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/single.html');
             file_put_contents($view_path . '/about.html', str_replace(['__content__', '../static'], [$text, './static'], $newTpl));
         }
         if (!is_dir($view_path . '/contact.html')) {
-            $text = <<<EOT
-    !--单页(示例)：联系我们-->
-    {article}
-    <div>{\$data.title}</div>
-    <div>{\$data.content|raw}</div>
-    {/article}
-EOT;
+            $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/single.html');
             file_put_contents($view_path . '/contact.html', str_replace(['__content__', '../static'], [$text, './static'], $newTpl));
         }
     }

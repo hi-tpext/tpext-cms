@@ -66,8 +66,6 @@ class Cmstemplatestatic extends Controller
             $this->error('模板不存在');
         }
 
-        $this->files = CmsTemplateHtml::scanStaticFiles($template_id,  App::getRootPath() . 'theme/' . $template['view_path']);
-
         $data = CmsTemplateHtml::scanStaticFiles($template_id,  App::getRootPath() . 'theme/' . $template['view_path']);
         $total = count($data);
 
@@ -102,7 +100,7 @@ class Cmstemplatestatic extends Controller
             ->btnDelete();
 
         foreach ($data as &$d) {
-            $d['fpath'] = str_replace(['/', '\\'], '@', $d['path']);
+            $d['fpath'] = str_replace(['/', '\\'], '--ds--', $d['path']);
         }
     }
 
@@ -113,15 +111,17 @@ class Cmstemplatestatic extends Controller
 
         if (request()->isGet()) {
 
-            $builder = $this->builder($this->pageTitle, $this->editText, 'edit');
+            $builder = $this->builder($this->pageTitle, '编辑' . $ext, 'edit');
 
             $form = $builder->form();
             $this->form = $form;
             $this->isEdit = 1;
 
-            $view_path = App::getRootPath() . str_replace(['\\', '/', '@'], DIRECTORY_SEPARATOR, $path);
+            $path = str_replace(['\\', '/', '--ds--'], DIRECTORY_SEPARATOR, $path);
 
-            $form->show('path', ' ')->showLabel(false)->size(12, 12)->to('路径：{val}');
+            $view_path = App::getRootPath() . $path;
+
+            $form->show('path', ' ')->showLabel(false)->size(12, 12)->value('路径：' . $path);
             $form->aceEditor('content', ' ')->setMode($ext == 'css' ? 'css' : 'javascript')->showLabel(false)->size(12, 12)->value(file_get_contents($view_path));
 
             $form->butonsSizeClass('btn-md');
@@ -195,7 +195,7 @@ class Cmstemplatestatic extends Controller
      * 保存数据
      *
      * @param string $path
-     * @return void
+     * @return mixed
      */
     private function save($path = '')
     {
@@ -246,7 +246,7 @@ class Cmstemplatestatic extends Controller
             return $this->builder()->layer()->closeRefresh();
         }
 
-        $file_path = App::getRootPath() . str_replace(['\\', '/', '@'], DIRECTORY_SEPARATOR, $path);
+        $file_path = App::getRootPath() . str_replace(['\\', '/', '--ds--'], DIRECTORY_SEPARATOR, $path);
 
         $res = file_put_contents($file_path, $data['content']);
 

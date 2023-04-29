@@ -38,10 +38,6 @@ class Cmschannel extends Controller
         $this->selectSearch = 'name';
         $this->selectFields = 'id,name,full_name';
         $this->selectTextField = 'name';
-
-        if (input('chose_page_id')) { //模板选择页面，不以树形显示
-            $this->dataModel->setAsTreeList(false);
-        }
     }
 
     /**
@@ -60,6 +56,7 @@ class Cmschannel extends Controller
         $table->switchBtn('is_show', '显示')->default(1)->autoPost()->getWrapper()->addStyle('width:80px');
         $table->match('type', '类型')->default(1)->options([1 => '不限', 2 => '目录', 3 => '分类'])->getWrapper()->addStyle('width:80px');
         $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:80px');
+        $table->text('pagesize', '分页大小')->autoPost()->getWrapper()->addStyle('width:80px');
         $table->show('content_count', '内容统计')->getWrapper()->addStyle('width:80px');
         $table->show('create_time', '添加时间')->getWrapper()->addStyle('width:180px');
         $table->show('update_time', '修改时间')->getWrapper()->addStyle('width:180px');
@@ -100,7 +97,8 @@ class Cmschannel extends Controller
         $form->select('parent_id', '上级')->required()->options($tree)->default(input('parend_id'));
         // $form->select('channel_template_id', '栏目模板')->dataUrl(url('/admin/cmstemplate/selectpage'));
         // $form->select('content_template_id', '内容模板')->dataUrl(url('/admin/cmstemplate/selectpage'));
-        $form->text('link', '链接');
+        $form->text('pagesize', '分页大小');
+        $form->text('link', '跳转链接')->help('设置后覆盖默认的页面地址');
         $form->image('logo', '封面图');
         $form->switchBtn('is_show', '显示')->default(1);
         $form->radio('type', '类型')->default(1)->options([1 => '不限', 2 => '目录', 3 => '分类'])->required()->help('目录有下级，不能存文章。分类无下级，只能存文章');

@@ -3,168 +3,260 @@
 namespace tpext\cms\common\taglib;
 
 use think\template\TagLib;
-use think\Db;
-use tpext\cms\common\model\EmptyData;
+use think\Exception;
 
 /**
  * Cms标签库解析类
  */
 class Cms extends Taglib
 {
-    protected static $path = '';
-
-    public static function setPath($val = '')
-    {
-        static::$path = $val;
-    }
-
-    protected static $tableData = [];
-
     // 标签定义
-    protected $tags = [
-        // 标签定义： attr 属性列表 close 是否闭合（0 或者1 默认1） alias 标签别名 level 嵌套层次
-        'list' => ['attr' => 'table,ck,num,order,where,fields,item'],
-        'detail' => ['attr' => 'table,pk,where,fields,item', 'expression' => true],
-        //
-        'articles' => ['attr' => 'table,ck,num,order,where,fields,item', 'alias' => 'articlelist'],
-        'channels' => ['attr' => 'table,ck,num,order,where,fields,item', 'alias' => 'channellist'],
-        'banners' => ['attr' => 'table,ck,num,order,where,fields,item', 'alias' => 'bannerlist'],
-        'positions' => ['attr' => 'table,ck,num,order,where,fields,item', 'alias' => 'positionlist'],
-        'tags' => ['attr' => 'table,ck,num,order,where,fields,item', 'alias' => 'taglist'],
-        //
-        'article' => ['attr' => 'table,pk,where,fields,item', 'expression' => true],
-        'channel' => ['attr' => 'table,pk,where,fields,item', 'expression' => true],
-        'banner' => ['attr' => 'table,pk,where,fields,item', 'expression' => true],
-        'position' => ['attr' => 'table,pk,where,fields,item', 'expression' => true],
-        'tag' => ['attr' => 'table,pk,where,fields,item', 'expression' => true],
-    ];
+    protected $tags = [];
 
-    public function tagArticles($tag, $content)
+    protected $tables = [];
+
+    public function __construct($template)
     {
-        $table = 'cms_content';
-        $tag['table'] = $table;
-
-        return $this->tagList($tag, $content);
-    }
-
-    public function tagArticle($tag, $content)
-    {
-        $table = 'cms_content';
-        $tag['table'] = $table;
-
-        return $this->tagDetail($tag, $content);
-    }
-
-    public function tagChannels($tag, $content)
-    {
-        $table = 'cms_channel';
-        $tag['table'] = $table;
-
-        return $this->tagList($tag, $content);
-    }
-
-    public function tagChannel($tag, $content)
-    {
-        $table = 'cms_channel';
-        $tag['table'] = $table;
-
-        return $this->tagDetail($tag, $content);
-    }
-
-    public function tagBanners($tag, $content)
-    {
-        $table = 'cms_banner';
-        $tag['table'] = $table;
-
-        return $this->tagList($tag, $content);
-    }
-
-    public function tagPositions($tag, $content)
-    {
-        $table = 'cms_position';
-        $tag['table'] = $table;
-
-        return $this->tagList($tag, $content);
-    }
-
-    public function tagPosition($tag, $content)
-    {
-        $table = 'cms_position';
-        $tag['table'] = $table;
-
-        return $this->tagDetail($tag, $content);
-    }
-
-    public function tagTags($tag, $content)
-    {
-        $table = 'cms_tag';
-        $tag['table'] = $table;
-
-        return $this->tagList($tag, $content);
-    }
-
-    public function tagTag($tag, $content)
-    {
-        $table = 'cms_tag';
-        $tag['table'] = $table;
-
-        return $this->tagDetail($tag, $content);
+        $this->tags = Table::getTagsList();
+        $this->tables = Table::getTables();
+        parent::__construct($template);
     }
 
     public function tagList($tag, $content)
     {
         $table = $tag['table'] ?? '';
-        if (!$this->isAllowTable($table)) {
+        if (!Table::isAllowTable($table)) {
             return "数据表：{$table}未允许使用标签。";
         }
+        $cid_key = $tag['cid_key'] ?? '';
+        $id_key = $tag['id_key'] ?? 'id';
 
-        $ck = $tag['ck'] ?? $this->defaultCk($table);
-        $num = $tag['num'] ?? 20;
-        $item = $tag['item'] ?? 'item';
-        $order = $tag['order'] ?? $this->defaultOrder($table);
-        $fields = $tag['fields'] ?? $this->defaultFields($table);
-        $where = $tag['where'] ?? '';
+        $take = $tag['num'] ?? 0;
+        $item = !empty($tag['item']) ? $tag['item'] : ($tag['default_item'] ?? 'item');
+        $assign = !empty($tag['assign']) ? $tag['assign'] : $table . '_list_' . time();
+        $item = ltrim($item, '$');
+        $assign = ltrim($assign, '$');
+        $order = $tag['order'] ?? Table::defaultOrder($table);
+        $fields = $tag['fields'] ?? Table::defaultFields($table);
+        $where = $tag['where'] ?? '1=1';
+        $links = true;
+        if (isset($tag['links']) && ($tag['links'] == '0' || $tag['links'] == 'false' || $tag['links'] == 'n' || $tag['links'] == 'no')) {
+            $links = false;
+        }
 
-        $__cid_v__ = '';
-        if ($ck && !empty($tag[$ck])) {
-            $__cid_v__ = $tag[$ck];
-        } else if ($ck && !empty($tag['cid'])) {
-            $__cid_v__ = $tag['cid'];
+        $cid_val = '';
+        if ($cid_key && isset($tag[$cid_key]) && $tag[$cid_key] !== '') {
+            $cid_val = trim($tag[$cid_key]);
+        }
+
+        if ($cid_val !== '') {
+            if ($cid_val[0] == '$' || $cid_val[0] == ':') { //变量或方法
+                $cid_val = $this->autoBuildVar($cid_val);
+            } else if (is_int($cid_val)) {
+                $cid_val = "{$cid_val}";
+            } else if (preg_match('/^\(?\d[,\d]+\)?$/is', $cid_val)) {
+                $cid_val = trim($cid_val, '()');
+                $where .= " and {$cid_key} in ({$cid_val})";
+                $cid_val = '';
+            } else if (preg_match('/^in([^\(]+)$/is', $cid_val, $mch)) {
+                $where .= " and {$cid_key} in ({$mch[1]})";
+                $cid_val = '';
+            } else if (preg_match('/^not\s*in([^\(]+)$/is', $cid_val, $mch)) {
+                $where .= " and {$cid_key} not in ({$mch[1]})";
+                $cid_val = '';
+            } else if (preg_match('/^not\s*in(.+)$/is', $cid_val, $mch)) {
+                $where .= " and {$cid_key} not in {$mch[1]}";
+                $cid_val = '';
+            } else if (preg_match('/^!=(.+)$/is', $cid_val, $mch)) {
+                $where .= " and {$cid_key} <> {$mch[1]}";
+                $cid_val = '';
+            } else if (preg_match('/^(in|>|=|<|>=|<=|<>)/is', $cid_val)) {
+                $where .= " and {$cid_key} {$cid_val}";
+                $cid_val = '';
+            }
+        } else {
+            $cid_val = "\${$cid_key}";
+        }
+
+        $id_val = '';
+        if ($id_key && isset($tag[$id_key]) && $tag[$id_key] !== '') {
+            $id_val = trim($tag[$id_key]);
+        }
+        if ($id_val) {
+            if (preg_match('/^\(?\d[,\d]+\)?$/is', $id_val)) {
+                $id_val = trim($id_val, '()');
+                $where .= " and {$id_key} in ({$id_val})";
+            } else if (preg_match('/^in([^\(]+)/is', $id_val, $mch)) {
+                $where .= " and {$id_key} in ({$mch[1]})";
+            } else if (preg_match('/^not\s*in([^\(]+)/is', $id_val, $mch)) {
+                $where .= " and {$id_key} not in ({$mch[1]})";
+            } else if (preg_match('/^not\s*in(.+)$/is', $id_val, $mch)) {
+                $where .= " and {$id_key} not in {$mch[1]}";
+            } else if (preg_match('/^!=(.+)$/is', $id_val, $mch)) {
+                $where .= " and {$id_key} <> {$mch[1]}";
+            } else if (preg_match('/^(in|>|=|<|>=|<=|<>)/is', $id_val)) {
+                $where .= " and {$id_key} {$id_val}";
+            } else {
+                $where .= " and {$id_key} = {$id_val}";
+            }
+            $cid_val = '0';
+        }
+
+        if ($where && $where != '1=1') { //解析变量
+            $where = str_replace('!=', '<>', $where);
+            preg_match_all('/([\$:][\w\.]+)/', $where, $matches);
+            if (isset($matches[1]) && count($matches[1]) > 0) {
+                $keys = [];
+                $replace = [];
+                foreach ($matches[1] as $match) {
+                    $keys[] = $match;
+                    if (strpos($match, '.')) {
+                        $vars  = explode('.', $match);
+                        $first = array_shift($vars);
+                        $replace[] = '\'" . ' . $first . '[\'' . implode('\'][\'', $vars) . '\']' . ' . "\'';
+                    } else {
+                        $replace[] = '\'" . ' . $match . ' . "\'';
+                    }
+                }
+                $where = str_replace($keys, $replace, $where);
+            }
         }
 
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
-        $scope = $this->defaultScope($table);
+        $scope = Table::defaultScope($table);
+        $dbNameSpace = class_exists(\think\facade\Db::class) ? '\think\facade\Db' : '\think\Db';
 
         $parseStr = <<<EOT
         <?php
-        \$__where_exp__ = '{$where}';
-        \$__where__ = [];
-        \$__cid__ = '{$ck}';
-        \$__cid_v__ = '';
-        if(\$__cid__){
-            \$__cid_v__ = '{$__cid_v__}' ?: (\$cid ?? '');
-            \$__where__[] = [\$__cid__, '=', \$__cid_v__];
-        }
-        \$__page__ = input('get.page/d', 1);
-        \$__page__ = \$__page__ < 1 ? 1 : \$__page__;
 
-        \$__LIST__ = Db::name('{$table}')
+        \$__where_exp__ = "{$where}";
+        \$__where__ = [];
+        \$__cid_key__ = '{$cid_key}';
+        
+        if(\$__cid_key__){
+            \$__cid_val__ = {$cid_val} ?? 0;
+            if(\$__cid_val__)
+            {
+                \$__where__[] = [\$__cid_key__, '=', \$__cid_val__];
+            }
+        }
+        
+        \$__page__ = 1;
+        \$__render_links__ = '{$links}' == '1';
+
+        \$has_paginator = false;
+
+        \$__take__ = {$take};
+        if(\$__take__ == 0)
+        {
+            if(isset(\$pagesize) && \$pagesize > 0)
+            {
+                \$__page__ = \$page < 1 ? 1 : \$page;
+                \$__take__ = \$pagesize;
+                \$has_paginator = true;
+            }
+            else
+            {
+                \$__take__ = 10;
+            }
+        }
+
+        \$__list__ = {$dbNameSpace}::name('{$table}')
             ->where(\$__where__)
             ->where(\$__where_exp__)
             ->where('{$scope}')
             ->order('{$order}')
             ->field('{$fields}')
-            ->limit((\$__page__ - 1) * {$num}, {$num})
+            ->limit((\$__page__ - 1) * \$__take__, \$__take__)
             ->select();
-        foreach(\$__LIST__ as &\$__LI__)
+        foreach(\$__list__ as &\$__li__)
         {
-            \$__LI__ = \\tpext\\cms\\common\\taglib\\Cms::processItem('{$table}', \$__LI__, '{$fields}');
+            \$__li__ = \\tpext\\cms\\common\\taglib\\Processer::item('{$table}', \$__li__);
+        }
+
+        unset(\$__li__);
+
+        \$__links_html__ = null;
+
+        if(\$has_paginator)
+        {
+            \$total = {$dbNameSpace}::name('{$table}')
+                ->where(\$__where__)
+                ->where(\$__where_exp__)
+                ->where('{$scope}')
+                ->count();
+                
+            \$__paginator__ = new \\think\\Paginator\\driver\\Bootstrap(\$__list__, \$pagesize, \$__page__, \$total, false, ['path' => \$path ?? 'no_path']);
+            \$__links_html__ = \$__paginator__->render();
         }
         ?>
-        {volist name="__LIST__" id="{$item}"}
+
+        {volist name="__list__" id="{$item}"}
         {$content}
         {/volist}
+        {if condition="\$__render_links__ && \$__links_html__"}
+        {\$__links_html__|raw}
+        {elseif condition="\$has_paginator"}
+        <!-- 未自动输出分页，请在页面需要的位置调用 -->
+        {/if}
+        {assign name="{$assign}" value="\$__list__" /}
+        
+        <?php
+        unset(\$__where_exp__, \$__where__, \$__cid_key__, \$__id_key__, \$__cid_val__, \$__id_val__, \$__paginator__, \$total);
+        ?>
+EOT;
+        return $parseStr;
+    }
 
+    public function tagParents($tag, $content)
+    {
+        $table = $tag['table'] ?? '';
+        if (!Table::isAllowTable($table)) {
+            return "数据表：{$table}未允许使用标签。";
+        }
+        $pid_key = $tag['pid_key'] ?? 'parent_id';
+        $id_key = $tag['id_key'] ?? 'id';
+        $item = !empty($tag['item']) ? $tag['item'] : ($tag['default_item'] ?? 'item');
+        $assign = !empty($tag['assign']) ? $tag['assign'] : $table . '_list_' . time();
+        $item = ltrim($item, '$');
+        $assign = ltrim($assign, '$');
+        $fields = $tag['fields'] ?? Table::defaultFields($table);
+
+        $id_val = '';
+        if ($id_key && isset($tag[$id_key]) && $tag[$id_key] !== '') {
+            $id_val = trim($tag[$id_key]);
+        }
+
+        if ($id_val !== '') {
+            if ($id_val[0] == '$' || $id_val[0] == ':') { //解析变量或方法
+                $id_val = $this->autoBuildVar($id_val);
+            } else if (is_int($id_val)) {
+                $id_val = "{$id_val}";
+            }
+        } else {
+            $id_val = "\${$id_key}";
+        }
+
+        $fields = is_array($fields) ? implode(',', $fields) : $fields;
+
+        $parseStr = <<<EOT
+        <?php
+
+        \$__pid_key__ ='{$pid_key}';
+        \$__id_key__ = '{$id_key}';
+        \$__id_val__ = {$id_val} ?? 0;
+
+        \$__list__ = \\tpext\\cms\\common\\taglib\\Processer::getParents('{$table}', \$__id_val__, \$__id_key__, \$__pid_key__);
+        ?>
+
+        {volist name="__list__" id="{$item}"}
+        {$content}
+        {/volist}
+        {assign name="{$assign}" value="\$__list__" /}
+        
+        <?php
+        unset(\$__pid_key__, \$__id_key__, \$__id_val__);
+        ?>
 EOT;
         return $parseStr;
     }
@@ -172,232 +264,200 @@ EOT;
     public function tagDetail($tag, $content)
     {
         $table = $tag['table'] ?? '';
-        if (!$this->isAllowTable($table)) {
+        if (!Table::isAllowTable($table)) {
             return "数据表：{$table}未允许使用标签。";
         }
-
-        $pk = $tag['pk'] ?? $this->defaultPk($table);
-        $item = $tag['item'] ?? 'data';
-        $fields = $tag['fields'] ?? $this->defaultFields($table);
-        $where = $tag['where'] ?? '';
-
-        $__id_v__ = '';
-        if ($pk && !empty($tag[$pk])) {
-            $__id_v__ = $tag[$pk];
+        $id_key = $tag['id_key'] ?? 'id';
+        $assign = !empty($tag['assign']) ? $tag['assign'] : ($tag['default_assign'] ?? 'data');
+        $assign = ltrim($assign, '$');
+        $order = $tag['order'] ?? '';
+        $fields = $tag['fields'] ?? Table::defaultFields($table);
+        $where = $tag['where'] ?? '1=1';
+        $id_val = '';
+        if ($id_key && isset($tag[$id_key]) && $tag[$id_key] !== '') {
+            $id_val = trim($tag[$id_key]);
+        }
+        if ($id_val !== '') {
+            if ($id_val[0] == '$' || $id_val[0] == ':') { //解析变量或方法
+                $id_val = $this->autoBuildVar($id_val);
+            } else if (is_int($id_val)) {
+                $id_val = "{$id_val}";
+            } else if (preg_match('/^\(?\d[,\d]+\)?$/is', $id_val)) {
+                $id_val = trim($id_val, '()');
+                $where .= " and {$id_key} in ({$id_val})";
+                $id_val = '0';
+            } else if (preg_match('/^in([^\(]+)/is', $id_val, $mch)) {
+                $where .= " and {$id_key} in ({$mch[1]})";
+                $id_val = '0';
+            } else if (preg_match('/^not\s*in([^\(]+)/is', $id_val, $mch)) {
+                $where .= " and {$id_key} not in ({$mch[1]})";
+                $id_val = '0';
+            } else if (preg_match('/^not\s*in(.+)$/is', $id_val, $mch)) {
+                $where .= " and {$id_key} not in {$mch[1]}";
+                $id_val = '0';
+            } else if (preg_match('/^!=(.+)$/is', $id_val, $mch)) {
+                $where .= " and {$id_key} <> {$mch[1]}";
+                $id_val = '0';
+            } else if (preg_match('/^(in|>|=|<|>=|<=|<>)/is', $id_val)) {
+                $where .= " and {$id_key} {$id_val}";
+                $id_val = '0';
+            }
+        } else {
+            $id_val = "\${$id_key}";
         }
 
+        if ($where && $where != '1=1') { //解析变量
+            $where = str_replace('!=', '<>', $where);
+            preg_match_all('/([\$:][\w\.]+)/', $where, $matches);
+            if (isset($matches[1]) && count($matches[1]) > 0) {
+                $keys = [];
+                $replace = [];
+                foreach ($matches[1] as $match) {
+                    $keys[] = $match;
+                    if (strpos($match, '.')) {
+                        $vars  = explode('.', $match);
+                        $first = array_shift($vars);
+                        $replace[] = '\'" . ' . $first . '[\'' . implode('\'][\'', $vars) . '\']' . ' . "\'';
+                    } else {
+                        $replace[] = '\'" . ' . $match . ' . "\'';
+                    }
+                }
+                $where = str_replace($keys, $replace, $where);
+            }
+        }
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
-        $scope = $this->defaultScope($table);
+        $scope = Table::defaultScope($table);
+        $dbNameSpace = class_exists(\think\facade\Db::class) ? '\think\facade\Db' : '\think\Db';
 
         $parseStr = <<<EOT
         <?php
-        \$__where_exp__ = '{$where}';
+        
+        \$__where_exp__ = "{$where}";
         \$__where__ = [];
-        \$__id__ = '{$pk}';
-        \$__id_v__ = '{$__id_v__}' ?: (\$id ?? '');
-        \$__where__[] = [\$__id__, '=', \$__id_v__];
+        \$__id_key__ = '{$id_key}';
+        \$__id_val__ = {$id_val} ?? 0;
 
-        \$__DETAIL__ = Db::name('{$table}')
+        if(empty(\$__where_exp__) || \$__where_exp__ == '1=1')
+        {
+            \$__where__[] = [\$__id_key__, '=', \$__id_val__];
+        }
+
+        \$__detail__ = {$dbNameSpace}::name('{$table}')
             ->where(\$__where__)
             ->where(\$__where_exp__)
             ->where('{$scope}')
+            ->order('{$order}')
             ->field('{$fields}')
             ->find();
         
-        \$__DETAIL__ = \\tpext\\cms\\common\\taglib\\Cms::processDetail('{$table}', \$__DETAIL__, '{$fields}');
+        \$__detail__ = \\tpext\\cms\\common\\taglib\\Processer::detail('{$table}', \$__detail__);
         ?>
 
-        {assign name="{$item}" value="\$__DETAIL__"/}
-        {notempty name="{$item}"}
+        {assign name="{$assign}" value="\$__detail__" /}
+        {notempty name="{$assign}"}
         {$content}
         {/notempty}
+
+        <?php
+        unset(\$__where_exp__, \$__where__, \$__id_key__, \$__id_val__);
+        ?>
 
 EOT;
         return $parseStr;
     }
 
-    /**
-     * 列表分类字段
-     *
-     * @param string $table
-     * @return string
-     */
-    protected function defaultCk($table)
+    public function __call($name, $arguments = [])
     {
-        $ck = '';
+        if (preg_match('/^tag(\w+@\w+)$/i', $name, $mchs) && count($arguments) == 2) {
+            $tagName = strtolower($mchs[1]);
+            $tag = $arguments[0];
+            $content = $arguments[1];
+            $tagArr = explode('@', $tagName);
+            foreach ($this->tables as $table => $info) {
+                if (empty($info['tag_name'])) {
+                    continue;
+                }
+                // $tags[$info['tag_name'] . '@arounds'] = ['attr' => $listAttr];
+                // $tags[$info['tag_name'] . '@prev'] = ['attr' => $getAttr, 'close' => 0];
+                // $tags[$info['tag_name'] . '@next'] = ['attr' => $getAttr, 'close' => 0];
+                // $tags[$info['tag_name'] . '@parent'] = ['attr' => $parentsAttr];
 
-        if ($table == 'cms_channel') {
-            $ck = 'parent_id';
-        } else if ($table == 'cms_content') {
-            $ck = 'channel_id';
-        } else if ($table == 'cms_position') {
-            $ck = '';
-        } else if ($table == 'cms_banner') {
-            $ck = 'position_id';
-        } else  if ($table == 'cms_tag') {
-            $ck = '';
+                if ($info['tag_name'] . '@list' == $tagName) {
+                    $tag['table'] = $table;
+                    $tag['tag_name'] = $tagName;
+                    $tag['default_item'] = $tagArr[0];
+                    $tag['id_key'] = $info['id_key'] ?? 'id';
+                    $tag['cid_key'] = $info['cid_key'] ?? '';
+                    $tag['pid_key'] = $info['pid_key'] ?? '';
+                    return $this->tagList($tag, $content);
+                }
+                if ($info['tag_name'] . '@parents' == $tagName) {
+                    $tag['table'] = $table;
+                    $tag['tag_name'] = $tagName;
+                    $tag['default_item'] = $tagArr[0];
+                    $tag['id_key'] = $info['id_key'] ?? 'id';
+                    $tag['cid_key'] = $info['cid_key'] ?? '';
+                    $tag['pid_key'] = $info['pid_key'] ?? '';
+                    return $this->tagParents($tag, $content);
+                }
+                if ($info['tag_name'] . '@get' == $tagName) {
+                    $tag['table'] = $table;
+                    $tag['tag_name'] = $tagName;
+                    $tag['default_assign'] = $tagArr[0];
+                    $tag['id_key'] = $info['id_key'] ?? 'id';
+                    return $this->tagDetail($tag, $content);
+                }
+                if ($info['tag_name'] . '@prev' == $tagName) {
+                    $tag['table'] = $table;
+                    $tag['tag_name'] = $tagName;
+                    $tag['default_assign'] = $tagArr[0];
+                    $tag['id_key'] = $info['id_key'] ?? 'id';
+                    $where = $tag['where'] ?? '1=1';
+                    $id = $tag[$tag['id_key']] ?? '$id';
+                    $order = $tag['order'] ?? Table::defaultOrder($table);
+                    $sort = $tag['sort'] ?? $id;
+
+                    $fields = [];
+                    $orders = explode(',', $order);
+                    foreach ($orders as $sod) {
+                        if (stripos($sod, 'desc') !== false) {
+                            $fields[] = preg_replace('/^(\w+\s+)desc$/is', '$1asc', $sod);
+                        } else {
+                            $fields[] = preg_replace('/^(\w+)(?:\s+asc)?$/is', '$1 desc', $sod);
+                        }
+                    }
+                    $first = preg_replace('/\s*(?:desc|asc)/', '', $orders[0]);
+                    $isDesc = stripos($orders[0], 'desc') !== false;
+                    $cmp = $isDesc ? '>=' : '<=';
+                    $tag['where'] = "{$tag['id_key']} != {$id} and {$first} {$cmp} {$sort} and " . $where;
+
+                    trace($tag['where']) ;
+                    $tag['order']  = implode(',', $fields);
+                    $tag[$tag['id_key']] = '';
+                    return $this->tagDetail($tag, $content);
+                }
+                if ($info['tag_name'] . '@next' == $tagName) {
+                    $tag['table'] = $table;
+                    $tag['tag_name'] = $tagName;
+                    $tag['default_assign'] = $tagArr[0];
+                    $tag['id_key'] = $info['id_key'] ?? 'id';
+                    $where = $tag['where'] ?? '1=1';
+                    $id = $tag[$tag['id_key']] ?? '$id';
+                    $order = $tag['order'] ?? Table::defaultOrder($table);
+                    $sort = $tag['sort'] ?? $id;
+                    $orders = explode(',', $order);
+                    $first = preg_replace('/\s*(?:desc|asc)/', '', $orders[0]);
+                    $isDesc = stripos($orders[0], 'desc') !== false;
+                    $cmp = $isDesc ? '<=' : '>=';
+                    $tag['where'] = "{$tag['id_key']} != {$id} and {$first} {$cmp} {$sort} and " . $where;
+                    $tag['order']  = $order;
+                    $tag[$tag['id_key']] = '';
+                    return $this->tagDetail($tag, $content);
+                }
+            }
+            throw new Exception("未知标签：{$tagName}");
         }
 
-        return $ck;
-    }
-
-    /**
-     * 详情主键字段
-     *
-     * @param string $table
-     * @return string
-     */
-    protected function defaultPk($table)
-    {
-        return 'id';
-    }
-
-    /**
-     * 列表默认排序
-     *
-     * @param string $table
-     * @return string
-     */
-    protected function defaultOrder($table)
-    {
-        return 'id desc';
-    }
-
-    /**
-     * 默认查询字段
-     *
-     * @param string $table
-     * @return string
-     */
-    protected function defaultFields($table)
-    {
-        return '*';
-    }
-
-    /**
-     * 默认查询条件，字符串形式，如： 'is_show=1'。不支持变量，如： 'name=' . input('name')。
-     *
-     * @param string $table
-     * @return string
-     */
-    protected function defaultScope($table)
-    {
-        $where = '';
-
-        if ($table == 'cms_channel') {
-            $where = 'is_show=1';
-        } else if ($table == 'cms_content') {
-            $where = 'is_show=1';
-        } else if ($table == 'cms_position') {
-            $where = 'is_show=1';
-        } else if ($table == 'cms_banner') {
-            $where = 'is_show=1';
-        } else  if ($table == 'cms_tag') {
-            $where = 'is_show=1';
-        }
-
-        return $where;
-    }
-
-    /**
-     * 是否允许数据表使用标签
-     *
-     * @param string $table
-     * @return boolean
-     */
-    protected function isAllowTable($table)
-    {
-        return in_array($table, ['cms_channel', 'cms_content', 'cms_position', 'cms_banner', 'cms_tag']);
-    }
-
-    /**
-     * 处理列表条目
-     *
-     * @param string $table
-     * @param array $item
-     * @return array
-     */
-    public static function processItem($table, &$item, $fields = '*')
-    {
-        if (empty($item)) {
-            return $item;
-        }
-
-        if ($table == 'cms_channel') {
-            $item['url'] = self::$path . 'channel/c' . $item['id'] . '.html';
-            $item['parent'] = static::getData('cms_channel', $item['parent_id']);
-        } else if ($table == 'cms_content') {
-            $item['url'] = self::$path . 'content/a' . $item['id'] . '.html';
-            $item['channel'] = static::getData('cms_channel', $item['channel_id']);
-        } else if ($table == 'cms_position') {
-            //
-        } else if ($table == 'cms_banner') {
-            $item['position'] = static::getData('cms_position', $item['position_id']);
-        } else if ($table == 'cms_tag') {
-            // 
-        } else {
-            // 
-        }
-
-        return $item;
-    }
-
-    /**
-     * 处理数据详情
-     *
-     * @param string $table
-     * @param array $item
-     * @return array
-     */
-    public static function processDetail($table, $item, $fields = '*')
-    {
-        if (empty($item)) {
-            $empty = new EmptyData;
-            return $empty;
-        }
-
-        $item['__not_found__'] = false;
-
-        if ($table == 'cms_channel') {
-            $item['parent'] = static::getData('cms_channel', $item['parent_id']);
-        } else if ($table == 'cms_content') {
-            $item['channel'] = static::getData('cms_channel', $item['channel_id']);
-            $item['prev'] = Db::name($table)->where('channel_id', $item['channel_id'])->where('is_show', 1)->where('id', '<', $item['id'])->find();
-            $item['next'] = Db::name($table)->where('channel_id', $item['channel_id'])->where('is_show', 1)->where('id', '>', $item['id'])->find();
-
-            $contentDetail = Db::name('cms_content_detail')->where('main_id', $item['id'])->find();
-            $item['content'] = $contentDetail ? $contentDetail['content'] : '--';
-
-            self::processItem($table, $item['prev']);
-            self::processItem($table, $item['next']);
-        } else if ($table == 'cms_position') {
-            //
-        } else if ($table == 'cms_banner') {
-            $item['position'] = static::getData('cms_position', $item['position_id']);
-        } else if ($table == 'cms_tag') {
-            //
-        } else {
-            //
-        }
-
-        return $item;
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @param string $table
-     * @param int $id
-     * @return array
-     */
-    protected static function getData($table, $id)
-    {
-        $key = $table . '_' . $id;
-
-        if (!isset(static::$tableData[$key])) {
-            static::$tableData[$key] = Db::name($table)->where('id', $id)->find();
-        }
-
-        return static::$tableData[$key] ?? [];
+        throw new Exception('Call to undefined method : ' . $name);
     }
 }
