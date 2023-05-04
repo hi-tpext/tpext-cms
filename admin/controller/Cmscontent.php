@@ -150,8 +150,9 @@ class Cmscontent extends Controller
             ->btnRefresh();
 
         $table->getActionbar()
-            ->btnEdit('', '', 'btn-primary', 'mdi-lead-pencil', 'data-layer-size="98%,98%"')
-            ->btnView('', '', 'btn-info', 'mdi-eye-outline', 'data-layer-size="98%,98%"')
+            ->btnEdit('', '', 'btn-primary', 'mdi-lead-pencil', 'data-layer-size="98%,98%" title="编辑"')
+            ->btnView('', '', 'btn-info', 'mdi-eye-outline', 'data-layer-size="98%,98%" title="查看"')
+            ->btnLink('copy', url('copy', ['id' => '__data.pk__']), '', 'btn-success', 'mdi-content-copy', 'data-layer-size="1000px,auto" title="复制"')
             ->btnDelete();
     }
 
@@ -194,6 +195,46 @@ class Cmscontent extends Controller
     }
 
     /**
+     * @title 复制
+     *
+     * @return mixed
+     */
+    public function copy()
+    {
+        $id = input('id/d');
+
+        $content = $this->dataModel->where('id', $id)->find();
+
+        $builder = $this->builder($this->pageTitle, '复制');
+        if (request()->isGet()) {
+            if (!$content) {
+                return $builder->layer()->closeRefresh(0, '数据不存在');
+            }
+            $form = $builder->form();
+            $form->show('title', '标题')->value($content['title']);
+            $form->selectTree('channel_id', '复制到栏目')->multiple(false)->optionsData($this->channelModel->select(), 'name', 'id', 'parent_id', '')->required();
+
+            return $builder;
+        }
+        $data = request()->post();
+        if ($data['channel_id'] == $content['channel_id']) {
+            $this->error('复制到栏目不能和原栏目相同');
+        }
+        $newData = new ContentModel;
+        $content['reference_id'] = $id;
+        $content['content'] = '@' . $id;
+        $content['channel_id'] = $data['channel_id'];
+        unset($content['id']);
+        $res = $newData->save($content->toArray());
+
+        if ($res) {
+            return $builder->layer()->closeRefresh(1, '复制成功');
+        } else {
+            $this->error('复制失败');
+        }
+    }
+
+    /**
      * 构建表单
      *
      * @param boolean $isEdit
@@ -212,17 +253,24 @@ class Cmscontent extends Controller
 
         $form->hidden('id');
         $form->text('title', '标题')->required()->maxlength(55);
-        $form->select('channel_id', '栏目')->required()->dataUrl(url('/admin/cmschannel/selectPage'));
+        $form->selectTree('channel_id', '栏目')->multiple(false)->optionsData($this->channelModel->select(), 'name', 'id', 'parent_id', '')->required();
         $form->multipleSelect('tags', '标签')->dataUrl(url('/admin/cmstag/selectPage'))->help('可到【标签管理】菜单添加标签');
         $form->tags('keyword', '关键字');
         $form->text('link', '跳转链接')->help('设置后覆盖默认的页面地址');
-        $form->textarea('description', '摘要')->maxlength(255);
+        $form->textarea('description', '摘要')->help('留空则自动从内容中提取')->maxlength(255);
 
         $editor = 'editor';
         if (!empty($config['editor'])) {
             $editor = $config['editor'];
         }
-        $form->$editor('content', '内容')->required();
+        if ($isEdit && $data['reference_id'] > 0) {
+            $form->raw('content_html', '内容')->to('<div>复制于<label class="label label-default">@{reference_id}</label>，内容只读，去<a title="点击去编辑" href="' . url('edit', ['id' => $data['reference_id']]) . '">[编辑]</a></div>' . $data['content']);
+            $form->hidden('content')->value('@' . $data['reference_id']);
+            $form->hidden('reference_id');
+        } else {
+            $form->$editor('content', '内容')->required();
+        }
+
 
         $form->fieldsEnd();
 
@@ -270,6 +318,7 @@ class Cmscontent extends Controller
             'content',
             'attr',
             'click',
+            'reference_id',
         ], 'post');
 
         $result = $this->validate($data, [

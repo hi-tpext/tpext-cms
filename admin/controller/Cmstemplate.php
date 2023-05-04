@@ -104,7 +104,7 @@ class Cmstemplate extends Controller
         $table->getActionbar()
             ->btnEdit()
             ->btnView()
-            ->btnLink('build', url('/admin/cmstemplatemake/make', ['id' => '__data.pk__']), '生成', 'btn-success', 'mdi-cloud-braces ')
+            ->btnLink('build', url('/admin/cmstemplatemake/make', ['id' => '__data.pk__']), '生成', 'btn-success', 'mdi-cloud-braces ','data-layer-size="98%,98%"')
             ->btnDelete();
     }
 

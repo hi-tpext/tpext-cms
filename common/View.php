@@ -33,11 +33,11 @@ class View extends Response
             'taglib_pre_load' => '\\tpext\\cms\\common\\taglib\\Cms',
             'tpl_deny_func_list' => 'eval,echo,exit,exec,shell_exec',
             'tpl_deny_php' => true,
-            'cache_prefix' => 'tpextcms',
-            'tpl_begin'          => '{',
-            'tpl_end'            => '}',
-            'taglib_begin'       => '{',
-            'taglib_end'         => '}',
+            'cache_prefix' => 'tpex.tcms',
+            'tpl_begin' => '{',
+            'tpl_end' => '}',
+            'taglib_begin' => '{',
+            'taglib_end' => '}',
         ], $config);
 
 

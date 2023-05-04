@@ -1,1 +1,1 @@
-tpextcms
+tpext.cms

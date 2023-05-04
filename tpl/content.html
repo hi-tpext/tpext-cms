@@ -13,13 +13,11 @@
 </div>
 <div>
     <div>
-        {content@get where="id !=$id and channel_id=$content.channel_id and sort>=$content.sort"
-        order="sort asc,id asc" assign="prev"/}
+        {content@prev id="$id" sort="$content.sort" where="channel_id=$content.channel_id" assign="prev"/}
         <p>上一篇：<a href="{$prev.url}">{$prev.title}</a></p>
     </div>
     <div>
-        {content@get where="id !=$id and channel_id=$content.channel_id and sort<=$content.sort"
-            order="sort desc,id desc" assign="next" /} 
+        {content@next id="$id" sort="$content.sort" where="channel_id=$content.channel_id" assign="next" /} 
     <p>下一篇：<a href="{$next.url}">{$next.title}</a></p>
     </div>
 </div>

@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_content`  (
   `is_show` tinyint(1) unsigned NOT NULL DEFAULT 1 COMMENT '是否显示',
   `click` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '点击量',
   `admin_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '添加人',
+  `reference_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '引用id',
   `create_time` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '添加时间',
   `update_time` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '更新时间',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',

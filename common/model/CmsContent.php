@@ -1,4 +1,13 @@
 <?php
+// +----------------------------------------------------------------------
+// | tpext.cms
+// +----------------------------------------------------------------------
+// | Copyright (c) tpext.cms All rights reserved.
+// +----------------------------------------------------------------------
+// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// +----------------------------------------------------------------------
+// | Author: lhy <ichynul@163.com>
+// +----------------------------------------------------------------------
 
 namespace tpext\cms\common\model;
 
@@ -8,6 +17,7 @@ use think\model\concern\SoftDelete;
 class CmsContent extends Model
 {
     use SoftDelete;
+    protected $name = 'cms_content';
     protected $autoWriteTimestamp = 'datetime';
 
     protected static function init()
@@ -30,6 +40,10 @@ class CmsContent extends Model
             self::afterDelete(function ($data) {
                 return self::onAfterDelete($data);
             });
+
+            self::beforeWrite(function ($data) {
+                return self::onBeforeWrite($data);
+            });
         }
     }
 
@@ -38,6 +52,51 @@ class CmsContent extends Model
         if (empty($data['sort'])) {
             $data['sort'] = static::max('sort') + 5;
         }
+    }
+
+    public static function onBeforeWrite($data)
+    {
+        if (empty($data['description']) && empty($data['reference_id'])) {
+            $content = $data->getData('content');
+            $content = preg_replace('/<[bh]r\s*\/?>/is', '', $content);
+            $content = preg_replace('/<img[^>]+?>/is', '', $content);
+            $content = preg_replace('/[\r|\n|\t|\s]/is', '', $content);
+            $content = str_replace(['\u00A0', '\u0020', '\u2800', '\u3000', '　', '&nbsp;', '&gt;', '&lt;', '&eq;', '&egt;', '&elt;'], '', $content);
+            $content = preg_replace('/<(\w+)[^>]*?>(.*?)<\/\1>/is', '$2', $content);
+            $data['description'] = static::getDesc($content);
+        }
+    }
+
+    protected static function getDesc($content)
+    {
+        $arr = explode('。', $content);
+        $text = '';
+        $n = 0;
+        foreach ($arr as $a) {
+            if (mb_strlen($text . $a . '。') > 255) {
+                if ($n == 0) {
+                    $a = mb_substr($a, 0, 254);
+                    $arr2 = explode('，', $a);
+                    if (count($arr2) > 1) {
+                        array_pop($arr2);
+                        $text = implode('，', $arr2) . '。';
+                    } else {
+                        $text = $a . '。';
+                    }
+                }
+                break;
+            }
+            $text .= $a . '。';
+            $n += 1;
+            if (mb_strlen($text) > 90) {
+                break;
+            }
+            if ($n > 2) {
+                break;
+            }
+        }
+
+        return $text;
     }
 
     public static function onAfterInsert($data)
@@ -50,7 +109,7 @@ class CmsContent extends Model
         $detail = new CmsContentDetail;
         $detail->save([
             'main_id' => $id,
-            'content' => $data->getData('content')
+            'content' => !empty($data['reference_id']) ? '@' . $data['reference_id'] :  $data->getData('content'),
         ]);
     }
 
@@ -67,7 +126,7 @@ class CmsContent extends Model
         }
         $detail->save([
             'main_id' => $id,
-            'content' => $data->getData('content')
+            'content' => !empty($data['reference_id']) ? '@' . $data['reference_id'] : $data->getData('content')
         ]);
     }
 
@@ -88,6 +147,11 @@ class CmsContent extends Model
 
     public function getContentAttr($value, $data)
     {
+        if (!empty($data['reference_id'])) {
+            $detail = CmsContentDetail::where('main_id', $data['reference_id'])->find();
+            return $detail ? $detail['content'] : '';
+        }
+
         return isset($this->detail) ? $this->detail['content'] : '';
     }
 

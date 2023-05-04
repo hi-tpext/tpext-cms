@@ -1,4 +1,13 @@
 <?php
+// +----------------------------------------------------------------------
+// | tpext.cms
+// +----------------------------------------------------------------------
+// | Copyright (c) tpext.cms All rights reserved.
+// +----------------------------------------------------------------------
+// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// +----------------------------------------------------------------------
+// | Author: lhy <ichynul@163.com>
+// +----------------------------------------------------------------------
 
 namespace tpext\cms\common\taglib;
 
@@ -14,6 +23,8 @@ class Cms extends Taglib
     protected $tags = [];
 
     protected $tables = [];
+
+    protected $usedTags = [];
 
     public function __construct($template)
     {
@@ -54,25 +65,12 @@ class Cms extends Taglib
                 $cid_val = $this->autoBuildVar($cid_val);
             } else if (is_int($cid_val)) {
                 $cid_val = "{$cid_val}";
-            } else if (preg_match('/^\(?\d[,\d]+\)?$/is', $cid_val)) {
-                $cid_val = trim($cid_val, '()');
-                $where .= " and {$cid_key} in ({$cid_val})";
-                $cid_val = '';
-            } else if (preg_match('/^in([^\(]+)$/is', $cid_val, $mch)) {
-                $where .= " and {$cid_key} in ({$mch[1]})";
-                $cid_val = '';
-            } else if (preg_match('/^not\s*in([^\(]+)$/is', $cid_val, $mch)) {
-                $where .= " and {$cid_key} not in ({$mch[1]})";
-                $cid_val = '';
-            } else if (preg_match('/^not\s*in(.+)$/is', $cid_val, $mch)) {
-                $where .= " and {$cid_key} not in {$mch[1]}";
-                $cid_val = '';
-            } else if (preg_match('/^!=(.+)$/is', $cid_val, $mch)) {
-                $where .= " and {$cid_key} <> {$mch[1]}";
-                $cid_val = '';
-            } else if (preg_match('/^(in|>|=|<|>=|<=|<>)/is', $cid_val)) {
-                $where .= " and {$cid_key} {$cid_val}";
-                $cid_val = '';
+            } else {
+                $whereExp = $this->parseIdVal($cid_key, $cid_val);
+                if ($whereExp) {
+                    $where .= $whereExp;
+                    $cid_val = '';
+                }
             }
         } else {
             $cid_val = "\${$cid_key}";
@@ -82,44 +80,24 @@ class Cms extends Taglib
         if ($id_key && isset($tag[$id_key]) && $tag[$id_key] !== '') {
             $id_val = trim($tag[$id_key]);
         }
-        if ($id_val) {
-            if (preg_match('/^\(?\d[,\d]+\)?$/is', $id_val)) {
-                $id_val = trim($id_val, '()');
-                $where .= " and {$id_key} in ({$id_val})";
-            } else if (preg_match('/^in([^\(]+)/is', $id_val, $mch)) {
-                $where .= " and {$id_key} in ({$mch[1]})";
-            } else if (preg_match('/^not\s*in([^\(]+)/is', $id_val, $mch)) {
-                $where .= " and {$id_key} not in ({$mch[1]})";
-            } else if (preg_match('/^not\s*in(.+)$/is', $id_val, $mch)) {
-                $where .= " and {$id_key} not in {$mch[1]}";
-            } else if (preg_match('/^!=(.+)$/is', $id_val, $mch)) {
-                $where .= " and {$id_key} <> {$mch[1]}";
-            } else if (preg_match('/^(in|>|=|<|>=|<=|<>)/is', $id_val)) {
-                $where .= " and {$id_key} {$id_val}";
+        if ($id_val !== '') {
+            if ($id_val[0] == '$' || $id_val[0] == ':') { //解析变量或方法
+                $id_val = $this->autoBuildVar($id_val);
+                $where .= "and {$id_key} = {$id_val}";
+            } else if (is_int($id_val)) {
+                $id_val = "{$id_val}";
+                $where .= "and {$id_key} = {$id_val}";
             } else {
-                $where .= " and {$id_key} = {$id_val}";
+                $whereExp = $this->parseIdVal($id_key, $id_val);
+                if ($whereExp) {
+                    $where .= $whereExp;
+                }
             }
             $cid_val = '0';
         }
-
-        if ($where && $where != '1=1') { //解析变量
-            $where = str_replace('!=', '<>', $where);
-            preg_match_all('/([\$:][\w\.]+)/', $where, $matches);
-            if (isset($matches[1]) && count($matches[1]) > 0) {
-                $keys = [];
-                $replace = [];
-                foreach ($matches[1] as $match) {
-                    $keys[] = $match;
-                    if (strpos($match, '.')) {
-                        $vars  = explode('.', $match);
-                        $first = array_shift($vars);
-                        $replace[] = '\'" . ' . $first . '[\'' . implode('\'][\'', $vars) . '\']' . ' . "\'';
-                    } else {
-                        $replace[] = '\'" . ' . $match . ' . "\'';
-                    }
-                }
-                $where = str_replace($keys, $replace, $where);
-            }
+        $binds = '';
+        if ($where && $where != '1=1') {
+            [$where, $binds] = $this->parseWhere($where); //解析变量
         }
 
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
@@ -129,60 +107,45 @@ class Cms extends Taglib
         $parseStr = <<<EOT
         <?php
 
-        \$__where_exp__ = "{$where}";
+        \$__where_raw__ = "{$where}";
         \$__where__ = [];
         \$__cid_key__ = '{$cid_key}';
-        
-        if(\$__cid_key__){
+        if(\$__cid_key__) {
             \$__cid_val__ = {$cid_val} ?? 0;
-            if(\$__cid_val__)
-            {
+            if(\$__cid_val__) {
                 \$__where__[] = [\$__cid_key__, '=', \$__cid_val__];
             }
         }
-        
         \$__page__ = 1;
         \$__render_links__ = '{$links}' == '1';
-
         \$has_paginator = false;
-
         \$__take__ = {$take};
-        if(\$__take__ == 0)
-        {
-            if(isset(\$pagesize) && \$pagesize > 0)
-            {
+        if(\$__take__ == 0) {
+            if(isset(\$pagesize) && \$pagesize > 0) {
                 \$__page__ = \$page < 1 ? 1 : \$page;
                 \$__take__ = \$pagesize;
                 \$has_paginator = true;
-            }
-            else
-            {
+            } else {
                 \$__take__ = 10;
             }
         }
-
         \$__list__ = {$dbNameSpace}::name('{$table}')
             ->where(\$__where__)
-            ->where(\$__where_exp__)
+            ->whereRaw(\$__where_raw__, [{$binds}])
             ->where('{$scope}')
             ->order('{$order}')
             ->field('{$fields}')
             ->limit((\$__page__ - 1) * \$__take__, \$__take__)
             ->select();
-        foreach(\$__list__ as &\$__li__)
-        {
+        foreach(\$__list__ as &\$__li__) {
             \$__li__ = \\tpext\\cms\\common\\taglib\\Processer::item('{$table}', \$__li__);
         }
-
         unset(\$__li__);
-
         \$__links_html__ = null;
-
-        if(\$has_paginator)
-        {
+        if(\$has_paginator) {
             \$total = {$dbNameSpace}::name('{$table}')
                 ->where(\$__where__)
-                ->where(\$__where_exp__)
+                ->whereRaw(\$__where_raw__, [{$binds}])
                 ->where('{$scope}')
                 ->count();
                 
@@ -190,7 +153,6 @@ class Cms extends Taglib
             \$__links_html__ = \$__paginator__->render();
         }
         ?>
-
         {volist name="__list__" id="{$item}"}
         {$content}
         {/volist}
@@ -200,11 +162,11 @@ class Cms extends Taglib
         <!-- 未自动输出分页，请在页面需要的位置调用 -->
         {/if}
         {assign name="{$assign}" value="\$__list__" /}
-        
         <?php
-        unset(\$__where_exp__, \$__where__, \$__cid_key__, \$__id_key__, \$__cid_val__, \$__id_val__, \$__paginator__, \$total);
+        unset(\$__where_raw__, \$__where__, \$__cid_key__, \$__id_key__, \$__cid_val__, \$__id_val__, \$__paginator__, \$total);
         ?>
 EOT;
+        $this->usedTags[] = $tag;
         return $parseStr;
     }
 
@@ -245,19 +207,17 @@ EOT;
         \$__pid_key__ ='{$pid_key}';
         \$__id_key__ = '{$id_key}';
         \$__id_val__ = {$id_val} ?? 0;
-
         \$__list__ = \\tpext\\cms\\common\\taglib\\Processer::getParents('{$table}', \$__id_val__, \$__id_key__, \$__pid_key__);
         ?>
-
         {volist name="__list__" id="{$item}"}
         {$content}
         {/volist}
         {assign name="{$assign}" value="\$__list__" /}
-        
         <?php
         unset(\$__pid_key__, \$__id_key__, \$__id_val__);
         ?>
 EOT;
+        $this->usedTags[] = $tag;
         return $parseStr;
     }
 
@@ -282,48 +242,19 @@ EOT;
                 $id_val = $this->autoBuildVar($id_val);
             } else if (is_int($id_val)) {
                 $id_val = "{$id_val}";
-            } else if (preg_match('/^\(?\d[,\d]+\)?$/is', $id_val)) {
-                $id_val = trim($id_val, '()');
-                $where .= " and {$id_key} in ({$id_val})";
-                $id_val = '0';
-            } else if (preg_match('/^in([^\(]+)/is', $id_val, $mch)) {
-                $where .= " and {$id_key} in ({$mch[1]})";
-                $id_val = '0';
-            } else if (preg_match('/^not\s*in([^\(]+)/is', $id_val, $mch)) {
-                $where .= " and {$id_key} not in ({$mch[1]})";
-                $id_val = '0';
-            } else if (preg_match('/^not\s*in(.+)$/is', $id_val, $mch)) {
-                $where .= " and {$id_key} not in {$mch[1]}";
-                $id_val = '0';
-            } else if (preg_match('/^!=(.+)$/is', $id_val, $mch)) {
-                $where .= " and {$id_key} <> {$mch[1]}";
-                $id_val = '0';
-            } else if (preg_match('/^(in|>|=|<|>=|<=|<>)/is', $id_val)) {
-                $where .= " and {$id_key} {$id_val}";
-                $id_val = '0';
+            } else {
+                $whereExp = $this->parseIdVal($id_key, $id_val);
+                if ($whereExp) {
+                    $id_val = '0';
+                    $where .= $whereExp;
+                }
             }
         } else {
             $id_val = "\${$id_key}";
         }
-
-        if ($where && $where != '1=1') { //解析变量
-            $where = str_replace('!=', '<>', $where);
-            preg_match_all('/([\$:][\w\.]+)/', $where, $matches);
-            if (isset($matches[1]) && count($matches[1]) > 0) {
-                $keys = [];
-                $replace = [];
-                foreach ($matches[1] as $match) {
-                    $keys[] = $match;
-                    if (strpos($match, '.')) {
-                        $vars  = explode('.', $match);
-                        $first = array_shift($vars);
-                        $replace[] = '\'" . ' . $first . '[\'' . implode('\'][\'', $vars) . '\']' . ' . "\'';
-                    } else {
-                        $replace[] = '\'" . ' . $match . ' . "\'';
-                    }
-                }
-                $where = str_replace($keys, $replace, $where);
-            }
+        $binds = '';
+        if ($where && $where != '1=1') {
+            [$where, $binds] = $this->parseWhere($where); //解析变量
         }
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
         $scope = Table::defaultScope($table);
@@ -332,38 +263,108 @@ EOT;
         $parseStr = <<<EOT
         <?php
         
-        \$__where_exp__ = "{$where}";
+        \$__where_raw__ = "{$where}";
         \$__where__ = [];
         \$__id_key__ = '{$id_key}';
         \$__id_val__ = {$id_val} ?? 0;
-
-        if(empty(\$__where_exp__) || \$__where_exp__ == '1=1')
-        {
+        if(empty(\$__where_raw__) || \$__where_raw__ == '1=1') {
             \$__where__[] = [\$__id_key__, '=', \$__id_val__];
         }
-
         \$__detail__ = {$dbNameSpace}::name('{$table}')
             ->where(\$__where__)
-            ->where(\$__where_exp__)
+            ->whereRaw(\$__where_raw__, [$binds])
             ->where('{$scope}')
             ->order('{$order}')
             ->field('{$fields}')
             ->find();
-        
         \$__detail__ = \\tpext\\cms\\common\\taglib\\Processer::detail('{$table}', \$__detail__);
         ?>
-
         {assign name="{$assign}" value="\$__detail__" /}
         {notempty name="{$assign}"}
         {$content}
         {/notempty}
-
         <?php
-        unset(\$__where_exp__, \$__where__, \$__id_key__, \$__id_val__);
+        unset(\$__where_raw__, \$__where__, \$__id_key__, \$__id_val__);
         ?>
-
 EOT;
+        $this->usedTags[] = $tag;
         return $parseStr;
+    }
+
+    /**
+     * 解析where中的变量
+     *
+     * @param string $where
+     * @return array
+     */
+    protected function parseWhere($where)
+    {
+        $where = str_replace('!=', '<>', $where);
+        $binds = [];
+        preg_match_all('/([\$:][\w\.]+)\b/', $where, $matches);
+        if (isset($matches[1]) && count($matches[1]) > 0) {
+            $keys = [];
+            $replace = [];
+            foreach ($matches[1] as $i => $match) {
+                $varName = preg_replace('/\W/is', '_', $match) . $i;
+                $keys[] = $match;
+                $replace[] = ':' . $varName;
+                if (strpos($match, '.') !== false) {
+                    $names  = explode('.', $match);
+                    $first = array_shift($names);
+                    $binds[] = '\'' . $varName . '\' => ' . $first . '[\'' . implode('\'][\'', $names) . '\']';
+                } else {
+                    if ($match[0] == ':') {
+                        $match = substr($match, 1);
+                    }
+                    $binds[] = '\'' . $varName . '\' => ' . $match;
+                }
+            }
+            $where = str_replace($keys, $replace, $where);
+        }
+        return [$where, implode(', ', $binds)];
+    }
+
+    /**
+     * 解析id值
+     *
+     * @param string $where
+     * @return string
+     */
+    protected function parseIdVal($idKey, $idVal)
+    {
+        $where = '';
+        if (preg_match('/^\(?\d[,\d]+\)?$/is', $idVal)) {
+            $idVal = trim($idVal, '()');
+            $where == " and {$idKey} in ({$idVal})";
+        } else if (preg_match('/^in([^\(]+)/is', $idVal, $mch)) {
+            $where = " and {$idKey} in ({$mch[1]})";
+        } else if (preg_match('/^not\s*in([^\(]+)/is', $idVal, $mch)) {
+            $where = " and {$idKey} not in ({$mch[1]})";
+        } else if (preg_match('/^not\s*in(.+)$/is', $idVal, $mch)) {
+            $where = " and {$idKey} not in {$mch[1]}";
+        } else if (preg_match('/^!=(.+)$/is', $idVal, $mch)) {
+            $where = " and {$idKey} <> {$mch[1]}";
+        } else if (preg_match('/^(?:in|>|=|<|>=|<=|<>)/is', $idVal)) {
+            $where = " and {$idKey} {$idVal}";
+        } else if (preg_match('/^(?:gt|eq|lt|egt|elt|neq)/is', $idVal)) {
+            $idVal = str_ireplace(['gt', 'eq', 'lt', 'egt', 'elt', 'neq'], ['>', '=', '<', '>=', '<=', '<>'], $idVal);
+            $where = " and {$idKey} {$idVal}";
+        } else if (preg_match('/^(?:like|not\s+like)/is', $idVal, $mch) && !strpos($idVal, '%')) {
+            $where = " and {$idKey} {$mch[0]} %{$idVal}%";
+        } else if (preg_match('/^notlike/is', $idVal, $mch)) {
+            if (!strpos($idVal, '%')) {
+                $idVal = "%{$idVal}%";
+            }
+            $where = " and {$idKey} not like {$idVal}";
+        } else if (preg_match('/^(?:between|not between)/is', $idVal, $mch)) {
+            $where = " and {$idKey} {$mch[0]} {$idVal}";
+        } else if (preg_match('/^notbetween/is', $idVal, $mch)) {
+            $where = " and {$idKey} not between {$idVal}";
+        } else {
+            $where = " and {$idKey} = {$idVal}";
+        }
+        return $where;
     }
 
     public function __call($name, $arguments = [])
@@ -377,10 +378,6 @@ EOT;
                 if (empty($info['tag_name'])) {
                     continue;
                 }
-                // $tags[$info['tag_name'] . '@arounds'] = ['attr' => $listAttr];
-                // $tags[$info['tag_name'] . '@prev'] = ['attr' => $getAttr, 'close' => 0];
-                // $tags[$info['tag_name'] . '@next'] = ['attr' => $getAttr, 'close' => 0];
-                // $tags[$info['tag_name'] . '@parent'] = ['attr' => $parentsAttr];
 
                 if ($info['tag_name'] . '@list' == $tagName) {
                     $tag['table'] = $table;
@@ -430,8 +427,6 @@ EOT;
                     $isDesc = stripos($orders[0], 'desc') !== false;
                     $cmp = $isDesc ? '>=' : '<=';
                     $tag['where'] = "{$tag['id_key']} != {$id} and {$first} {$cmp} {$sort} and " . $where;
-
-                    trace($tag['where']) ;
                     $tag['order']  = implode(',', $fields);
                     $tag[$tag['id_key']] = '';
                     return $this->tagDetail($tag, $content);

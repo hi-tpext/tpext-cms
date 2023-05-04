@@ -56,11 +56,11 @@ class Cmstemplatemake extends Controller
             if (is_string($types)) {
                 $types = explode(',', $types);
             }
-            $res = $templateBuilder->make($template_id, [], $types, input('from_channel_id/d', 0), input('from_channel_page/d', 1), input('from_content_id/d', 0));
+            $res = $templateBuilder->make($template_id, [], $types, input('from_channel_id/d', 0), input('from_channel_page/d', 1), input('from_content_id/d', 0), input('content_done/d', 0));
 
             if ($res['code'] == 1) {
                 $msg_arr = $res['msg_arr'] ?? [];
-                $res['msg'] = '<p>' . implode('</p><p>', $msg_arr) . '</p>';
+                $res['msg'] = '<div><label class="label-default">' . implode('</label></div><div><label class="label-default">', $msg_arr) . '</label></div>';
 
                 if ($res['is_over']) {
                     $builder->content()->display('{$msg|raw}', $res);
@@ -71,6 +71,7 @@ class Cmstemplatemake extends Controller
                         'from_channel_id' => $res['from_channel_id'] ?: 0,
                         'from_channel_page' => $res['from_channel_page'] ?: 1,
                         'from_content_id' => $res['from_content_id'] ?: 0,
+                        'content_done' => $res['content_done'] ?: 0,
                     ];
                     $res['url'] = url('make', $params);
                     $builder->content()->display('{$msg|raw}<div class="hidden" id="goon">若页面长时间未刷新，可点此<a href="{$url}">继续</a></div><script>setTimeout(function(){location.href="{$url}"},1000);setTimeout(function(){$("#goon").removeClass("hidden")},20000);</script>', $res);

@@ -1,5 +1,15 @@
 <?php
 
+// +----------------------------------------------------------------------
+// | tpext.cms
+// +----------------------------------------------------------------------
+// | Copyright (c) tpext.cms All rights reserved.
+// +----------------------------------------------------------------------
+// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// +----------------------------------------------------------------------
+// | Author: lhy <ichynul@163.com>
+// +----------------------------------------------------------------------
+
 namespace tpext\cms\common\taglib;
 
 use tpext\common\ExtLoader;
@@ -36,7 +46,7 @@ class Table
             'id_key' => 'id',
             'cid_key' => 'channel_id',
             'category_table' => 'cms_channel',
-            'default_order' => 'sort desc,id desc',
+            'default_order' => 'sort asc,id asc',
             'default_fields' => '*',
             'default_scope' => 'is_show=1 and delete_time is null',
             'pid_key' => '',
@@ -116,7 +126,7 @@ class Table
             // 标签定义： attr 属性列表 close 是否闭合（0 或者1 默认1） alias 标签别名 level 嵌套层次
             'list' => ['attr' => 'table,num,where,order,fields,item,assign,id_key,cid_key'],
             'parents' => ['attr' => 'table,num,until,where,order,fields,assign,id_key,cid_key,pid_key'],
-            'arounds' => ['attr' => 'table,num,where,order,fields,assign,id_key,cid_key'],
+            // 'arounds' => ['attr' => 'table,num,where,order,fields,assign,id_key,cid_key'],
             //
             'get' => ['attr' => 'table,where,order,fields,assign,id_key', 'close' => 0],
             'prev' => ['attr' => 'table,where,order,fields,assign,id_key,sort', 'close' => 0],
@@ -150,7 +160,7 @@ class Table
             }
 
             $tags[$info['tag_name'] . '@list'] = ['attr' => $listAttr];
-            $tags[$info['tag_name'] . '@arounds'] = ['attr' => $listAttr];
+            // $tags[$info['tag_name'] . '@arounds'] = ['attr' => $listAttr];
 
             if (!empty($info['pid_key'])) {
                 $parentsAttr .= ',' . $info['pid_key'];
@@ -168,7 +178,6 @@ class Table
             ExtLoader::trigger('tpext_cms_get_tables'); //监听此事件以扩展标签
             static::$init = true;
         }
-
         return static::$tables;
     }
 
@@ -181,7 +190,6 @@ class Table
     public static function isAllowTable($table)
     {
         $tables = static::getTables();
-
         return in_array($table, array_keys($tables)) || in_array($table, static::$allowTables);
     }
 
@@ -194,11 +202,9 @@ class Table
     public static function defaultOrder($table)
     {
         $tables = static::getTables();
-
         if (isset($tables[$table])) {
             return $tables[$table]['default_order'] ?? 'id desc';
         }
-
         return 'id desc';
     }
 
@@ -211,11 +217,9 @@ class Table
     public static function defaultFields($table)
     {
         $tables = static::getTables();
-
         if (isset($tables[$table]) && !empty($tables[$table]['default_fields'])) {
             return $tables[$table]['default_fields'];
         }
-
         return '*';
     }
 
@@ -228,11 +232,9 @@ class Table
     public static function defaultScope($table)
     {
         $tables = static::getTables();
-
         if (isset($tables[$table])) {
             return $tables[$table]['default_scope'] ?? '';
         }
-
         return '';
     }
 }

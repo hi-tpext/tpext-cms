@@ -1,4 +1,13 @@
 <?php
+// +----------------------------------------------------------------------
+// | tpext.cms
+// +----------------------------------------------------------------------
+// | Copyright (c) tpext.cms All rights reserved.
+// +----------------------------------------------------------------------
+// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// +----------------------------------------------------------------------
+// | Author: lhy <ichynul@163.com>
+// +----------------------------------------------------------------------
 
 namespace tpext\cms\common;
 
@@ -83,11 +92,11 @@ class TemplaBuilder
 
                         $fromContentId = $content['id'];
                         $msgArr[] = $resB['msg'];
-                        if ($contentDone % $contentSize == 0) {
+                        if ($contentDone % $contentSize  == 0) {
                             break;
                         }
                     }
-                    $isContentOver = count($contentList) < $contentSize;
+                    $isContentOver = count($contentList)  < $contentSize;
                 } else {
                     $isContentOver = true;
                 }
@@ -127,7 +136,7 @@ class TemplaBuilder
                     $fromContentId = 0;
                 }
             }
-            if (count($channelList) < $channelSize) {
+            if (count($channelList) == 0) {
                 $isChannelOver = $isContentOver = true;
             }
         } else {
@@ -149,8 +158,9 @@ class TemplaBuilder
             }
             $msgArr[] = '[完成]已全部处理';
         }
+        trace([$isChannelOver, $isContentOver]);
 
-        return ['code' => 1, 'msg' =>  '成功', 'msg_arr' => $msgArr, 'is_over' => $isChannelOver && $isContentOver, 'from_channel_id' => $fromChannelId, 'from_channel_page' => $fromChannelPage, 'from_content_id' => $fromContentId];
+        return ['code' => 1, 'msg' =>  '成功', 'msg_arr' => $msgArr, 'is_over' => $isChannelOver && $isContentOver, 'from_channel_id' => $fromChannelId, 'from_channel_page' => $fromChannelPage, 'from_content_id' => $fromContentId, 'content_done' => $contentDone];
     }
 
     /**
@@ -204,6 +214,8 @@ class TemplaBuilder
                     'cache_prefix' => $tplHtml['path'],
                     'tpl_replace_string' => ['@static' => $template['prefix'] . 'static'],
                     'view_path' => App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR,
+                    'tpl_cache' => true,
+                    'cache_time' => 60,
                 ];
                 $view = new View(App::getRootPath() . $file, $vars,  $config);
                 $out = $view->getContent();
@@ -268,6 +280,8 @@ class TemplaBuilder
                     'cache_prefix' => $tplHtml['path'],
                     'tpl_replace_string' => ['@static' => $template['prefix'] . 'static'],
                     'view_path' => App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR,
+                    'tpl_cache' => true,
+                    'cache_time' => 60,
                 ];
                 $view = new View(App::getRootPath() . $file, $vars,  $config);
                 $out = $view->getContent();
@@ -318,6 +332,8 @@ class TemplaBuilder
                 'tpl_replace_string' => ['@static' => $template['prefix'] . 'static'],
                 'cache_prefix' => $tplHtml['path'],
                 'view_path' => App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR,
+                'tpl_cache' => true,
+                'cache_time' => 60,
             ];
             $view = new View(App::getRootPath() . $file, $vars,  $config);
             $out = $view->getContent();
@@ -326,7 +342,7 @@ class TemplaBuilder
             return ['code' => 1, 'msg' => '[首页]生成成功，模板文件：' . $file];
         } catch (\Throwable $e) {
             trace($e->__toString());
-            return ['code' => 0, 'msg' => '[首页]生成出错，' . $e->getMessage()];
+            return ['code' => 0, 'msg' => '[首页]生成出错，<b>' .  $e->getFile() . '#' . $e->getLine() . '|' . $e->getMessage() . '</b>'];
         }
     }
 
