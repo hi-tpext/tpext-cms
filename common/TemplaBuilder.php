@@ -221,6 +221,9 @@ class TemplaBuilder
                 $out = $view->getContent();
                 $out = $this->replaceStaticPath($template, $out);
             }
+            if ($currentPage == 1) {
+                file_put_contents($outPath . "c{$channel['id']}.html", $out);
+            }
             file_put_contents($outPath . "c{$channel['id']}p{$currentPage}.html", $out);
             return ['code' => 0, 'msg' => '[' . $channel['name'] . ']栏目生成成功，页码：' . $currentPage . '，模板文件：' . $file, 'is_over' => $currentPage * $channel['pagesize'] >= $contentTotal];
         } catch (\Throwable $e) {
@@ -242,7 +245,7 @@ class TemplaBuilder
             ->find(); //获取绑定的单页模板
 
         if (!$pageInfo) {
-            $pageInfo = CmsContentPage::where(['html_type' => 'content', 'template_id' => $template['id'], 'to_id' => $content['id']])
+            $pageInfo = CmsContentPage::where(['html_type' => 'content', 'template_id' => $template['id'], 'to_id' => $content['channel_id']])
                 ->find(); //获取绑定的模板
         }
 

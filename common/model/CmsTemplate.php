@@ -26,6 +26,9 @@ class CmsTemplate extends Model
             self::beforeInsert(function ($data) {
                 return self::onBeforeInsert($data);
             });
+            self::afterDelete(function ($data) {
+                return self::onAfterDelete($data);
+            });
         }
     }
 
@@ -34,6 +37,12 @@ class CmsTemplate extends Model
         if (empty($data['sort'])) {
             $data['sort'] = static::max('sort') + 5;
         }
+    }
+
+    public static function onAfterDelete($data)
+    {
+        CmsTemplateHtml::where(['template_id' => $data['id']])->delete();
+        CmsContentPage::where(['template_id' => $data['id']])->delete();
     }
 
     public function getPagesCountAttr($value, $data)

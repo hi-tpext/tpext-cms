@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_channel`  (
   `link` varchar(255) NOT NULL DEFAULT '' COMMENT '跳转链接',
   `deep` tinyint(2) unsigned NOT NULL DEFAULT 0 COMMENT '层级',
   `path` varchar(55) NOT NULL DEFAULT '' COMMENT '层级路径',
+  `channel_path` varchar(55) NOT NULL DEFAULT 'c[id]' COMMENT '栏目路径',
+  `content_path` varchar(55) NOT NULL DEFAULT 'a[id]' COMMENT '内容路径',
   `is_show` tinyint(1) unsigned DEFAULT 1 COMMENT '是否显示',
   `sort` mediumint(8) unsigned NOT NULL DEFAULT 0 COMMENT '排序',
   `pagesize` mediumint(8) unsigned NOT NULL DEFAULT 20 COMMENT '分页大小',

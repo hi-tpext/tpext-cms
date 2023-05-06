@@ -54,13 +54,26 @@ class CmsChannel extends Model
     {
         if (isset($data['parent_id'])) {
             if ($data['parent_id'] == 0) {
+                $data['full_name'] = $data['name'];
+                $data['path'] = ',0,';
                 $data['deep'] = 1;
-                $data['path'] = '0';
             } else {
+                $upNodes = static::getUpperNodes($data);
+                $names = [];
+                $ids = [];
+                foreach ($upNodes as $node) {
+                    if (!empty($data['id']) && $node['id'] == $data['id']) {
+                        continue;
+                    }
+                    $names[] = $node['name'];
+                    $ids[] = $node['id'];
+                }
+                $data['full_name'] =  implode('->', array_reverse($names));
+                $data['path'] = ',' . implode(',', array_reverse($ids)) . ',';
+                $data['deep'] =  count($ids);
                 $parent = static::find($data['parent_id']);
                 if ($parent) {
                     $data['deep'] = $parent['deep'] + 1;
-                    $data['path'] = $parent['path'] . $data['parent_id'] . ',';
                 }
             }
         }

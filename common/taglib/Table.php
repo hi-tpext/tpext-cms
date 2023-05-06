@@ -172,6 +172,11 @@ class Table
         return $tags;
     }
 
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
     public static function getTables()
     {
         if (!static::$init) {

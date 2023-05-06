@@ -56,6 +56,7 @@ class Cmscontent extends Controller
         $this->treeModel = $this->channelModel; //分类模型
         $this->treeTextField = 'name'; //分类模型中的分类名称字段
         $this->treeKey = 'channel_id'; //关联的键　localKey
+        $this->treeType ='jstree';
     }
 
     protected function filterWhere()
@@ -276,8 +277,8 @@ class Cmscontent extends Controller
 
         $form->fields('', '', 5)->size(0, 12)->showLabel(false);
 
-        $form->image('logo', '封面图')->mediumSize();
-        $form->file('attachment', '附件')->mediumSize();
+        $form->image('logo', '封面图')->smallSize();
+        $form->file('attachment', '附件')->smallSize();
         $form->text('author', '作者', 6)->maxlength(33)->default($admin ? $admin['name'] : '');
         $form->text('source', '来源', 6)->maxlength(55)->default($admin && $admin['group'] ? $admin['group']['name'] : '');
         $form->datetime('publish_time', '发布时间')->required()->default(date('Y-m-d H:i:s'));

@@ -40,6 +40,11 @@ class CmsTemplateHtml extends Model
         }
     }
 
+    public function template()
+    {
+        return $this->belongsTo(CmsTemplate::class, 'template_id', 'id');
+    }
+
     /**
      * 扫描模板页面
      *

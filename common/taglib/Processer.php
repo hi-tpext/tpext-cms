@@ -36,15 +36,22 @@ class Processer
             $empty = new EmptyData;
             return $empty;
         }
-
+        $dbNameSpace = class_exists(\think\facade\Db::class) ? '\think\facade\Db' : '\think\Db';
         if ($table == 'cms_channel') {
-            $item['url'] = self::$path . 'channel/c' . $item['id'] . 'p1.html';
-        } else if ($table == 'cms_content') {
-            $item['url'] = self::$path . 'content/a' . $item['id'] . '.html';
+            $item['url'] = $item['link'] ?: self::$path . 'channel/' . str_ireplace('[id]', $item['id'], $item['channel_path']) . '.html';
+        } else if ($table == 'cms_content') { {
+                $channel = $dbNameSpace::name('cms_channel')->where('id', $item['channel_id'])->find();
+                if ($channel) {
+                    $item['url'] = $item['link'] ?: self::$path . 'content/' . str_ireplace('[id]', $item['id'], ltrim($channel['content_path'], '/')) . '.html';
+                    $item['channel_url'] = $channel['link'] ?: self::$path . 'channel/' . str_ireplace('[id]', $channel['id'], ltrim($channel['channel_path'], '/')) . '.html';
+                } else {
+                    $$item['url'] = self::$path . 'content/a' . $item['id'] . '.html';
+                }
+            }
         } else if ($table == 'cms_banner') {
             $item['url'] = $item['link'];
-        } else if ($table == 'cms_tag') {
-            $item['url'] = self::$path . 'tag/t' . $item['id'] . '.html';
+        } else {
+            $item['url'] = '#';
         }
 
         return $item;
@@ -63,21 +70,25 @@ class Processer
             $empty = new EmptyData;
             return $empty;
         }
-
         $dbNameSpace = class_exists(\think\facade\Db::class) ? '\think\facade\Db' : '\think\Db';
-
         $item['__not_found__'] = false;
-
         if ($table == 'cms_channel') {
-            $item['url'] = $item['link'] ?: self::$path . 'channel/c' . $item['id'] . 'p1.html';
+            $item['url'] = $item['link'] ?: self::$path . 'channel/' . str_ireplace('[id]', $item['id'], $item['channel_path']) . '.html';
         } else if ($table == 'cms_content') {
-            $item['url'] = $item['link'] ?: self::$path . 'content/a' . $item['id'] . '.html';
-            $contentDetail = $dbNameSpace::name('cms_content_detail')->where('main_id', $item['id'])->find();
-            $item['content'] = $contentDetail ? $contentDetail['content'] : '--';
+            $detail = $dbNameSpace::name('cms_content_detail')->where('main_id', $item['id'])->find();
+            $item['content'] = $detail ? $detail['content'] : '--';
+            $channel = $dbNameSpace::name('cms_channel')->where('id', $item['channel_id'])->find();
+            if ($channel) {
+                $item['url'] = $item['link'] ?: self::$path . 'content/' . str_ireplace('[id]', $item['id'], ltrim($channel['content_path'], '/')) . '.html';
+                $item['channel_url'] = $channel['link'] ?: self::$path . 'channel/' . str_ireplace('[id]', $channel['id'], ltrim($channel['channel_path'], '/')) . '.html';
+            } else {
+                $empty = new EmptyData;
+                return $empty;
+            }
         } else if ($table == 'cms_banner') {
             $item['url'] = $item['link'];
-        } else if ($table == 'cms_tag') {
-            $item['url'] = self::$path . 'tag/t' . $item['id'] . '.html';
+        } else {
+            $item['url'] = '#';
         }
 
         return $item;
