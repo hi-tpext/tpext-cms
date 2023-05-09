@@ -129,7 +129,8 @@ class Cms extends Taglib
                 \$__take__ = 10;
             }
         }
-        \$__list__ = {$dbNameSpace}::name('{$table}')
+        \$__list__ = [];
+        \$__data__ = {$dbNameSpace}::name('{$table}')
             ->where(\$__where__)
             ->whereRaw(\$__where_raw__, [{$binds}])
             ->where('{$scope}')
@@ -137,10 +138,9 @@ class Cms extends Taglib
             ->field('{$fields}')
             ->limit((\$__page__ - 1) * \$__take__, \$__take__)
             ->select();
-        foreach(\$__list__ as &\$__li__) {
-            \$__li__ = \\tpext\\cms\\common\\taglib\\Processer::item('{$table}', \$__li__);
+        foreach(\$__data__ as \$__d__) {
+            \$__list__[] = \\tpext\\cms\\common\\taglib\\Processer::item('{$table}', \$__d__);
         }
-        unset(\$__li__);
         \$__links_html__ = null;
         if(\$has_paginator) {
             \$total = {$dbNameSpace}::name('{$table}')
@@ -149,7 +149,7 @@ class Cms extends Taglib
                 ->where('{$scope}')
                 ->count();
                 
-            \$__paginator__ = new \\think\\Paginator\\driver\\Bootstrap(\$__list__, \$pagesize, \$__page__, \$total, false, ['path' => \$path ?? 'no_path']);
+            \$__paginator__ = new \\think\\paginator\\driver\\Bootstrap(\$__data__, \$pagesize, \$__page__, \$total, false, ['path' => \$path ?? 'no_path']);
             \$__links_html__ = \$__paginator__->render();
         }
         ?>
@@ -163,7 +163,7 @@ class Cms extends Taglib
         {/if}
         {assign name="{$assign}" value="\$__list__" /}
         <?php
-        unset(\$__where_raw__, \$__where__, \$__cid_key__, \$__id_key__, \$__cid_val__, \$__id_val__, \$__paginator__, \$total);
+        unset(\$__data__, \$__where_raw__, \$__where__, \$__cid_key__, \$__id_key__, \$__cid_val__, \$__id_val__, \$__paginator__, \$total);
         ?>
 EOT;
         $this->usedTags[] = $tag;

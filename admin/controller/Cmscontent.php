@@ -73,11 +73,11 @@ class Cmscontent extends Controller
         }
 
         if (!empty($searchData['channel_id'])) {
-            $where[] = ['channel_id', 'eq', $searchData['channel_id']];
+            $where[] = ['channel_id', '=', $searchData['channel_id']];
         }
 
         if (isset($searchData['is_show']) && $searchData['is_show'] != '') {
-            $where[] = ['is_show', 'eq', $searchData['is_show']];
+            $where[] = ['is_show', '=', $searchData['is_show']];
         }
 
         if (!empty($searchData['tags'])) {
@@ -86,13 +86,13 @@ class Cmscontent extends Controller
 
         if (isset($searchData['attr'])) {
             if (in_array('is_recommend', $searchData['attr'])) {
-                $where[] = ['is_recommend', 'eq', 1];
+                $where[] = ['is_recommend', '=', 1];
             }
             if (in_array('is_hot', $searchData['attr'])) {
-                $where[] = ['is_hot', 'eq', 1];
+                $where[] = ['is_hot', '=', 1];
             }
             if (in_array('is_top', $searchData['attr'])) {
-                $where[] = ['is_top', 'eq', 1];
+                $where[] = ['is_top', '=', 1];
             }
         }
 
@@ -131,7 +131,7 @@ class Cmscontent extends Controller
         $table->show('channel_id', '栏目')->to('{channel.full_name}');
         $table->show('author', '作者')->default('暂无');
         $table->show('source', '来源')->default('暂无');
-        $table->matches('tags', '标签')->optionsData(CmsTag::all());
+        $table->matches('tags', '标签')->optionsData(CmsTag::select());
         $table->switchBtn('is_show', '显示')->default(1)->autoPost();
         $table->checkbox('attr', '属性')->autoPost(url('editAttr'))->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶'])->inline(false);
         $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:80px');

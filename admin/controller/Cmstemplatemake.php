@@ -74,7 +74,7 @@ class Cmstemplatemake extends Controller
                         'content_done' => $res['content_done'] ?: 0,
                     ];
                     $res['url'] = url('make', $params);
-                    $builder->content()->display('{$msg|raw}<div class="hidden" id="goon">若页面长时间未刷新，可点此<a href="{$url}">继续</a></div><script>setTimeout(function(){location.href="{$url}"},1000);setTimeout(function(){$("#goon").removeClass("hidden")},20000);</script>', $res);
+                    $builder->content()->display('{$msg|raw}<div class="hidden" id="goon">若页面长时间未刷新，可点此<a href="{$url|raw}">继续</a></div><script>setTimeout(function(){location.href="{$url|raw}"},1000);setTimeout(function(){$("#goon").removeClass("hidden")},20000);</script>', $res);
                 }
             } else {
                 $builder->content()->display('{$msg}', $res);

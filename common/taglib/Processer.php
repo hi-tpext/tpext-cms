@@ -45,7 +45,8 @@ class Processer
                     $item['url'] = $item['link'] ?: self::$path . 'content/' . str_ireplace('[id]', $item['id'], ltrim($channel['content_path'], '/')) . '.html';
                     $item['channel_url'] = $channel['link'] ?: self::$path . 'channel/' . str_ireplace('[id]', $channel['id'], ltrim($channel['channel_path'], '/')) . '.html';
                 } else {
-                    $$item['url'] = self::$path . 'content/a' . $item['id'] . '.html';
+                    $item['url'] = self::$path . 'content/a' . $item['id'] . '.html';
+                    $item['channel_url'] = self::$path . 'channel/c' . $item['channel_id'] . '.html';
                 }
             }
         } else if ($table == 'cms_banner') {

@@ -208,7 +208,7 @@ class TemplaBuilder
                     '__SITE_HOME__' => $template['prefix'],
                     'page' => $currentPage,
                     'pagesize' => $channel['pagesize'],
-                    'path' => "/channel/c{$channel['id']}p[PAGE].html"
+                    'path' => '/channel/' . preg_replace('/\[id\]/i', $channel['id'], $channel['channel_path']) . 'p[PAGE].html',
                 ];
                 $config = [
                     'cache_prefix' => $tplHtml['path'],
@@ -222,9 +222,9 @@ class TemplaBuilder
                 $out = $this->replaceStaticPath($template, $out);
             }
             if ($currentPage == 1) {
-                file_put_contents($outPath . "c{$channel['id']}.html", $out);
+                file_put_contents($outPath . preg_replace('/\[id\]/i', $channel['id'], $channel['channel_path']) . '.html', $out);
             }
-            file_put_contents($outPath . "c{$channel['id']}p{$currentPage}.html", $out);
+            file_put_contents($outPath . preg_replace('/\[id\]/i', $channel['id'], $channel['channel_path']) . "p{$currentPage}.html", $out);
             return ['code' => 0, 'msg' => '[' . $channel['name'] . ']栏目生成成功，页码：' . $currentPage . '，模板文件：' . $file, 'is_over' => $currentPage * $channel['pagesize'] >= $contentTotal];
         } catch (\Throwable $e) {
             trace($e->__toString());

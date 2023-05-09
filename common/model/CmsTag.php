@@ -20,10 +20,18 @@ class CmsTag extends Model
 
     protected static function init()
     {
-        self::beforeInsert(function ($data) {
-            if (empty($data['sort'])) {
-                $data['sort'] = static::max('sort') + 5;
-            }
-        });
+        /**是否为tp5**/
+        if (method_exists(static::class, 'event')) {
+            self::beforeInsert(function ($data) {
+                return self::onBeforeInsert($data);
+            });
+        }
+    }
+
+    public static function onBeforeInsert($data)
+    {
+        if (empty($data['sort'])) {
+            $data['sort'] = static::max('sort') + 5;
+        }
     }
 }

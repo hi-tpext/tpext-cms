@@ -2,17 +2,21 @@
 
 namespace tpext\cms\common;
 
-use think\Response;
 use think\Template;
+use tpext\think\App;
 use tpext\common\ExtLoader;
 
-class View extends Response
+class View
 {
-    protected $vars = [];
-
     protected static $shareVars = [];
-
+    protected $vars = [];
+    protected $content = null;
     protected $isContent = false;
+    /**
+     * 原始数据
+     * @var mixed
+     */
+    protected $data = [];
 
     protected $app;
 
@@ -38,6 +42,7 @@ class View extends Response
             'tpl_end' => '}',
             'taglib_begin' => '{',
             'taglib_end' => '}',
+            'cache_path' => App::getRuntimePath() . 'temp' . DIRECTORY_SEPARATOR,
         ], $config);
 
 
@@ -49,9 +54,18 @@ class View extends Response
         }
     }
 
-    protected function output($data = '')
+    /**
+     * 获取输出数据
+     * @access public
+     * @return string
+     */
+    public function getContent()
     {
-        return $this->fetch($data);
+        if (null == $this->content) {
+            $this->content = $this->fetch($this->data) ?: '';
+        }
+
+        return $this->content;
     }
 
     public function isContent($content = true)
@@ -119,5 +133,10 @@ class View extends Response
         $content = ob_get_clean();
 
         return $content;
+    }
+
+    public function __toString()
+    {
+        return $this->getContent();
     }
 }

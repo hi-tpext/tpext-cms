@@ -36,13 +36,12 @@ class CmsPosition extends Model
     public static function onBeforeInsert($data)
     {
         if (empty($data['sort'])) {
-            $data['sort'] = static::where(['parent_id' => $data['parent_id']])->max('sort') + 5;
+            $data['sort'] = static::max('sort') + 5;
         }
     }
 
     public static function onAfterDelete($data)
     {
-        static::where(['parent_id' => $data['id']])->update(['parent_id' => $data['parent_id']]);
         Cmsbanner::where(['position_id' => $data['id']])->update(['position_id' => $data['parent_id']]);
     }
 

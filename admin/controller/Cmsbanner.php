@@ -4,7 +4,6 @@ namespace tpext\cms\admin\controller;
 
 use think\Controller;
 use tpext\builder\traits\actions;
-use tpext\cms\common\model\CmsPosition;
 use tpext\cms\common\model\CmsBanner as BannerModel;
 
 /**
@@ -28,17 +27,10 @@ class Cmsbanner extends Controller
      * @var BannerModel
      */
     protected $dataModel;
-    /**
-     * Undocumented variable
-     *
-     * @var CmsPosition
-     */
-    protected $positionModel;
 
     protected function initialize()
     {
         $this->dataModel = new BannerModel;
-        $this->positionModel = new CmsPosition;
         $this->pageTitle = '广告管理';
         $this->enableField = 'is_show';
         $this->pagesize = 6;
@@ -60,7 +52,7 @@ class Cmsbanner extends Controller
         }
 
         if (!empty($searchData['position_id'])) {
-            $where[] = ['position_id', 'eq', $searchData['position_id']];
+            $where[] = ['position_id', '=', $searchData['position_id']];
         }
 
         return $where;
@@ -76,7 +68,7 @@ class Cmsbanner extends Controller
         $search = $this->search;
 
         $search->text('title', '标题', 3)->maxlength(20);
-        $search->select('position_id', '位置', 3)->optionsData($this->positionModel->all());
+        $search->select('position_id', '位置', 3)->dataUrl(url('/admin/cmsposition/selectpage'));
     }
 
     /**
@@ -123,7 +115,7 @@ class Cmsbanner extends Controller
         $form = $this->form;
 
         $form->text('title', '标题')->required()->maxlength(55);
-        $form->select('position_id', '位置')->required()->optionsData($this->positionModel->all());
+        $form->select('position_id', '位置')->required()->dataUrl(url('/admin/cmsposition/selectpage'));
         $form->textarea('description', '摘要')->maxlength(255);
         $form->text('link', '链接')->maxlength(255)->default('#');
         $form->image('image', '图片')->mediumSize();
