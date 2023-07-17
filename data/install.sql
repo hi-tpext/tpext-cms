@@ -142,6 +142,6 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_template_html` (
   KEY `template_id` (`template_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='模板页面';
 
-INSERT INTO `tp_cms_template` (`id`, `name`, `platform`, `view_path`, `prefix`, `description`, `sort`, `is_open`, `create_time`, `update_time`) VALUES
+INSERT INTO `__PREFIX__cms_template` (`id`, `name`, `platform`, `view_path`, `prefix`, `description`, `sort`, `is_open`, `create_time`, `update_time`) VALUES
 (1, 'default', 'pc', 'default', '/', 'pc端默认模板', 5, 1, '2022-09-16 14:53:08', '2022-09-16 15:03:24'),
 (2, 'mobile', 'mobile', 'mobile', '/m/', '手机端默认模板', 10, 1, '2022-09-16 14:53:29', '2022-09-16 15:03:45');
