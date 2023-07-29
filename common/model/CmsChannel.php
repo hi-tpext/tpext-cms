@@ -58,7 +58,7 @@ class CmsChannel extends Model
                 $data['path'] = ',0,';
                 $data['deep'] = 1;
             } else {
-                $upNodes = static::getUpperNodes($data);
+                $upNodes = (new static)->getUpperNodes($data);
                 $names = [];
                 $ids = [];
                 foreach ($upNodes as $node) {

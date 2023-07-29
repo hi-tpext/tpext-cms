@@ -238,7 +238,7 @@ class Cmschannel extends Controller
         }
 
         if ($data['parent_id']) {
-            $parent = $this->dataModel->get($data['parent_id']);
+            $parent = $this->dataModel->find($data['parent_id']);
             if ($parent && $parent['type'] == 3) {
                 $this->error($parent['name'] . '不允许有下级栏目，请重新选择');
             }
@@ -246,19 +246,10 @@ class Cmschannel extends Controller
         $data['channel_path'] = str_replace('\\', '/', $data['channel_path']);
         $data['content_path'] = str_replace('\\', '/', $data['content_path']);
 
-        if ($id) {
-            if ($data['parent_id'] == $id) {
-                $this->error('上级不能是自己');
-            }
-            $res = $this->dataModel->update($data, ['id' => $id]);
-        } else {
-            $res = $this->dataModel->create($data);
+        if ($id && $data['parent_id'] == $id) {
+            $this->error('上级不能是自己');
         }
 
-        if (!$res) {
-            $this->error('保存失败');
-        }
-
-        return $this->builder()->layer()->closeRefresh(1, '保存成功');
+        return $this->doSave();
     }
 }

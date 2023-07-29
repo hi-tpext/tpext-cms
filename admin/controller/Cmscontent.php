@@ -56,7 +56,7 @@ class Cmscontent extends Controller
         $this->treeModel = $this->channelModel; //分类模型
         $this->treeTextField = 'name'; //分类模型中的分类名称字段
         $this->treeKey = 'channel_id'; //关联的键　localKey
-        $this->treeType ='jstree';
+        $this->treeType = 'jstree';
     }
 
     protected function filterWhere()
@@ -350,23 +350,16 @@ class Cmscontent extends Controller
         }
 
         if ($data['channel_id']) {
-            $parent = $this->channelModel->get($data['channel_id']);
+            $parent = $this->channelModel->find($data['channel_id']);
             if ($parent && $parent['type'] == 2) {
                 $this->error($parent['name'] . '是目录，不允许存放文章，请重新选择');
             }
         }
 
-        if ($id) {
-            $res = $this->dataModel->update($data, ['id' => $id]);
-        } else {
+        if (!$id) {
             $data['create_user'] = session('admin_id');
-            $res = $this->dataModel->create($data);
         }
 
-        if (!$res) {
-            $this->error('保存失败');
-        }
-
-        return $this->builder()->layer()->closeRefresh(1, '保存成功');
+        return $this->doSave();
     }
 }
