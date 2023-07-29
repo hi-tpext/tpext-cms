@@ -156,16 +156,6 @@ class Cmsbanner extends Controller
             $this->error($result);
         }
 
-        if ($id) {
-            $res = $this->dataModel->update($data, ['id' => $id]);
-        } else {
-            $res = $this->dataModel->create($data);
-        }
-
-        if (!$res) {
-            $this->error('保存失败');
-        }
-
-        return $this->builder()->layer()->closeRefresh(1, '保存成功');
+        return $this->doSave();
     }
 }
