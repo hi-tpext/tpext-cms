@@ -360,6 +360,6 @@ class Cmscontent extends Controller
             $data['create_user'] = session('admin_id');
         }
 
-        return $this->doSave();
+        return $this->doSave($data, $id);
     }
 }

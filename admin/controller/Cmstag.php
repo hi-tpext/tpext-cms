@@ -131,6 +131,6 @@ class Cmstag extends Controller
             $this->error($result);
         }
 
-        return $this->doSave();
+        return $this->doSave($data, $id);
     }
 }

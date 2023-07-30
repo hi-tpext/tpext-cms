@@ -250,6 +250,6 @@ class Cmschannel extends Controller
             $this->error('上级不能是自己');
         }
 
-        return $this->doSave();
+        return $this->doSave($data, $id);
     }
 }
