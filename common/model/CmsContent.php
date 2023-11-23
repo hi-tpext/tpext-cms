@@ -58,11 +58,7 @@ class CmsContent extends Model
     {
         if (empty($data['description']) && empty($data['reference_id'])) {
             $content = $data->getData('content');
-            $content = preg_replace('/<[bh]r\s*\/?>/is', '', $content);
-            $content = preg_replace('/<img[^>]+?>/is', '', $content);
-            for ($i = 0; $i <= 3; $i += 1) {
-                $content = preg_replace('/<(\w+)[^>]*?>(.*?)<\/\1>/is', '$2', $content);
-            }
+            $content = strip_tags($content);
             $content = preg_replace('/[\r|\n|\t|\s]/is', '', $content);
             $content = str_replace(['\u00A0', '\u0020', '\u2800', '\u3000', '　', '&nbsp;', '&gt;', '&lt;', '&eq;', '&egt;', '&elt;'], '', $content);
             $data['description'] = static::getDesc($content);

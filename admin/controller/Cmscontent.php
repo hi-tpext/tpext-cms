@@ -247,14 +247,14 @@ class Cmscontent extends Controller
 
         $form = $this->form;
 
-        $admin = !$isEdit ? (session('admin_User') ?: []) : null;
+        $admin = !$isEdit ? (session('admin_user') ?: []) : null;
 
         $form->fields('', '', 7)->size(0, 12)->showLabel(false);
         $form->defaultDisplayerSize(12, 12);
 
         $form->hidden('id');
         $form->text('title', '标题')->required()->maxlength(55);
-        $form->selectTree('channel_id', '栏目')->multiple(false)->optionsData($this->channelModel->select(), 'name', 'id', 'parent_id', '')->required();
+        $form->selectTree('channel_id', '栏目')->multiple(false)->optionsData($this->channelModel->order('sort')->select(), 'name', 'id', 'parent_id', '')->required();
         $form->multipleSelect('tags', '标签')->dataUrl(url('/admin/cmstag/selectPage'))->help('可到【标签管理】菜单添加标签');
         $form->tags('keyword', '关键字');
         $form->text('link', '跳转链接')->help('设置后覆盖默认的页面地址');
