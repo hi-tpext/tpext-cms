@@ -122,7 +122,7 @@ class Cmstemplatestatic extends Controller
             $view_path = App::getRootPath() . $path;
 
             $form->show('path', ' ')->showLabel(false)->size(12, 12)->value('路径：' . $path);
-            $form->aceEditor('content', ' ')->setMode($ext == 'css' ? 'css' : 'javascript')->showLabel(false)->size(12, 12)->value(file_get_contents($view_path));
+            $form->aceEditor('content', ' ')->setMode($ext == 'css' ? 'css' : 'javascript')->showLabel(false)->size(12, 12)->value(htmlentities(file_get_contents($view_path)));
 
             $form->butonsSizeClass('btn-md');
             $form->btnSubmit('提&nbsp;&nbsp;交', '12');

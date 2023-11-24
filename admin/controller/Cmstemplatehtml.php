@@ -166,7 +166,7 @@ class Cmstemplatehtml extends Controller
         if ($isEdit) {
             $view_path = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $data['path']);
             $form->show('path', ' ')->showLabel(false)->size(12, 12)->to('路径：{val}');
-            $form->aceEditor('content', ' ')->setMode('html')->showLabel(false)->size(12, 12)->value(file_get_contents($view_path));
+            $form->aceEditor('content', ' ')->setMode('html')->showLabel(false)->size(12, 12)->value(htmlentities(file_get_contents($view_path)));
 
             $form->butonsSizeClass('btn-md');
             $form->btnSubmit('提&nbsp;&nbsp;交', '12');
