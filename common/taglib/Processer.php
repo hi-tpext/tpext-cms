@@ -12,6 +12,7 @@
 namespace tpext\cms\common\taglib;
 
 use tpext\cms\common\model\EmptyData;
+use tpext\think\App;
 
 class Processer
 {
@@ -21,6 +22,52 @@ class Processer
     public static function setPath($val = '')
     {
         static::$path = $val;
+    }
+
+    public static function getDbNamesapce()
+    {
+        return class_exists(\think\facade\Db::class) ? '\think\facade\Db' : '\think\Db';
+    }
+
+    /**
+     * 替换栏目路径
+     * 
+     * @param array|mixed $channel
+     * @return string
+     */
+    public static function resolveChannelPath($channel)
+    {
+        return 'channel/' . str_replace('[id]', $channel['id'], ltrim($channel['channel_path'], '/'));
+    }
+
+    /**
+     * 替换内容路径
+     * 
+     * @param array|mixed $content
+     * @param array|mixed $channel
+     * @return string
+     */
+    public static function resolveContentPath($content, $channel)
+    {
+        return  'content/' . str_replace('[id]', $content['id'], ltrim($channel['content_path'], '/'));
+    }
+
+    public static function getChannelOutPath()
+    {
+        $outPath = App::getPublicPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, self::$path);
+        if (!is_dir($outPath . 'channel/')) {
+            mkdir($outPath . 'channel/', 0755, true);
+        }
+        return $outPath;
+    }
+
+    public static function getContentOutPath()
+    {
+        $outPath = App::getPublicPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, self::$path);
+        if (!is_dir($outPath . 'content/')) {
+            mkdir($outPath . 'content/', 0755, true);
+        }
+        return $outPath;
     }
 
     /**
@@ -36,17 +83,18 @@ class Processer
             $empty = new EmptyData;
             return $empty;
         }
-        $dbNameSpace = class_exists(\think\facade\Db::class) ? '\think\facade\Db' : '\think\Db';
+        $dbNameSpace = self::getDbNamesapce();
         if ($table == 'cms_channel') {
-            $item['url'] = $item['link'] ?: self::$path . 'channel/' . str_ireplace('[id]', $item['id'], $item['channel_path']) . '.html';
+            $item['url'] = $item['link'] ?: self::$path .  self::resolveChannelPath($item) . '.html';
         } else if ($table == 'cms_content') { {
-                $channel = $dbNameSpace::name('cms_channel')->where('id', $item['channel_id'])->find();
+                $channelScope = Table::defaultScope($table);
+                $channel = $dbNameSpace::name('cms_channel')->where('id', $item['channel_id'])->where($channelScope)->cache('cms_channel_' . $item['channel_id'])->find();
                 if ($channel) {
-                    $item['url'] = $item['link'] ?: self::$path . 'content/' . str_ireplace('[id]', $item['id'], ltrim($channel['content_path'], '/')) . '.html';
-                    $item['channel_url'] = $channel['link'] ?: self::$path . 'channel/' . str_ireplace('[id]', $channel['id'], ltrim($channel['channel_path'], '/')) . '.html';
+                    $item['url'] = $item['link'] ?: self::$path . self::resolveContentPath($item, $channel) . '.html';
+                    $item['channel_url'] = $channel['link'] ?: self::$path . self::resolveChannelPath($channel) . '.html';
                 } else {
-                    $item['url'] = self::$path . 'content/a' . $item['id'] . '.html';
-                    $item['channel_url'] = self::$path . 'channel/c' . $item['channel_id'] . '.html';
+                    $item['url'] = '#';
+                    $item['channel_url'] = '#';
                 }
             }
         } else if ($table == 'cms_banner') {
@@ -71,21 +119,27 @@ class Processer
             $empty = new EmptyData;
             return $empty;
         }
-        $dbNameSpace = class_exists(\think\facade\Db::class) ? '\think\facade\Db' : '\think\Db';
+        $dbNameSpace = self::getDbNamesapce();
         $item['__not_found__'] = false;
         if ($table == 'cms_channel') {
-            $item['url'] = $item['link'] ?: self::$path . 'channel/' . str_ireplace('[id]', $item['id'], $item['channel_path']) . '.html';
+            $item['url'] = $item['link'] ?: self::$path . self::resolveChannelPath($item) . '.html';
         } else if ($table == 'cms_content') {
-            $detail = $dbNameSpace::name('cms_content_detail')->where('main_id', $item['id'])->find();
-            $item['content'] = $detail ? $detail['content'] : '--';
-            $channel = $dbNameSpace::name('cms_channel')->where('id', $item['channel_id'])->find();
+            if (!empty($item['reference_id'])) {
+                $detail = $dbNameSpace::name('cms_content_detail')->where('main_id', $item['reference_id'])->find();
+            } else {
+                $detail = $dbNameSpace::name('cms_content_detail')->where('main_id', $item['id'])->find();
+            }
+            $item['content'] = $detail ? $detail['content'] : '';
+            $channelScope = Table::defaultScope($table);
+            $channel = $dbNameSpace::name('cms_channel')->where('id', $item['channel_id'])->where($channelScope)->cache('cms_channel_' . $item['channel_id'])->find();
             if ($channel) {
-                $item['url'] = $item['link'] ?: self::$path . 'content/' . str_ireplace('[id]', $item['id'], ltrim($channel['content_path'], '/')) . '.html';
-                $item['channel_url'] = $channel['link'] ?: self::$path . 'channel/' . str_ireplace('[id]', $channel['id'], ltrim($channel['channel_path'], '/')) . '.html';
+                $item['url'] = $item['link'] ?: self::$path  . self::resolveContentPath($item, $channel) . '.html';
+                $item['channel_url'] = $channel['link'] ?: self::$path .  self::resolveChannelPath($channel) . '.html';
             } else {
                 $empty = new EmptyData;
                 return $empty;
             }
+            $item['channel'] = $channel;
         } else if ($table == 'cms_banner') {
             $item['url'] = $item['link'];
         } else {
@@ -139,7 +193,8 @@ class Processer
      */
     public static function getData($table, $idKey, $id)
     {
-        $dbNameSpace = class_exists(\think\facade\Db::class) ? '\think\facade\Db' : '\think\Db';
-        return $dbNameSpace::name($table)->where($idKey, $id)->find();
+        $dbNameSpace = self::getDbNamesapce();
+
+        return $dbNameSpace::name($table)->where($idKey, $id)->cache($table . '_' . $id)->find();
     }
 }

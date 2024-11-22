@@ -1,10 +1,8 @@
-{content@get id="$id"/}
-
 <!--文章详情(示例)-->
 <div>
-    当前位置：<a href="/">首页</a>
+    当前位置：<a href="{$__SITE_HOME__}">首页</a>
     {channel@parents id="$content.channel_id"}
-    &gt;<a>{$channel.name}</a>
+    &gt;<a href="{$channel.url}">{$channel.name}</a>
     {/channel@parents}
 </div>
 <div>
@@ -13,11 +11,11 @@
 </div>
 <div>
     <div>
-        {content@prev id="$id" sort="$content.sort" where="channel_id=$content.channel_id" assign="prev"/}
+        {content@prev/}
         <p>上一篇：<a href="{$prev.url}">{$prev.title}</a></p>
     </div>
     <div>
-        {content@next id="$id" sort="$content.sort" where="channel_id=$content.channel_id" assign="next" /} 
-    <p>下一篇：<a href="{$next.url}">{$next.title}</a></p>
+        {content@next/}
+        <p>下一篇：<a href="{$next.url}">{$next.title}</a></p>
     </div>
 </div>

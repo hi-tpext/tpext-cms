@@ -46,7 +46,7 @@ class Table
             'id_key' => 'id',
             'cid_key' => 'channel_id',
             'category_table' => 'cms_channel',
-            'default_order' => 'sort asc,id asc',
+            'default_order' => 'sort desc,publish_time desc,id desc',
             'default_fields' => '*',
             'default_scope' => 'is_show=1 and delete_time is null',
             'pid_key' => '',
@@ -152,8 +152,8 @@ class Table
             }
 
             $tags[$info['tag_name'] . '@get'] = ['attr' => $getAttr, 'close' => 0];
-            $tags[$info['tag_name'] . '@prev'] = ['attr' => $getAttr, 'close' => 0];
-            $tags[$info['tag_name'] . '@next'] = ['attr' => $getAttr, 'close' => 0];
+            $tags[$info['tag_name'] . '@prev'] = ['attr' => $getAttr, 'close' => 0, 'expression' => true];
+            $tags[$info['tag_name'] . '@next'] = ['attr' => $getAttr, 'close' => 0, 'expression' => true];
 
             if (!empty($info['cid_key'])) {
                 $listAttr .= ',' . $info['cid_key'];

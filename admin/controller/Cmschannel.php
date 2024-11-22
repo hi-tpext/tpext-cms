@@ -60,6 +60,7 @@ class Cmschannel extends Controller
         $table->match('type', '类型')->default(1)->options([1 => '不限', 2 => '目录', 3 => '分类'])->mapClassGroup([[1, 'success'], [2, 'info'], [3, 'warning']])->getWrapper()->addStyle('width:80px');
         $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:80px');
         $table->text('pagesize', '分页大小')->autoPost()->getWrapper()->addStyle('width:80px');
+        $table->show('order_by', '内容排序方式');
         $table->show('content_count', '内容统计')->getWrapper()->addStyle('width:80px');
         $table->fields('page_path', '生成路径')->with(
             $table->show('channel_path', '栏目生成路径')->to('channel/{val}.html'),
@@ -74,7 +75,6 @@ class Cmschannel extends Controller
 
         $table->getToolbar()
             ->btnAdd()
-            ->btnDelete()
             ->btnRefresh()
             ->btnLink(url('refresh'), '刷新层级', 'btn-success', 'mdi-autorenew');
 
@@ -162,16 +162,20 @@ class Cmschannel extends Controller
         }
         $form->tab('生成设置');
         $form->number('pagesize', '分页大小')->default(20)->required();
-        $form->text('channel_path', '栏目生成路径')->required()->size(2, 6)->beforSymbol('/channel/')->afterSymbol('.html')->default('c[id]')->help('[id]为变量，栏目编号');
-        $form->text('content_path', '内容生成路径')->required()->size(2, 6)->beforSymbol('/content/')->afterSymbol('.html')->default('a[id]')->help('[id]为变量，内容编号');
+        $form->text('channel_path', '栏目生成路径')->required()->size(2, 6)->beforSymbol('channel/')->afterSymbol('-p.html')->default('c[id]')->help('[id]为栏目编号变量');
+        $form->text('content_path', '内容生成路径')->required()->size(2, 6)->beforSymbol('content/')->afterSymbol('.html')->default('a[id]')->help('[id]为内容编号变量');
         $form->text('link', '跳转链接')->help('设置后覆盖栏目生成地址，用于外链或站内跳转');
+        $form->text('order_by', '内容排序方式')->help('默认为：sort desc,publish_time desc,id desc');
 
         if ($isEdit) {
+            $form->hidden('id');
             $form->tab('模板信息');
 
             $templates = CmsTemplate::select();
 
             foreach ($templates as $tpl) {
+                $form->divider($tpl['name']);
+
                 $channelPage = CmsContentPage::where(['html_type' => 'channel', 'template_id' => $tpl['id'], 'to_id' => $data['id']])->with(['template'])->find();
                 $tplHtml = null;
                 if ($channelPage) {
@@ -207,9 +211,10 @@ class Cmschannel extends Controller
         }
     }
 
-    private function save($id = 0)
+    protected function save($id = 0)
     {
         $data = request()->only([
+            'id',
             'name',
             'parent_id',
             'logo',
@@ -220,6 +225,7 @@ class Cmschannel extends Controller
             'sort',
             'channel_path',
             'content_path',
+            'order_by',
         ], 'post');
 
         $result = $this->validate($data, [
@@ -248,6 +254,23 @@ class Cmschannel extends Controller
 
         if ($id && $data['parent_id'] == $id) {
             $this->error('上级不能是自己');
+        }
+
+        if (
+            !empty($data['content_path']) && stripos($data['channel_path'], '[id]') === false
+            && $exist = $this->dataModel->where(['channel_path' => $data['channel_path']])->find()
+        ) {
+            if ($id) {
+                if ($exist['id'] != $id) {
+                    $this->error('栏目生成路径，已被其他栏目占用-' . $exist['name']);
+                }
+            } else {
+                $this->error('栏目生成路径，已被其他栏目占用-' . $exist['name']);
+            }
+        }
+
+        if (!empty($data['content_path']) && stristr($data['content_path'], '[id]') === false) {
+            $this->error('内容生成路径必须包含[id]变量');
         }
 
         return $this->doSave($data, $id);

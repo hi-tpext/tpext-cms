@@ -289,6 +289,7 @@ class Cmscontent extends Controller
         $form->switchBtn('is_show', '显示')->default(1);
 
         if ($isEdit) {
+            $form->hidden('id');
             $form->show('create_time', '添加时间', 6);
             $form->show('update_time', '修改时间', 6);
         }
@@ -300,7 +301,7 @@ class Cmscontent extends Controller
      * @param integer $id
      * @return void
      */
-    private function save($id = 0)
+    protected function save($id = 0)
     {
         $data = request()->only([
             'id',

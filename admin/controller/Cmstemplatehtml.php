@@ -32,6 +32,8 @@ class Cmstemplatehtml extends Controller
      */
     protected $dataModel;
 
+    protected $pageTypes = ['index' => '首页', 'channel' => '栏目', 'content' => '详情', 'common' => '公共', 'single' => '单页', 'dynamic' => '动态'];
+
     protected function initialize()
     {
         $this->dataModel = new TemplateHtmlModel;
@@ -109,8 +111,8 @@ class Cmstemplatehtml extends Controller
         $table->show('name', '名称');
         $table->text('description', '描述')->autoPost()->mapClass(1, 'disabled', 'is_default');
         $table->raw('path', '路径')->to('<a target="_blank" href="/admin/cmstemplatehtml/edit?id={id}">{val}</a>');
-        $table->match('type', '类型')->options(['channel' => '栏目', 'content' => '详情', 'common' => '公共', 'single' => '单页', 'index' => '首页'])
-            ->mapClassGroup([['channel', 'success'], ['content', 'info'], ['common', 'warning'], ['single', 'purple'], ['index', 'danger']]);
+        $table->match('type', '类型')->options($this->pageTypes)
+            ->mapClassGroup([['channel', 'success'], ['content', 'info'], ['common', 'warning'], ['single', 'purple'], ['index', 'danger'], ['dynamic', 'dark']]);
         $table->show('ext', '后缀');
         $table->show('size', '大小')->to('{val}kb');
         $table->show('conut', '统计');
@@ -148,7 +150,7 @@ class Cmstemplatehtml extends Controller
                 $d['conut'] = '无';
             }
 
-            $d['__dis_apply__'] = in_array($d['type'], ['common']) || $d['is_default'];
+            $d['__dis_apply__'] = in_array($d['type'], ['common', 'dynamic']) || $d['is_default'];
             $d['__dis_delete__'] = $d['is_default'];
         }
     }
@@ -164,6 +166,7 @@ class Cmstemplatehtml extends Controller
         $form = $this->form;
 
         if ($isEdit) {
+            $form->hidden('id');
             $view_path = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $data['path']);
             $form->show('path', ' ')->showLabel(false)->size(12, 12)->to('路径：{val}');
             $form->aceEditor('content', ' ')->setMode('html')->showLabel(false)->size(12, 12)->value(htmlentities(file_get_contents($view_path)));
@@ -175,7 +178,7 @@ class Cmstemplatehtml extends Controller
             $template = CmsTemplate::where('id', $template_id)->find();
             $form->hidden('template_id')->value($template_id);
             $form->show('view_path', '模板基础路径')->value('theme/' . $template['view_path']);
-            $form->radio('type', '页面类型')->default('channel')->inline(false)->options(['channel' => '栏目页：' . '/channel/newpage-xx.html', 'content' => '详情页：' . '/content/newpage-xx.html', 'single' => '单页：' . '/newpage-xx.html', 'common' => '公共页：' . '/common/newpage-xx.html']);
+            $form->radio('type', '页面类型')->default('channel')->inline(false)->options(['channel' => '栏目页：' . '/channel/newpage-xx.html', 'content' => '详情页：' . '/content/newpage-xx.html', 'common' => '公共页：' . '/common/newpage-xx.html', 'single' => '单页：' . '/newpage-xx.html', 'dynamic' => '动态解析：' . '/dynamic/newpage-xx.html']);
             $form->text('name', '文件名称')->required()->default('newpage-xx')->help('格式：只能包含英文数字-_，不支持多级目录')->afterSymbol('.html');
             $form->textarea('description', '描述');
         }
@@ -205,7 +208,7 @@ class Cmstemplatehtml extends Controller
             $builder = $this->builder('模板管理', '页面分配');
             $form = $builder->form();
             $form->show('path', '模板基础路径');
-            $form->match('type', '页面类型')->options(['channel' => '栏目', 'content' => '详情', 'common' => '公共', 'single' => '单页']);
+            $form->match('type', '页面类型')->options($this->pageTypes);
             if (str_replace('\\', '/',  'theme/' . $template['view_path'] . '/index.html') == str_replace('\\', '/', $page['path'])) {
                 $form->show('tips', ' ')->value('首页不需要分配');
                 $form->readonly();
@@ -299,9 +302,10 @@ class Cmstemplatehtml extends Controller
      * @param integer $id
      * @return void
      */
-    private function save($id = 0)
+    protected function save($id = 0)
     {
         $data = request()->only([
+            'id',
             'content',
             'name',
             'description',
@@ -348,20 +352,20 @@ class Cmstemplatehtml extends Controller
             } else if ($data['type'] == 'channel') {
                 $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/channel.html');
                 $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');
+            } else if ($data['type'] == 'dynamic') {
+                $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/dynamic.html');
+                $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');
             } else {
                 $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');
             }
 
             $newFilePath = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $path);
 
-            if (is_file($newFilePath)) {
-                $this->error('文件已存在！');
-            }
-
-            $newRes = file_put_contents($newFilePath, str_replace(['__content__', '../static'], [$text, $static], $newTpl));
-
-            if (!$newRes) {
-                $this->error('创建新文件失败');
+            if (!is_file($newFilePath)) {
+                $newRes = file_put_contents($newFilePath, str_replace(['__content__', '../static'], [$text, $static], $newTpl));
+                if (!$newRes) {
+                    $this->error('创建新文件失败');
+                }
             }
 
             $key = md5(strtolower($path));

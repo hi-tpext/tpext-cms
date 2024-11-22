@@ -197,7 +197,7 @@ class Cmstemplatestatic extends Controller
      * @param string $path
      * @return mixed
      */
-    private function save($path = '')
+    protected function save($path = '')
     {
         $data = request()->only([
             'content',
@@ -226,21 +226,18 @@ class Cmstemplatestatic extends Controller
             $path = 'theme/' . $templatePath . '/static/' . $dir . $data['name'] . '.' . $data['type'];
 
             if ($data['type'] == 'css') {
-                $newTpl = '/*网站样式*/' . PHP_EOL;
+                $newTpl = '/*网站样式*/' . PHP_EOL . '@charset "UTF-8";' . PHP_EOL;
             } else {
                 $newTpl = '/*网站js*/' . PHP_EOL;
             }
 
             $newFilePath = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $path);
 
-            if (is_file($newFilePath)) {
-                $this->error('文件已存在！');
-            }
-
-            $newRes = file_put_contents($newFilePath, $newTpl);
-
-            if (!$newRes) {
-                $this->error('创建新文件失败');
+            if (!is_file($newFilePath)) {
+                $newRes = file_put_contents($newFilePath, $newTpl);
+                if (!$newRes) {
+                    $this->error('创建新文件失败');
+                }
             }
 
             return $this->builder()->layer()->closeRefresh();

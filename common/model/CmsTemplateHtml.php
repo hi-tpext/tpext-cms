@@ -98,6 +98,9 @@ class CmsTemplateHtml extends Model
                     } else if (stripos($path, 'common') !== false) {
                         $type = 'common';
                         $description = '公共模板';
+                    } else if (stripos($path, 'dynamic') !== false) {
+                        $type = 'dynamic';
+                        $description = '动态解析';
                     } else if (preg_match('/theme\/[\w\-]+?\/index.html$/i', $path)) {
                         $type = 'index';
                         $description = '首页';

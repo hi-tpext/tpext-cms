@@ -92,10 +92,11 @@ class View
         } else {
             self::$shareVars[$name] = $value;
         }
+    }
 
-        if (class_exists('\\think\\facade\\View')) {
-            \think\facade\View::assign($name, $value);
-        }
+    public static function getShare()
+    {
+        return self::$shareVars;
     }
 
     public function clear()

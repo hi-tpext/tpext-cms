@@ -40,29 +40,6 @@ class Cmstag extends Controller
         $this->selectTextField = 'name';
     }
 
-    /**
-     * 构建表单
-     *
-     * @param boolean $isEdit
-     * @param array $data
-     */
-    protected function buildForm($isEdit, &$data = [])
-    {
-        $form = $this->form;
-
-        $form->text('name', '名称')->required();
-        $form->image('logo', '封面图片');
-        $form->textarea('description', '描述')->maxlength(255);
-        $form->text('link', '链接');
-        $form->switchBtn('is_show', '显示')->default(1);
-        $form->number('sort', '排序')->default(0)->required();
-
-        if ($isEdit) {
-            $form->show('create_time', '添加时间');
-            $form->show('update_time', '修改时间');
-        }
-    }
-
     protected function filterWhere()
     {
         $searchData = request()->get();
@@ -109,9 +86,34 @@ class Cmstag extends Controller
             ->btnDelete();
     }
 
-    private function save($id = 0)
+    /**
+     * 构建表单
+     *
+     * @param boolean $isEdit
+     * @param array $data
+     */
+    protected function buildForm($isEdit, &$data = [])
+    {
+        $form = $this->form;
+
+        $form->text('name', '名称')->required();
+        $form->image('logo', '封面图片');
+        $form->textarea('description', '描述')->maxlength(255);
+        $form->text('link', '链接');
+        $form->switchBtn('is_show', '显示')->default(1);
+        $form->number('sort', '排序')->default(0)->required();
+
+        if ($isEdit) {
+            $form->hidden('id');
+            $form->show('create_time', '添加时间');
+            $form->show('update_time', '修改时间');
+        }
+    }
+
+    protected function save($id = 0)
     {
         $data = request()->only([
+            'id',
             'name',
             'logo',
             'description',

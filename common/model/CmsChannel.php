@@ -32,11 +32,12 @@ class CmsChannel extends Model
             self::beforeWrite(function ($data) {
                 return self::onBeforeWrite($data);
             });
-
+            self::afterUpdate(function ($data) {
+                return self::onAfterUpdate($data);
+            });
             self::beforeInsert(function ($data) {
                 return self::onBeforeInsert($data);
             });
-
             self::afterDelete(function ($data) {
                 return self::onAfterDelete($data);
             });
@@ -48,6 +49,14 @@ class CmsChannel extends Model
         if (empty($data['sort'])) {
             $data['sort'] = static::where(['parent_id' => $data['parent_id']])->max('sort') + 5;
         }
+    }
+
+    public static function onAfterUpdate($data)
+    {
+        if (!isset($data['id'])) {
+            return;
+        }
+        cache('cms_channel_' . $data['id'], null);
     }
 
     public static function onBeforeWrite($data)
@@ -71,10 +80,6 @@ class CmsChannel extends Model
                 $data['full_name'] =  implode('->', array_reverse($names));
                 $data['path'] = ',' . implode(',', array_reverse($ids)) . ',';
                 $data['deep'] =  count($ids);
-                $parent = static::find($data['parent_id']);
-                if ($parent) {
-                    $data['deep'] = $parent['deep'] + 1;
-                }
             }
         }
     }
@@ -145,5 +150,21 @@ class CmsChannel extends Model
             }
         }
         return null;
+    }
+
+    public function getChannelPathAttr($value, $data)
+    {
+        if (empty($value)) {
+            $value = 'c[id]';
+        }
+        return $value;
+    }
+
+    public function getContentPathAttr($value, $data)
+    {
+        if (empty($value)) {
+            $value = 'a[id]';
+        }
+        return $value;
     }
 }

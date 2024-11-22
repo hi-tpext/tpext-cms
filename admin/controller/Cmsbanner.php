@@ -5,6 +5,7 @@ namespace tpext\cms\admin\controller;
 use think\Controller;
 use tpext\builder\traits\actions;
 use tpext\cms\common\model\CmsBanner as BannerModel;
+use tpext\cms\common\model\CmsPosition as CmsPositionModel;
 
 /**
  * Undocumented class
@@ -40,6 +41,10 @@ class Cmsbanner extends Controller
         $this->selectTextField = 'title';
 
         $this->indexWith = ['position'];
+
+        $this->treeModel = new CmsPositionModel; //分类模型
+        $this->treeTextField = 'name'; //分类模型中的分类名称字段
+        $this->treeKey = 'position_id'; //关联的键　localKey
     }
 
     protected function filterWhere()
@@ -122,6 +127,7 @@ class Cmsbanner extends Controller
         $form->number('sort', '排序')->default(0);
         $form->switchBtn('is_show', '显示')->default(1);
         if ($isEdit) {
+            $form->hidden('id');
             $form->show('create_time', '添加时间');
             $form->show('update_time', '修改时间');
         }
@@ -133,9 +139,10 @@ class Cmsbanner extends Controller
      * @param integer $id
      * @return void
      */
-    private function save($id = 0)
+    protected function save($id = 0)
     {
         $data = request()->only([
+            'id',
             'title',
             'position_id',
             'description',

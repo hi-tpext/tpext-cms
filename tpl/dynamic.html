@@ -1,11 +1,10 @@
-<!--文章列表:按栏目(示例)-->
+<!--文章列表:按标签(示例)-->
 <div>
     当前位置：<a href="{$__SITE_HOME__}">首页</a>
-    {channel@parents id="$id"}
-    &gt;<a>{$channel.name}</a>
-    {/channel@parents}
+    {tag@get id="$id"}
+    &gt;<a>{$tag.name}</a>
 </div>
-{content@list channel_id="$id"}
+{content@list where="FIND_IN_SET($id,tags)"}
 <div>
     <a target="_blank" href="{$content.url}">{$content.title}</a>
     <p>{$content.description}</p>

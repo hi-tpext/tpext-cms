@@ -65,38 +65,6 @@ class CmsContent extends Model
         }
     }
 
-    protected static function getDesc($content)
-    {
-        $arr = explode('。', $content);
-        $text = '';
-        $n = 0;
-        foreach ($arr as $a) {
-            if (mb_strlen($text . $a . '。') > 255) {
-                if ($n == 0) {
-                    $a = mb_substr($a, 0, 254);
-                    $arr2 = explode('，', $a);
-                    if (count($arr2) > 1) {
-                        array_pop($arr2);
-                        $text = implode('，', $arr2) . '。';
-                    } else {
-                        $text = $a . '。';
-                    }
-                }
-                break;
-            }
-            $text .= $a . '。';
-            $n += 1;
-            if (mb_strlen($text) > 90) {
-                break;
-            }
-            if ($n > 2) {
-                break;
-            }
-        }
-
-        return $text;
-    }
-
     public static function onAfterInsert($data)
     {
         if (!isset($data['id'])) {
@@ -131,6 +99,38 @@ class CmsContent extends Model
     public static function onAfterDelete($data)
     {
         CmsContentDetail::where('main_id', $data['id'])->delete();
+    }
+
+    protected static function getDesc($content)
+    {
+        $arr = explode('。', $content);
+        $text = '';
+        $n = 0;
+        foreach ($arr as $a) {
+            if (mb_strlen($text . $a . '。') > 255) {
+                if ($n == 0) {
+                    $a = mb_substr($a, 0, 254);
+                    $arr2 = explode('，', $a);
+                    if (count($arr2) > 1) {
+                        array_pop($arr2);
+                        $text = implode('，', $arr2) . '。';
+                    } else {
+                        $text = $a . '。';
+                    }
+                }
+                break;
+            }
+            $text .= $a . '。';
+            $n += 1;
+            if (mb_strlen($text) > 90) {
+                break;
+            }
+            if ($n > 2) {
+                break;
+            }
+        }
+
+        return $text;
     }
 
     public function channel()

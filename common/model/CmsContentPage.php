@@ -22,4 +22,9 @@ class CmsContentPage extends Model
     {
         return $this->belongsTo(CmsTemplate::class, 'template_id', 'id');
     }
+
+    public function templateHtml()
+    {
+        return $this->belongsTo(CmsTemplateHtml::class, 'html_id', 'id');
+    }
 }

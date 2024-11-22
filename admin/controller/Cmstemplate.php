@@ -104,7 +104,7 @@ class Cmstemplate extends Controller
         $table->getActionbar()
             ->btnEdit()
             ->btnView()
-            ->btnLink('build', url('/admin/cmstemplatemake/make', ['id' => '__data.pk__']), '生成', 'btn-success', 'mdi-cloud-braces ','data-layer-size="98%,98%"')
+            ->btnLink('build', url('/admin/cmstemplatemake/make', ['id' => '__data.pk__']), '生成', 'btn-success', 'mdi-cloud-braces ', 'data-layer-size="98%,98%"')
             ->btnDelete();
     }
 
@@ -125,6 +125,7 @@ class Cmstemplate extends Controller
         $form->textarea('description', '描述')->maxlength(255);
         $form->number('sort', '排序')->default(0);
         if ($isEdit) {
+            $form->hidden('id');
             $form->show('create_time', '添加时间');
             $form->show('update_time', '修改时间');
             $form->divider('模板信息');
@@ -136,7 +137,8 @@ class Cmstemplate extends Controller
             $form->raw('index', '首页页模板')->value('<code>index.html</code>：' . (is_file($view_path . '/index.html') ? '<label class="label label-success">存在</label>' : '<label class="label label-danger">不存在</label>'));
             $form->raw('channel', '栏目默认模板')->value('<code>/channel/default.html</code>：' . (is_file($view_path . '/channel/default.html') ? '<label class="label label-success">存在</label>' : '<label class="label label-danger">不存在</label>'));
             $form->raw('content', '内容默认模板')->value('<code>/content/default.html</code>：' . (is_file($view_path . '/content/default.html') ? '<label class="label label-success">存在</label>' : '<label class="label label-danger">不存在</label>'));
-            $form->raw('common', '共用目录')->value('<code>/common/</code>：' . (is_dir($view_path . '/common') ? '<label class="label label-success">存在</label>' : '<label class="label label-danger">不存在</label>'));
+            $form->raw('common', '共用模板')->value('<code>/common/</code>：' . (is_dir($view_path . '/common') ? '<label class="label label-success">存在</label>' : '<label class="label label-danger">不存在</label>'));
+            $form->raw('dynamic', '动态解析模板')->value('<code>/dynamic/</code>：' . (is_dir($view_path . '/dynamic') ? '<label class="label label-success">存在</label>' : '<label class="label label-danger">不存在</label>'));
             $form->raw('static', '静态资源目录')->value('<code>/static/</code>：' . (is_dir($view_path . '/static') ? '<label class="label label-success">存在</label>' : '<label class="label label-danger">不存在</label>'));
         }
     }
@@ -147,9 +149,10 @@ class Cmstemplate extends Controller
      * @param integer $id
      * @return void
      */
-    private function save($id = 0)
+    protected function save($id = 0)
     {
         $data = request()->only([
+            'id',
             'name',
             'platform',
             'view_path',

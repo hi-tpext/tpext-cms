@@ -26,6 +26,9 @@ class CmsTemplate extends Model
             self::beforeInsert(function ($data) {
                 return self::onBeforeInsert($data);
             });
+            self::afterUpdate(function ($data) {
+                return self::onAfterUpdate($data);
+            });
             self::afterDelete(function ($data) {
                 return self::onAfterDelete($data);
             });
@@ -39,10 +42,20 @@ class CmsTemplate extends Model
         }
     }
 
+    public static function onAfterUpdate($data)
+    {
+        if (!isset($data['id'])) {
+            return;
+        }
+        cache('cms_template_' . $data['id'], null);
+    }
+
     public static function onAfterDelete($data)
     {
         CmsTemplateHtml::where(['template_id' => $data['id']])->delete();
         CmsContentPage::where(['template_id' => $data['id']])->delete();
+
+        cache('cms_template_' . $data['id'], null);
     }
 
     public function getPagesCountAttr($value, $data)
@@ -68,7 +81,7 @@ class CmsTemplate extends Model
         }
         if (!is_dir($view_path . '/static')) {
             if (mkdir($view_path . '/static/css', 0775, true)) {
-                file_put_contents($view_path . '/static/css/site.css', '/*网站样式*/' . PHP_EOL);
+                file_put_contents($view_path . '/static/css/site.css', '/*网站样式*/' . PHP_EOL . '@charset "UTF-8";' . PHP_EOL);
             }
             if (mkdir($view_path . '/static/js', 0775, true)) {
                 file_put_contents($view_path . '/static/js/site.js', '/*网站js*/' . PHP_EOL);
@@ -79,8 +92,14 @@ class CmsTemplate extends Model
         if (!is_dir($view_path . '/common')) {
             if (mkdir($view_path . '/common', 0775, true)) {
                 file_put_contents($view_path . '/common/header.html', file_get_contents(Module::getInstance()->getRoot() . 'tpl/header.html'));
-                file_put_contents($view_path . '/common/fotter.html', file_get_contents(Module::getInstance()->getRoot() . 'tpl/fotter.html'));
+                file_put_contents($view_path . '/common/footer.html', file_get_contents(Module::getInstance()->getRoot() . 'tpl/footer.html'));
                 file_put_contents($view_path . '/common/layout.html', file_get_contents(Module::getInstance()->getRoot() . 'tpl/layout.html'));
+            }
+        }
+        if (!is_dir($view_path . '/dynamic')) {
+            if (mkdir($view_path . '/dynamic', 0775, true)) {
+                $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/dynamic.html');
+                file_put_contents($view_path . '/dynamic/tag.html', str_replace('__content__', $text, $newTpl));
             }
         }
         if (!is_dir($view_path . '/index.html')) {

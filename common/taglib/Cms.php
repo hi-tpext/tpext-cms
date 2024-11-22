@@ -47,7 +47,7 @@ class Cms extends Taglib
         $assign = !empty($tag['assign']) ? $tag['assign'] : $table . '_list_' . time();
         $item = ltrim($item, '$');
         $assign = ltrim($assign, '$');
-        $order = $tag['order'] ?? Table::defaultOrder($table);
+        $tagOrder = !empty($tag['order']) ? $tag['order'] : Table::defaultOrder($table);
         $fields = $tag['fields'] ?? Table::defaultFields($table);
         $where = $tag['where'] ?? '1=1';
         $links = true;
@@ -102,7 +102,7 @@ class Cms extends Taglib
 
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
         $scope = Table::defaultScope($table);
-        $dbNameSpace = class_exists(\think\facade\Db::class) ? '\think\facade\Db' : '\think\Db';
+        $dbNameSpace = $this->getDbNamesapce();
 
         $parseStr = <<<EOT
         <?php
@@ -113,43 +113,48 @@ class Cms extends Taglib
         if(\$__cid_key__) {
             \$__cid_val__ = {$cid_val} ?? 0;
             if(\$__cid_val__) {
-                \$__where__[] = [\$__cid_key__, '=', \$__cid_val__];
+                if(strstr(\$__cid_val__, ',')) {
+                    \$__where__[] = [\$__cid_key__, 'in', \$__cid_val__];
+                } else {
+                    \$__where__[] = [\$__cid_key__, '=', \$__cid_val__];
+                }
             }
         }
         \$__page__ = 1;
         \$__render_links__ = '{$links}' == '1';
-        \$has_paginator = false;
+        \$__has_paginator__ = false;
         \$__take__ = {$take};
         if(\$__take__ == 0) {
             if(isset(\$pagesize) && \$pagesize > 0) {
                 \$__page__ = \$page < 1 ? 1 : \$page;
                 \$__take__ = \$pagesize;
-                \$has_paginator = true;
+                \$__has_paginator__ = true;
             } else {
                 \$__take__ = 10;
             }
         }
         \$__list__ = [];
+        \$orderBy = !empty(\$orderBy) ? \$orderBy : '{$tagOrder}';
         \$__data__ = {$dbNameSpace}::name('{$table}')
             ->where(\$__where__)
             ->whereRaw(\$__where_raw__, [{$binds}])
             ->where('{$scope}')
-            ->order('{$order}')
             ->field('{$fields}')
+            ->order(\$orderBy)
             ->limit((\$__page__ - 1) * \$__take__, \$__take__)
             ->select();
         foreach(\$__data__ as \$__d__) {
             \$__list__[] = \\tpext\\cms\\common\\taglib\\Processer::item('{$table}', \$__d__);
         }
         \$__links_html__ = null;
-        if(\$has_paginator) {
+        if(\$__has_paginator__) {
             \$total = {$dbNameSpace}::name('{$table}')
                 ->where(\$__where__)
                 ->whereRaw(\$__where_raw__, [{$binds}])
                 ->where('{$scope}')
                 ->count();
                 
-            \$__paginator__ = new \\think\\paginator\\driver\\Bootstrap(\$__data__, \$pagesize, \$__page__, \$total, false, ['path' => \$path ?? 'no_path']);
+            \$__paginator__ = new \\think\\paginator\\driver\\Bootstrap(\$__data__, \$pagesize, \$__page__, \$total, false, ['path' => \$page_path ?? 'no_path']);
             \$__links_html__ = \$__paginator__->render();
         }
         ?>
@@ -158,7 +163,7 @@ class Cms extends Taglib
         {/volist}
         {if condition="\$__render_links__ && \$__links_html__"}
         {\$__links_html__|raw}
-        {elseif condition="\$has_paginator"}
+        {elseif condition="\$__has_paginator__"}
         <!-- 未自动输出分页，请在页面需要的位置调用 -->
         {/if}
         {assign name="{$assign}" value="\$__list__" /}
@@ -221,6 +226,11 @@ EOT;
         return $parseStr;
     }
 
+    public function getDbNamesapce()
+    {
+        return class_exists(\think\facade\Db::class) ? '\think\facade\Db' : '\think\Db';
+    }
+
     public function tagDetail($tag, $content)
     {
         $table = $tag['table'] ?? '';
@@ -256,9 +266,10 @@ EOT;
         if ($where && $where != '1=1') {
             [$where, $binds] = $this->parseWhere($where); //解析变量
         }
+
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
         $scope = Table::defaultScope($table);
-        $dbNameSpace = class_exists(\think\facade\Db::class) ? '\think\facade\Db' : '\think\Db';
+        $dbNameSpace = $this->getDbNamesapce();
 
         $parseStr = <<<EOT
         <?php
@@ -407,13 +418,24 @@ EOT;
                 if ($info['tag_name'] . '@prev' == $tagName) {
                     $tag['table'] = $table;
                     $tag['tag_name'] = $tagName;
+                    $tag['assign'] = empty($tag['assign']) ? 'prev' : $tag['assign'];
                     $tag['default_assign'] = $tagArr[0];
                     $tag['id_key'] = $info['id_key'] ?? 'id';
-                    $where = $tag['where'] ?? '1=1';
+                    $where = '';
+                    if (empty($tag['where'])) {
+                        $cid_key =  $info['cid_key'] ?? '';
+                        if ($cid_key) {
+                            $where = $cid_key . "=\${$tagArr[0]}." . $cid_key;
+                        } else {
+                            $where = '1=1';
+                        }
+                    } else {
+                        $where = $tag['where'];
+                    }
+
                     $id = $tag[$tag['id_key']] ?? '$id';
                     $order = $tag['order'] ?? Table::defaultOrder($table);
-                    $sort = $tag['sort'] ?? $id;
-
+                    $sort = $tag['sort'] ?? "\${$tagArr[0]}.sort";
                     $fields = [];
                     $orders = explode(',', $order);
                     foreach ($orders as $sod) {
@@ -425,7 +447,7 @@ EOT;
                     }
                     $first = preg_replace('/\s*(?:desc|asc)/', '', $orders[0]);
                     $isDesc = stripos($orders[0], 'desc') !== false;
-                    $cmp = $isDesc ? '>=' : '<=';
+                    $cmp = $isDesc ? '>' : '<';
                     $tag['where'] = "{$tag['id_key']} != {$id} and {$first} {$cmp} {$sort} and " . $where;
                     $tag['order']  = implode(',', $fields);
                     $tag[$tag['id_key']] = '';
@@ -434,16 +456,27 @@ EOT;
                 if ($info['tag_name'] . '@next' == $tagName) {
                     $tag['table'] = $table;
                     $tag['tag_name'] = $tagName;
+                    $tag['assign'] = empty($tag['assign']) ? 'next' : $tag['assign'];
                     $tag['default_assign'] = $tagArr[0];
                     $tag['id_key'] = $info['id_key'] ?? 'id';
-                    $where = $tag['where'] ?? '1=1';
+                    $where = '';
+                    if (empty($tag['where'])) {
+                        $cid_key =  $info['cid_key'] ?? '';
+                        if ($cid_key) {
+                            $where = $cid_key . "=\${$tagArr[0]}." . $cid_key;
+                        } else {
+                            $where = '1=1';
+                        }
+                    } else {
+                        $where = $tag['where'];
+                    }
                     $id = $tag[$tag['id_key']] ?? '$id';
                     $order = $tag['order'] ?? Table::defaultOrder($table);
-                    $sort = $tag['sort'] ?? $id;
+                    $sort = $tag['sort'] ?? "\${$tagArr[0]}.sort";
                     $orders = explode(',', $order);
                     $first = preg_replace('/\s*(?:desc|asc)/', '', $orders[0]);
                     $isDesc = stripos($orders[0], 'desc') !== false;
-                    $cmp = $isDesc ? '<=' : '>=';
+                    $cmp = $isDesc ? '<' : '>';
                     $tag['where'] = "{$tag['id_key']} != {$id} and {$first} {$cmp} {$sort} and " . $where;
                     $tag['order']  = $order;
                     $tag[$tag['id_key']] = '';
