@@ -69,13 +69,13 @@ class CmsTemplate extends Model
 
         if (!is_dir($view_path . '/channel')) {
             if (mkdir($view_path . '/channel', 0775, true)) {
-                $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/channel.html');
+                $text = self::getTemplatePart('tpl/channel.html');
                 file_put_contents($view_path . '/channel/default.html', str_replace('__content__', $text, $newTpl));
             }
         }
         if (!is_dir($view_path . '/content')) {
             if (mkdir($view_path . '/content', 0775, true)) {
-                $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/content.html');
+                $text = self::getTemplatePart('tpl/content.html');
                 file_put_contents($view_path . '/content/default.html', str_replace('__content__', $text, $newTpl));
             }
         }
@@ -98,21 +98,38 @@ class CmsTemplate extends Model
         }
         if (!is_dir($view_path . '/dynamic')) {
             if (mkdir($view_path . '/dynamic', 0775, true)) {
-                $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/dynamic.html');
+                $text = self::getTemplatePart('tpl/tag.html');
                 file_put_contents($view_path . '/dynamic/tag.html', str_replace('__content__', $text, $newTpl));
+                $text = self::getTemplatePart('tpl/demo.html');
+                file_put_contents($view_path . '/dynamic/demo.html', str_replace('__content__', $text, $newTpl));
             }
         }
         if (!is_dir($view_path . '/index.html')) {
-            $text = $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/index.html');
+            $text = self::getTemplatePart('tpl/index.html');
             file_put_contents($view_path . '/index.html', str_replace(['__content__', '../static'], [$text, './static'], $newTpl));
         }
         if (!is_dir($view_path . '/about.html')) {
-            $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/single.html');
+            $text = self::getTemplatePart('tpl/single.html');
             file_put_contents($view_path . '/about.html', str_replace(['__content__', '../static'], [$text, './static'], $newTpl));
         }
         if (!is_dir($view_path . '/contact.html')) {
-            $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/single.html');
+            $text = self::getTemplatePart('tpl/single.html');
             file_put_contents($view_path . '/contact.html', str_replace(['__content__', '../static'], [$text, './static'], $newTpl));
         }
+    }
+
+    /**
+     * 获取模板内容
+     * 
+     * @param string $tplPath
+     * @return string
+     */
+    public static function getTemplatePart($tplPath)
+    {
+        $text = file_get_contents(Module::getInstance()->getRoot() . $tplPath);
+        $text = preg_replace('/\r\n|\r/', "\n", $text);
+        $text = preg_replace('/\n{2,}/s', "\n", $text);
+        $lines = explode("\n", $text);
+        return implode(PHP_EOL . '        ', $lines);
     }
 }

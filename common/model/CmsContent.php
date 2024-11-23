@@ -153,6 +153,11 @@ class CmsContent extends Model
         return isset($this->detail) ? $this->detail['content'] : '';
     }
 
+    public function getPublishDateAttr($value, $data)
+    {
+        return date('Y-m-d', strtotime($data['publish_time']));
+    }
+
     public function getAttrAttr($value, $data)
     {
         $attr = [];
@@ -176,5 +181,15 @@ class CmsContent extends Model
         }
 
         return is_array($value) ? ',' . implode(',', $value) . ',' : ',' . trim($value, ',') . ',';
+    }
+
+    public function getTagNamesAttr($value, $data)
+    {
+        $ids = trim($data['tags'], ',');
+        if (empty($ids)) {
+            return '';
+        }
+        $list = CmsTag::where('id', 'in', $ids)->column('name');
+        return implode(',', $list);
     }
 }

@@ -33,6 +33,10 @@ class EmptyData extends Model
             return '#';
         }
 
+        if ($name == 'id' || $name = 'parent_id') {
+            return 0;
+        }
+
         return '__not_found__';
     }
 

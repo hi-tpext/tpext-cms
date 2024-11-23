@@ -39,7 +39,7 @@ class Cmstemplatehtml extends Controller
         $this->dataModel = new TemplateHtmlModel;
         $this->pageTitle = '模板页面管理';
         $this->pagesize = 6;
-        $this->sortOrder = 'path';
+        $this->sortOrder = 'type,path';
 
         $this->selectSearch = 'path';
         $this->selectFields = 'id,path';
@@ -220,9 +220,9 @@ class Cmstemplatehtml extends Controller
                 $form->readonly();
             } else {
                 if ($page['type'] == 'channel') {
-                    $form->tree('relation_ids', '选择栏目')->optionsData(CmsChannel::where('is_show', 1)->field('id,name,parent_id')->select())->value($relation_ids)->help('可选择多个栏目')->required();
+                    $form->tree('relation_ids', '选择栏目')->optionsData(CmsChannel::where('is_show', 1)->field('id,name,parent_id')->select())->value($relation_ids)->help('哪些列表页使用该模板，可选择多个栏目')->required();
                 } else if ($page['type'] == 'content') {
-                    $form->tree('relation_ids', '选择栏目')->optionsData(CmsChannel::where('is_show', 1)->field('id,name,parent_id')->select())->value($relation_ids)->help('可选择多个栏目')->required();
+                    $form->tree('relation_ids', '选择栏目')->optionsData(CmsChannel::where('is_show', 1)->field('id,name,parent_id')->select())->value($relation_ids)->help('哪些内容页使用该模板，可选择多个栏目')->required();
                 } else if ($page['type'] == 'single') {
                     $form->select('relation_id', '选择内容详情')->value($relation_ids)->help('选择一篇文章')->dataUrl(url('/admin/cmscontent/selectpage'), '{id}#{title}[所属栏目：{channel.full_name}]')->required();
                 } else {
@@ -245,7 +245,7 @@ class Cmstemplatehtml extends Controller
         }
 
         $activeIds = [];
-        $perm = null;
+        $active = null;
         $allIds = [];
 
         foreach ($pageList as $prow) {
@@ -258,25 +258,36 @@ class Cmstemplatehtml extends Controller
             if (empty($to_id)) {
                 continue;
             }
-            $perm = null;
+            $active = null;
             foreach ($pageList as $prow) {
                 if ($prow['to_id'] == $to_id) {
-                    $perm = $prow;
+                    $active = $prow;
                     break;
                 }
             }
-            if ($perm) {
-                $activeIds[] = $perm['id'];
+            if ($active) {
+                $activeIds[] = $active['id'];
                 $success += 1;
             } else {
-                $perm = new CmsContentPage;
+                $exist = CmsContentPage::where('template_id', $page['template_id'])
+                    ->where('html_type', $page['type'])
+                    ->where('to_id', $to_id)
+                    ->where('html_id', '<>', $html_id)
+                    ->find();
 
-                $res = $perm->save([
-                    'to_id' => $to_id,
-                    'template_id' => $page['template_id'],
-                    'html_id' => $html_id,
-                    'html_type' => $page['type'],
-                ]);
+                if ($exist) {
+                    $res = $exist->save([
+                        'html_id' => $html_id,
+                    ]);
+                } else {
+                    $perm = new CmsContentPage;
+                    $res = $perm->save([
+                        'to_id' => $to_id,
+                        'template_id' => $page['template_id'],
+                        'html_id' => $html_id,
+                        'html_type' => $page['type'],
+                    ]);
+                }
                 if ($res) {
                     $success += 1;
                 }
@@ -344,16 +355,16 @@ class Cmstemplatehtml extends Controller
             if ($data['type'] == 'common') {
                 $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/common.html');
             } else if ($data['type'] == 'content') {
-                $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/content.html');
+                $text = CmsTemplate::getTemplatePart('tpl/content.html');
                 $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');
             } else if ($data['type'] == 'single') {
-                $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/single.html');
+                $text = CmsTemplate::getTemplatePart('tpl/single.html');
                 $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');
             } else if ($data['type'] == 'channel') {
-                $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/channel.html');
+                $text = CmsTemplate::getTemplatePart('tpl/channel.html');
                 $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');
             } else if ($data['type'] == 'dynamic') {
-                $text = file_get_contents(Module::getInstance()->getRoot() . 'tpl/dynamic.html');
+                $text = CmsTemplate::getTemplatePart('tpl/dynamic.html');
                 $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');
             } else {
                 $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');

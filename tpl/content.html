@@ -1,6 +1,6 @@
 <!--文章详情(示例)-->
 <div>
-    当前位置：<a href="{$__SITE_HOME__}">首页</a>
+    当前位置：<a href="{$__site_home__}">首页</a>
     {channel@parents id="$content.channel_id"}
     &gt;<a href="{$channel.url}">{$channel.name}</a>
     {/channel@parents}
@@ -11,11 +11,11 @@
 </div>
 <div>
     <div>
-        {content@prev/}
+        {content@prev}
         <p>上一篇：<a href="{$prev.url}">{$prev.title}</a></p>
     </div>
     <div>
-        {content@next/}
+        {content@next}
         <p>下一篇：<a href="{$next.url}">{$next.title}</a></p>
     </div>
 </div>

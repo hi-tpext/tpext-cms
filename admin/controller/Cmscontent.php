@@ -131,9 +131,9 @@ class Cmscontent extends Controller
         $table->show('channel_id', '栏目')->to('{channel.full_name}');
         $table->show('author', '作者')->default('暂无');
         $table->show('source', '来源')->default('暂无');
-        $table->matches('tags', '标签')->optionsData(CmsTag::select());
+        $table->show('tag_names', '标签');
         $table->switchBtn('is_show', '显示')->default(1)->autoPost();
-        $table->checkbox('attr', '属性')->autoPost(url('editAttr'))->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶'])->inline(false);
+        $table->checkbox('attr', '属性')->autoPost(url('editAttr'))->options(['is_recommend' => '推荐', 'is_top' => '置顶', 'is_hot' => '热门'])->inline(false);
         $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:80px');
         $table->text('click', '点击量')->autoPost('', true)->getWrapper()->addStyle('width:80px');
         $table->show('publish_time', '发布时间')->getWrapper()->addStyle('width:160px');
@@ -285,7 +285,8 @@ class Cmscontent extends Controller
         $form->number('click', '点击量', 6)->default(0);
         $form->number('sort', '排序', 6)->default(0);
 
-        $form->checkbox('attr', '属性')->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶']);
+        $form->checkbox('attr', '属性')->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶'])
+            ->help('推荐：优先在首页显示，前提此内容在首页显示；置顶：栏目页时优先显示（只在所在栏目有效）；热门：排序无影响，可以在样式上突出显示。');
         $form->switchBtn('is_show', '显示')->default(1);
 
         if ($isEdit) {

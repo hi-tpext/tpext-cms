@@ -24,9 +24,9 @@ class Processer
         static::$path = $val;
     }
 
-    public static function getDbNamesapce()
+    public static function getDbNamespace()
     {
-        return class_exists(\think\facade\Db::class) ? '\think\facade\Db' : '\think\Db';
+        return class_exists('\think\facade\Db') ? '\think\facade\Db' : '\think\Db';
     }
 
     /**
@@ -50,6 +50,17 @@ class Processer
     public static function resolveContentPath($content, $channel)
     {
         return  'content/' . str_replace('[id]', $content['id'], ltrim($channel['content_path'], '/'));
+    }
+
+    /**
+     * 替换标签路径
+     * 
+     * @param array|mixed $tag
+     * @return string
+     */
+    public static function resolveTagPath($tag)
+    {
+        return  'dynamic/tag?id=' . $tag['id'];
     }
 
     public static function getChannelOutPath()
@@ -83,22 +94,28 @@ class Processer
             $empty = new EmptyData;
             return $empty;
         }
-        $dbNameSpace = self::getDbNamesapce();
+        $dbNameSpace = self::getDbNamespace();
         if ($table == 'cms_channel') {
+            $item['channel_id'] = $item['id'];
             $item['url'] = $item['link'] ?: self::$path .  self::resolveChannelPath($item) . '.html';
         } else if ($table == 'cms_content') { {
                 $channelScope = Table::defaultScope($table);
                 $channel = $dbNameSpace::name('cms_channel')->where('id', $item['channel_id'])->where($channelScope)->cache('cms_channel_' . $item['channel_id'])->find();
                 if ($channel) {
-                    $item['url'] = $item['link'] ?: self::$path . self::resolveContentPath($item, $channel) . '.html';
-                    $item['channel_url'] = $channel['link'] ?: self::$path . self::resolveChannelPath($channel) . '.html';
+                    $item['url'] = $item['link'] ?: self::$path  . self::resolveContentPath($item, $channel) . '.html';
+                    $item['channel_url'] = $channel['link'] ?: self::$path .  self::resolveChannelPath($channel) . '.html';
                 } else {
-                    $item['url'] = '#';
-                    $item['channel_url'] = '#';
+                    $empty = new EmptyData;
+                    return $empty;
                 }
+                $item['channel'] = $channel;
+                $item['content_id'] = $item['id'];
+                $item['publish_date'] = date('Y-m-d', strtotime($item['publish_time'] ?? '2024-01-01'));
             }
         } else if ($table == 'cms_banner') {
             $item['url'] = $item['link'];
+        } else if ($table == 'cms_tag') {
+            $item['url'] = self::$path . self::resolveTagPath($item);
         } else {
             $item['url'] = '#';
         }
@@ -119,17 +136,12 @@ class Processer
             $empty = new EmptyData;
             return $empty;
         }
-        $dbNameSpace = self::getDbNamesapce();
+        $dbNameSpace = self::getDbNamespace();
         $item['__not_found__'] = false;
         if ($table == 'cms_channel') {
+            $item['channel_id'] = $item['id'];
             $item['url'] = $item['link'] ?: self::$path . self::resolveChannelPath($item) . '.html';
         } else if ($table == 'cms_content') {
-            if (!empty($item['reference_id'])) {
-                $detail = $dbNameSpace::name('cms_content_detail')->where('main_id', $item['reference_id'])->find();
-            } else {
-                $detail = $dbNameSpace::name('cms_content_detail')->where('main_id', $item['id'])->find();
-            }
-            $item['content'] = $detail ? $detail['content'] : '';
             $channelScope = Table::defaultScope($table);
             $channel = $dbNameSpace::name('cms_channel')->where('id', $item['channel_id'])->where($channelScope)->cache('cms_channel_' . $item['channel_id'])->find();
             if ($channel) {
@@ -140,8 +152,18 @@ class Processer
                 return $empty;
             }
             $item['channel'] = $channel;
+            $item['content_id'] = $item['id'];
+            $item['publish_date'] = date('Y-m-d', strtotime($item['publish_time'] ?? '2024-01-01'));
+            if (!empty($item['reference_id'])) {
+                $detail = $dbNameSpace::name('cms_content_detail')->where('main_id', $item['reference_id'])->find();
+            } else {
+                $detail = $dbNameSpace::name('cms_content_detail')->where('main_id', $item['id'])->find();
+            }
+            $item['content'] = $detail ? $detail['content'] : '';
         } else if ($table == 'cms_banner') {
             $item['url'] = $item['link'];
+        } else if ($table == 'cms_tag') {
+            $item['url'] = self::$path . self::resolveTagPath($item);
         } else {
             $item['url'] = '#';
         }
@@ -193,7 +215,7 @@ class Processer
      */
     public static function getData($table, $idKey, $id)
     {
-        $dbNameSpace = self::getDbNamesapce();
+        $dbNameSpace = self::getDbNamespace();
 
         return $dbNameSpace::name($table)->where($idKey, $id)->cache($table . '_' . $id)->find();
     }

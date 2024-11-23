@@ -1,7 +1,7 @@
 <!--文章列表:按标签(示例)-->
+{tag@get}<!--读取当前-->
 <div>
-    当前位置：<a href="{$__SITE_HOME__}">首页</a>
-    {tag@get id="$id"}
+    当前位置：<a href="{$__site_home__}">首页</a>
     &gt;<a>{$tag.name}</a>
 </div>
 {content@list where="FIND_IN_SET($id,tags)"}

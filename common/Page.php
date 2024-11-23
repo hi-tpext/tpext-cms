@@ -12,17 +12,11 @@
 namespace tpext\cms\common;
 
 use tpext\cms\common\model\CmsTemplate;
-use tpext\cms\common\model\CmsTemplateHtml;
 use tpext\cms\common\taglib\Processer;
 use tpext\cms\common\taglib\Table;
 
 class Page
 {
-    public function getDbNamesapce()
-    {
-        return class_exists(\think\facade\Db::class) ? '\think\facade\Db' : '\think\Db';
-    }
-
     /**
      * 栏目
      * @param int $id
@@ -38,7 +32,7 @@ class Page
         }
         $table = 'cms_channel';
 
-        $dbNameSpace = self::getDbNamesapce();
+        $dbNameSpace = Processer::getDbNamespace();
         $channelScope = Table::defaultScope($table);
         $channel = $dbNameSpace::name($table)->where('id', $id)->where($channelScope)->find();
 
@@ -69,7 +63,7 @@ class Page
         }
         $table = 'cms_content';
 
-        $dbNameSpace = self::getDbNamesapce();
+        $dbNameSpace = Processer::getDbNamespace();
         $channelScope = Table::defaultScope($table);
         $content = $dbNameSpace::name($table)->where('id', $id)->where($channelScope)->find();
         if (!$content) {

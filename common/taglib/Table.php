@@ -123,14 +123,13 @@ class Table
     public static function getTagsList()
     {
         $tags = [
-            // 标签定义： attr 属性列表 close 是否闭合（0 或者1 默认1） alias 标签别名 level 嵌套层次
-            'list' => ['attr' => 'table,num,where,order,fields,item,assign,id_key,cid_key'],
-            'parents' => ['attr' => 'table,num,until,where,order,fields,assign,id_key,cid_key,pid_key'],
-            // 'arounds' => ['attr' => 'table,num,where,order,fields,assign,id_key,cid_key'],
+            // 标签定义： attr 属性列表 close 是否闭合（0 或者1 默认1） alias 标签别名 level 嵌套层次 expression 允许表达式
+            'list' => ['attr' => 'table,num,pagesize,where,order,fields,item,assign,cache,links'],
+            'parents' => ['attr' => 'table,num,until,where,order,fields,assign,id_key,pid_key'],
             //
-            'get' => ['attr' => 'table,where,order,fields,assign,id_key', 'close' => 0],
-            'prev' => ['attr' => 'table,where,order,fields,assign,id_key,sort', 'close' => 0],
-            'next' => ['attr' => 'table,where,order,fields,assign,id_key,sort', 'close' => 0],
+            'get' => ['attr' => 'table,where,order,fields,assign,cache', 'close' => 0],
+            'prev' => ['attr' => 'table,where,order,fields,assign,cache,sort', 'close' => 0],
+            'next' => ['attr' => 'table,where,order,fields,assign,cache,sort', 'close' => 0],
         ];
 
         $tables = static::getTables();
@@ -139,10 +138,11 @@ class Table
             if (empty($info['tag_name'])) {
                 continue;
             }
-            $listAttr = 'num,where,order,fields,item,assign';
-            $getAttr = 'where,order,fields,assign';
-            $parentsAttr = 'where,order,fields,assign,num,until';
-            $parentAttr = 'where,order,fields,assign';
+
+            $listAttr = 'num,pagesize,where,order,fields,item,assign,cache,links';
+            $parentsAttr = 'num,until,where,order,fields,assign';
+            $getAttr = 'where,order,fields,assign,cache';
+            $parentAttr = 'where,order,fields,assign,cache';
 
             if (!empty($info['id_key'])) {
                 $listAttr .= ',' . $info['id_key'];
@@ -151,7 +151,8 @@ class Table
                 $parentAttr .= ',' . $info['id_key'];
             }
 
-            $tags[$info['tag_name'] . '@get'] = ['attr' => $getAttr, 'close' => 0];
+            //expression为true的作用是attr可以为空
+            $tags[$info['tag_name'] . '@get'] = ['attr' => $getAttr, 'close' => 0, 'expression' => true];
             $tags[$info['tag_name'] . '@prev'] = ['attr' => $getAttr, 'close' => 0, 'expression' => true];
             $tags[$info['tag_name'] . '@next'] = ['attr' => $getAttr, 'close' => 0, 'expression' => true];
 
@@ -159,13 +160,12 @@ class Table
                 $listAttr .= ',' . $info['cid_key'];
             }
 
-            $tags[$info['tag_name'] . '@list'] = ['attr' => $listAttr];
-            // $tags[$info['tag_name'] . '@arounds'] = ['attr' => $listAttr];
+            $tags[$info['tag_name'] . '@list'] = ['attr' => $listAttr, 'expression' => true];
 
             if (!empty($info['pid_key'])) {
                 $parentsAttr .= ',' . $info['pid_key'];
                 $parentAttr .= ',' . $info['pid_key'];
-                $tags[$info['tag_name'] . '@parents'] = ['attr' => $parentsAttr];
+                $tags[$info['tag_name'] . '@parents'] = ['attr' => $parentsAttr, 'expression' => true];
             }
         }
 

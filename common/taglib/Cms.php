@@ -43,10 +43,14 @@ class Cms extends Taglib
         $id_key = $tag['id_key'] ?? 'id';
 
         $take = $tag['num'] ?? 0;
+        $pagesize = $tag['pagesize'] ?? 0;
         $item = !empty($tag['item']) ? $tag['item'] : ($tag['default_item'] ?? 'item');
         $assign = !empty($tag['assign']) ? $tag['assign'] : $table . '_list_' . time();
         $item = ltrim($item, '$');
         $assign = ltrim($assign, '$');
+        $cache = explode(',', $tag['cache'] ?? '');
+        $cacheKey =  empty($cache[0]) ? 'false' : "'" . trim($cache[0]) . "'";
+        $cacheTime = intval($cache[1] ?? 360);
         $tagOrder = !empty($tag['order']) ? $tag['order'] : Table::defaultOrder($table);
         $fields = $tag['fields'] ?? Table::defaultFields($table);
         $where = $tag['where'] ?? '1=1';
@@ -69,11 +73,13 @@ class Cms extends Taglib
                 $whereExp = $this->parseIdVal($cid_key, $cid_val);
                 if ($whereExp) {
                     $where .= $whereExp;
-                    $cid_val = '';
+                    $cid_val = '0';
                 }
             }
-        } else {
+        } else if ($cid_key) {
             $cid_val = "\${$cid_key}";
+        } else {
+            $cid_val = '0';
         }
 
         $id_val = '';
@@ -102,11 +108,10 @@ class Cms extends Taglib
 
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
         $scope = Table::defaultScope($table);
-        $dbNameSpace = $this->getDbNamesapce();
+        $dbNameSpace = Processer::getDbNamespace();
 
         $parseStr = <<<EOT
         <?php
-
         \$__where_raw__ = "{$where}";
         \$__where__ = [];
         \$__cid_key__ = '{$cid_key}';
@@ -124,51 +129,52 @@ class Cms extends Taglib
         \$__render_links__ = '{$links}' == '1';
         \$__has_paginator__ = false;
         \$__take__ = {$take};
+        \$__pagesize__ = {$pagesize} ?: (\$__set_pagesize__ ?? 0);
         if(\$__take__ == 0) {
-            if(isset(\$pagesize) && \$pagesize > 0) {
-                \$__page__ = \$page < 1 ? 1 : \$page;
-                \$__take__ = \$pagesize;
+            if(\$__pagesize__ > 0) {
+                \$__page__ = isset(\$page) && \$page > 0 ? \$page : 1;
+                \$__take__ = \$__pagesize__;
                 \$__has_paginator__ = true;
             } else {
                 \$__take__ = 10;
             }
         }
         \$__list__ = [];
-        \$orderBy = !empty(\$orderBy) ? \$orderBy : '{$tagOrder}';
+        \$__order_by__ = !empty(\$__set_order_by__) ? \$__set_order_by__ : '{$tagOrder}';
         \$__data__ = {$dbNameSpace}::name('{$table}')
             ->where(\$__where__)
             ->whereRaw(\$__where_raw__, [{$binds}])
             ->where('{$scope}')
             ->field('{$fields}')
-            ->order(\$orderBy)
+            ->order(\$__order_by__)
             ->limit((\$__page__ - 1) * \$__take__, \$__take__)
+            ->cache({$cacheKey}, {$cacheTime})
             ->select();
         foreach(\$__data__ as \$__d__) {
             \$__list__[] = \\tpext\\cms\\common\\taglib\\Processer::item('{$table}', \$__d__);
         }
-        \$__links_html__ = null;
         if(\$__has_paginator__) {
-            \$total = {$dbNameSpace}::name('{$table}')
+            \$__total__ = {$dbNameSpace}::name('{$table}')
                 ->where(\$__where__)
                 ->whereRaw(\$__where_raw__, [{$binds}])
                 ->where('{$scope}')
                 ->count();
                 
-            \$__paginator__ = new \\think\\paginator\\driver\\Bootstrap(\$__data__, \$pagesize, \$__page__, \$total, false, ['path' => \$page_path ?? 'no_path']);
+            \$__paginator__ = new \\think\\paginator\\driver\\Bootstrap(\$__data__, \$__pagesize__, \$__page__, \$__total__, false, ['path' => \$__set_page_path__ ?? '']);
             \$__links_html__ = \$__paginator__->render();
         }
         ?>
         {volist name="__list__" id="{$item}"}
         {$content}
         {/volist}
-        {if condition="\$__render_links__ && \$__links_html__"}
+        {if condition="\$__has_paginator__ && \$__render_links__ && !empty(\$__links_html__)"}
         {\$__links_html__|raw}
         {elseif condition="\$__has_paginator__"}
         <!-- 未自动输出分页，请在页面需要的位置调用 -->
         {/if}
         {assign name="{$assign}" value="\$__list__" /}
         <?php
-        unset(\$__data__, \$__where_raw__, \$__where__, \$__cid_key__, \$__id_key__, \$__cid_val__, \$__id_val__, \$__paginator__, \$total);
+        unset(\$__data__, \$__where_raw__, \$__where__, \$__cid_key__, \$__id_key__, \$__cid_val__, \$__id_val__, \$__paginator__, \$__total__, \$__take__, \$__pagesize__, \$__page__);
         ?>
 EOT;
         $this->usedTags[] = $tag;
@@ -208,7 +214,6 @@ EOT;
 
         $parseStr = <<<EOT
         <?php
-
         \$__pid_key__ ='{$pid_key}';
         \$__id_key__ = '{$id_key}';
         \$__id_val__ = {$id_val} ?? 0;
@@ -226,12 +231,7 @@ EOT;
         return $parseStr;
     }
 
-    public function getDbNamesapce()
-    {
-        return class_exists(\think\facade\Db::class) ? '\think\facade\Db' : '\think\Db';
-    }
-
-    public function tagDetail($tag, $content)
+    public function tagGet($tag, $content)
     {
         $table = $tag['table'] ?? '';
         if (!Table::isAllowTable($table)) {
@@ -240,6 +240,9 @@ EOT;
         $id_key = $tag['id_key'] ?? 'id';
         $assign = !empty($tag['assign']) ? $tag['assign'] : ($tag['default_assign'] ?? 'data');
         $assign = ltrim($assign, '$');
+        $cache = explode(',', $tag['cache'] ?? '');
+        $cacheKey =  empty($cache[0]) ? 'false' : "'" . trim($cache[0]) . "'";
+        $cacheTime = intval($cache[1] ?? 360);
         $order = $tag['order'] ?? '';
         $fields = $tag['fields'] ?? Table::defaultFields($table);
         $where = $tag['where'] ?? '1=1';
@@ -269,11 +272,10 @@ EOT;
 
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
         $scope = Table::defaultScope($table);
-        $dbNameSpace = $this->getDbNamesapce();
+        $dbNameSpace = Processer::getDbNamespace();
 
         $parseStr = <<<EOT
         <?php
-        
         \$__where_raw__ = "{$where}";
         \$__where__ = [];
         \$__id_key__ = '{$id_key}';
@@ -287,6 +289,7 @@ EOT;
             ->where('{$scope}')
             ->order('{$order}')
             ->field('{$fields}')
+            ->cache({$cacheKey}, {$cacheTime})
             ->find();
         \$__detail__ = \\tpext\\cms\\common\\taglib\\Processer::detail('{$table}', \$__detail__);
         ?>
@@ -302,6 +305,14 @@ EOT;
         return $parseStr;
     }
 
+    protected function whereExp($where)
+    {
+        $where = str_ireplace(['egt', 'elt', 'neq'], ['>=', '<=', '<>'], $where);
+        $where = str_ireplace(['gt', 'eq', 'lt', '!='], ['>', '=', '<', '<>'], $where);
+
+        return $where;
+    }
+
     /**
      * 解析where中的变量
      *
@@ -310,7 +321,8 @@ EOT;
      */
     protected function parseWhere($where)
     {
-        $where = str_replace('!=', '<>', $where);
+        $where = $this->whereExp($where);
+
         $binds = [];
         preg_match_all('/([\$:][\w\.]+)\b/', $where, $matches);
         if (isset($matches[1]) && count($matches[1]) > 0) {
@@ -347,7 +359,7 @@ EOT;
         $where = '';
         if (preg_match('/^\(?\d[,\d]+\)?$/is', $idVal)) {
             $idVal = trim($idVal, '()');
-            $where == " and {$idKey} in ({$idVal})";
+            $where = " and {$idKey} in ({$idVal})";
         } else if (preg_match('/^in([^\(]+)/is', $idVal, $mch)) {
             $where = " and {$idKey} in ({$mch[1]})";
         } else if (preg_match('/^not\s*in([^\(]+)/is', $idVal, $mch)) {
@@ -358,20 +370,16 @@ EOT;
             $where = " and {$idKey} <> {$mch[1]}";
         } else if (preg_match('/^(?:in|>|=|<|>=|<=|<>)/is', $idVal)) {
             $where = " and {$idKey} {$idVal}";
-        } else if (preg_match('/^(?:gt|eq|lt|egt|elt|neq)/is', $idVal)) {
-            $idVal = str_ireplace(['gt', 'eq', 'lt', 'egt', 'elt', 'neq'], ['>', '=', '<', '>=', '<=', '<>'], $idVal);
+        } else if (preg_match('/^(?:gt|eq|lt|egt|elt|neq|!=)/is', $idVal)) {
+            $idVal = $this->whereExp($idVal);
             $where = " and {$idKey} {$idVal}";
-        } else if (preg_match('/^(?:like|not\s+like)/is', $idVal, $mch) && !strpos($idVal, '%')) {
-            $where = " and {$idKey} {$mch[0]} %{$idVal}%";
-        } else if (preg_match('/^notlike/is', $idVal, $mch)) {
-            if (!strpos($idVal, '%')) {
-                $idVal = "%{$idVal}%";
+        } else if (preg_match('/^(like|not\s*like)\s+(.+)$/is', $idVal, $mch)) {
+            if (!strstr($mch[2], '%')) {
+                $mch[2] = '%' . $mch[2] . '%';
             }
-            $where = " and {$idKey} not like {$idVal}";
-        } else if (preg_match('/^(?:between|not between)/is', $idVal, $mch)) {
-            $where = " and {$idKey} {$mch[0]} {$idVal}";
-        } else if (preg_match('/^notbetween/is', $idVal, $mch)) {
-            $where = " and {$idKey} not between {$idVal}";
+            $where = " and {$idKey} {$mch[1]} {$mch[2]}";
+        } else if (preg_match('/^(between|not\s*between)\s+(.+)$/is', $idVal, $mch)) {
+            $where = " and {$idKey} {$mch[1]} {$mch[2]}";
         } else {
             $where = " and {$idKey} = {$idVal}";
         }
@@ -413,7 +421,7 @@ EOT;
                     $tag['tag_name'] = $tagName;
                     $tag['default_assign'] = $tagArr[0];
                     $tag['id_key'] = $info['id_key'] ?? 'id';
-                    return $this->tagDetail($tag, $content);
+                    return $this->tagGet($tag, $content);
                 }
                 if ($info['tag_name'] . '@prev' == $tagName) {
                     $tag['table'] = $table;
@@ -451,7 +459,7 @@ EOT;
                     $tag['where'] = "{$tag['id_key']} != {$id} and {$first} {$cmp} {$sort} and " . $where;
                     $tag['order']  = implode(',', $fields);
                     $tag[$tag['id_key']] = '';
-                    return $this->tagDetail($tag, $content);
+                    return $this->tagGet($tag, $content);
                 }
                 if ($info['tag_name'] . '@next' == $tagName) {
                     $tag['table'] = $table;
@@ -480,7 +488,7 @@ EOT;
                     $tag['where'] = "{$tag['id_key']} != {$id} and {$first} {$cmp} {$sort} and " . $where;
                     $tag['order']  = $order;
                     $tag[$tag['id_key']] = '';
-                    return $this->tagDetail($tag, $content);
+                    return $this->tagGet($tag, $content);
                 }
             }
             throw new Exception("未知标签：{$tagName}");

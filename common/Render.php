@@ -17,6 +17,7 @@ use tpext\cms\common\model\CmsTemplate;
 use tpext\cms\common\model\CmsTemplateHtml;
 use tpext\cms\common\model\CmsContentPage;
 use tpext\cms\common\taglib\Processer;
+use tpext\cms\common\taglib\Table;
 
 class Render
 {
@@ -31,16 +32,18 @@ class Render
     public function channel($template, $channel, $page = 1)
     {
         $pageInfo = CmsContentPage::where(['html_type' => 'channel', 'template_id' => $template['id'], 'to_id' => $channel['id']])
+            ->cache('cms_content_page_' . $template['id'] . '_' . 'channel' . '_' . $channel['id'], 3600)
             ->find(); //获取绑定的模板
 
         $tplHtml = null;
 
         if ($pageInfo) {
-            $tplHtml = CmsTemplateHtml::where('id', $pageInfo['html_id'])->find();
+            $tplHtml = CmsTemplateHtml::where('id', $pageInfo['html_id'])->cache('cms_template_html_' . $pageInfo['html_id'], 3600)->find();
         } else {
             //无绑定，使用默认模板
             $tplHtml = CmsTemplateHtml::where('is_default', 1)
                 ->where(['type' => 'channel', 'template_id' => $template['id']])
+                ->cache('cms_template_html_channel_default_' . $template['id'], 3600)
                 ->find();
         }
         if (!$tplHtml) {
@@ -54,14 +57,16 @@ class Render
                 return ['code' => 0, 'msg' => '页面不存在'];
             } else {
                 $vars = [
-                    'id' => $channel['id'],
-                    '__SITE_HOME__' => $template['prefix'],
                     'page' => $page,
+                    'id' => $channel['id'],
+                    'channel_id' => $channel['id'],
                     'channel' => $channel,
-                    'pagesize' => $channel['pagesize'],
-                    'orderBy' => $channel['order_by'],
-                    'page_path' => $template['prefix'] . Processer::resolveChannelPath($channel) . '-[PAGE].html',
-                    'web_config' => Module::getInstance()->config(),
+                    '__site_home__' => $template['prefix'],
+                    '__page_type__' => 'channel',
+                    '__set_pagesize__' => $channel['pagesize'],
+                    '__set_order_by__' => 'is_top desc,' . ($channel['order_by'] ?: Table::defaultOrder('cms_content')),
+                    '__set_page_path__' => $template['prefix'] . Processer::resolveChannelPath($channel) . '-[PAGE].html',
+                    '__wconf__' => Module::getInstance()->config(),
                 ];
                 $config = [
                     'cache_prefix' => $tplHtml['path'],
@@ -76,7 +81,7 @@ class Render
             return ['code' => 1, 'msg' => 'ok', 'data' => $out, 'page_info' => $pageInfo, 'tpl_html' => $tplHtml];
         } catch (\Throwable $e) {
             trace($e->__toString());
-            return ['code' => 0, 'msg' => $channel['name'] . ']栏目渲染出错，' . str_replace(App::getRootPath(), '', $e->getFile()) . '#' . $e->getLine() . '|' . $e->getMessage() . '。模板文件：' . $tplFile, 'out' => $out];
+            return ['code' => 0, 'msg' => '[' . $channel['name'] . ']栏目渲染出错，' . str_replace(App::getRootPath(), '', $e->getFile()) . '#' . $e->getLine() . '|' . $e->getMessage() . '。模板文件：' . $tplFile];
         }
     }
 
@@ -91,21 +96,24 @@ class Render
     public function content($template, $content)
     {
         $pageInfo = CmsContentPage::where(['html_type' => 'single', 'template_id' => $template['id'], 'to_id' => $content['id']])
+            ->cache('cms_content_page_' . $template['id'] . '_' . 'single' . '_' . $content['id'], 3600)
             ->find(); //获取绑定的单页模板
 
         if (!$pageInfo) {
-            $pageInfo = CmsContentPage::where(['html_type' => 'content', 'template_id' => $template['id'], 'to_id' => $content['id']])
+            $pageInfo = CmsContentPage::where(['html_type' => 'content', 'template_id' => $template['id'], 'to_id' => $content['channel_id']])
+                ->cache('cms_content_page_' . $template['id'] . '_' . 'content' . '_' . $content['channel_id'], 3600)
                 ->find(); //获取绑定的模板
         }
 
         $tplHtml = null;
 
         if ($pageInfo) {
-            $tplHtml = CmsTemplateHtml::where('id', $pageInfo['html_id'])->find();
+            $tplHtml = CmsTemplateHtml::where('id', $pageInfo['html_id'])->cache('cms_template_html_' . $pageInfo['html_id'], 3600)->find();
         } else {
             //无绑定，使用默认模板
             $tplHtml = CmsTemplateHtml::where('is_default', 1)
                 ->where(['type' => 'content', 'template_id' => $template['id']])
+                ->cache('cms_template_html_content_default_' . $template['id'], 3600)
                 ->find();
         }
         if (!$tplHtml) {
@@ -121,9 +129,12 @@ class Render
             } else {
                 $vars = [
                     'id' => $content['id'],
+                    'channel_id' => $content['channel_id'],
                     'content' => $content,
-                    '__SITE_HOME__' => $template['prefix'],
-                    'web_config' => Module::getInstance()->config(),
+                    'channel' => $content['channel'],
+                    '__site_home__' => $template['prefix'],
+                    '__page_type__' => 'content',
+                    '__wconf__' => Module::getInstance()->config(),
                 ];
                 $config = [
                     'cache_prefix' => $tplHtml['path'],
@@ -138,7 +149,7 @@ class Render
             return ['code' => 1, 'msg' => 'ok', 'data' => $out, 'page_info' => $pageInfo, 'tpl_html' => $tplHtml];
         } catch (\Throwable $e) {
             trace($e->__toString());
-            return ['code' => 0, 'msg' => $content['title'] . ']内容生成出错，' . str_replace(App::getRootPath(), '', $e->getFile()) . '#' . $e->getLine() . '|' . $e->getMessage() . '。模板文件：' . $tplFile, 'out' => $out];
+            return ['code' => 0, 'msg' => '[' . $content['title'] . ']内容生成出错，' . str_replace(App::getRootPath(), '', $e->getFile()) . '#' . $e->getLine() . '|' . $e->getMessage() . '。模板文件：' . $tplFile];
         }
     }
 
@@ -153,6 +164,7 @@ class Render
     {
         $tplHtml = CmsTemplateHtml::where('is_default', 1)
             ->where(['type' => 'index', 'template_id' => $template['id']])
+            ->cache('cms_template_html_index_' . $template['id'], 3600)
             ->find();
 
         if (!$tplHtml) {
@@ -163,8 +175,9 @@ class Render
             $tplFile =  str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
             Processer::setPath($template['prefix']);
             $vars = [
-                '__SITE_HOME__' => $template['prefix'],
-                'web_config' => Module::getInstance()->config(),
+                '__site_home__' => $template['prefix'],
+                '__page_type__' => 'index',
+                '__wconf__' => Module::getInstance()->config(),
             ];
             $config = [
                 'tpl_replace_string' => ['@static' => $template['prefix'] . 'static'],
@@ -202,8 +215,8 @@ class Render
             $tplFile =  str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
             Processer::setPath($template['prefix']);
             $vars = [
-                '__SITE_HOME__' => $template['prefix'],
-                'web_config' => Module::getInstance()->config(),
+                '__site_home__' => $template['prefix'],
+                '__wconf__' => Module::getInstance()->config(),
             ];
             $get = request()->get();
             $vars = array_merge($vars, $get);
