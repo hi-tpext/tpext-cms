@@ -43,7 +43,7 @@ class Cmscontent extends Controller
         $this->channelModel = new CmsChannel;
         $this->pageTitle = '内容管理';
         $this->enableField = 'is_show';
-        $this->pagesize = 6;
+        $this->pagesize = 8;
 
         $this->selectSearch = 'title';
         $this->selectFields = 'id,title,channel_id';
@@ -153,6 +153,7 @@ class Cmscontent extends Controller
         $table->getActionbar()
             ->btnEdit('', '', 'btn-primary', 'mdi-lead-pencil', 'data-layer-size="98%,98%" title="编辑"')
             ->btnView('', '', 'btn-info', 'mdi-eye-outline', 'data-layer-size="98%,98%" title="查看"')
+            ->br()
             ->btnLink('copy', url('copy', ['id' => '__data.pk__']), '', 'btn-success', 'mdi-content-copy', 'data-layer-size="1000px,auto" title="复制"')
             ->btnDelete();
     }
@@ -186,7 +187,8 @@ class Cmscontent extends Controller
             $data['is_top'] = 0;
         }
 
-        $res = $this->dataModel->update($data, [$this->getPk() => $id]);
+        $info = $this->dataModel->find($id);
+        $res = $info && $info->force()->save($data);
 
         if ($res) {
             $this->success('修改成功');
@@ -294,6 +296,13 @@ class Cmscontent extends Controller
             $form->show('create_time', '添加时间', 6);
             $form->show('update_time', '修改时间', 6);
         }
+    }
+
+    public function autopost()
+    {
+        $id = input('post.id/d', '');
+        cache('cms_content_' . $id, null);
+        return $this->_autopost();
     }
 
     /**

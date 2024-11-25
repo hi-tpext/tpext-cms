@@ -12,6 +12,7 @@
 namespace tpext\cms\common\model;
 
 use think\Model;
+use tpext\common\ExtLoader;
 
 class CmsBanner extends Model
 {
@@ -26,6 +27,12 @@ class CmsBanner extends Model
             self::beforeInsert(function ($data) {
                 return self::onBeforeInsert($data);
             });
+            self::afterInsert(function ($data) {
+                return self::onAfterInsert($data);
+            });
+            self::afterUpdate(function ($data) {
+                return self::onAfterUpdate($data);
+            });
         }
     }
 
@@ -34,6 +41,27 @@ class CmsBanner extends Model
         if (empty($data['sort'])) {
             $data['sort'] = static::max('sort') + 5;
         }
+    }
+
+    public static function onAfterInsert($data)
+    {
+        ExtLoader::trigger('cms_banner_on_after_insert', $data);
+    }
+
+    public static function onAfterUpdate($data)
+    {
+        if (!isset($data['id'])) {
+            return;
+        }
+        cache('cms_banner_' . $data['id'], null);
+
+        ExtLoader::trigger('cms_banner_on_after_insert', $data);
+    }
+
+    public static function onAfterDelete($data)
+    {
+        cache('cms_banner_' . $data['id'], null);
+        ExtLoader::trigger('cms_banner_on_after_delete', $data);
     }
 
     public function position()

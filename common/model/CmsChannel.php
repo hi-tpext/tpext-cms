@@ -12,8 +12,9 @@
 namespace tpext\cms\common\model;
 
 use think\Model;
-use tpext\builder\traits\TreeModel;
+use tpext\common\ExtLoader;
 use think\model\concern\SoftDelete;
+use tpext\builder\traits\TreeModel;
 
 class CmsChannel extends Model
 {
@@ -31,6 +32,9 @@ class CmsChannel extends Model
             //调用tp6事件，达到兼容
             self::beforeWrite(function ($data) {
                 return self::onBeforeWrite($data);
+            });
+            self::afterInsert(function ($data) {
+                return self::onAfterInsert($data);
             });
             self::afterUpdate(function ($data) {
                 return self::onAfterUpdate($data);
@@ -51,12 +55,27 @@ class CmsChannel extends Model
         }
     }
 
+    public static function onAfterInsert($data)
+    {
+        ExtLoader::trigger('cms_channel_on_after_insert', $data);
+
+        if (!empty($data['parent_id'])) {
+            cache('cms_channel_children_ids_' . $data['parent_id'], null);
+        }
+    }
+
     public static function onAfterUpdate($data)
     {
         if (!isset($data['id'])) {
             return;
         }
         cache('cms_channel_' . $data['id'], null);
+
+        if (!empty($data['parent_id'])) {
+            cache('cms_channel_children_ids_' . $data['parent_id'], null);
+        }
+
+        ExtLoader::trigger('cms_channel_on_after_insert', $data);
     }
 
     public static function onBeforeWrite($data)
@@ -88,6 +107,10 @@ class CmsChannel extends Model
     {
         static::where(['parent_id' => $data['id']])->update(['parent_id' => $data['parent_id']]);
         CmsContent::where(['channel_id' => $data['id']])->update(['channel_id' => $data['parent_id']]);
+        ExtLoader::trigger('cms_channel_on_after_delete', $data);
+
+        cache('cms_channel_' . $data['id'], null);
+        cache('cms_channel_children_ids_' . $data['parent_id'], null);
     }
 
     protected function treeInit()

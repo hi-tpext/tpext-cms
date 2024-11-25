@@ -36,7 +36,7 @@ class CmsContentPage extends Model
         if (!isset($data['html_type']) || !isset($data['to_id']) || !isset($data['template_id'])) {
             return;
         }
-        cache('cms_content_page_' . $data['template_id'] . '_' . $data['html_type'] . '_' . $data['to_id'], null);
+        cache('cms_page_' . $data['template_id'] . '_' . $data['html_type'] . '_' . $data['to_id'], null);
     }
 
     public static function onAfterDelete($data)
@@ -44,7 +44,7 @@ class CmsContentPage extends Model
         if (!isset($data['html_type']) || !isset($data['to_id']) || !isset($data['template_id'])) {
             return;
         }
-        cache('cms_content_page_' . $data['template_id'] . '_' . $data['html_type'] . '_' . $data['to_id'], null);
+        cache('cms_page_' . $data['template_id'] . '_' . $data['html_type'] . '_' . $data['to_id'], null);
     }
 
     public function template()

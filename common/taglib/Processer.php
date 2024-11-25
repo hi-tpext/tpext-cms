@@ -97,21 +97,24 @@ class Processer
         $dbNameSpace = self::getDbNamespace();
         if ($table == 'cms_channel') {
             $item['channel_id'] = $item['id'];
-            $item['url'] = $item['link'] ?: self::$path .  self::resolveChannelPath($item) . '.html';
-        } else if ($table == 'cms_content') { {
-                $channelScope = Table::defaultScope($table);
-                $channel = $dbNameSpace::name('cms_channel')->where('id', $item['channel_id'])->where($channelScope)->cache('cms_channel_' . $item['channel_id'])->find();
-                if ($channel) {
-                    $item['url'] = $item['link'] ?: self::$path  . self::resolveContentPath($item, $channel) . '.html';
-                    $item['channel_url'] = $channel['link'] ?: self::$path .  self::resolveChannelPath($channel) . '.html';
-                } else {
-                    $empty = new EmptyData;
-                    return $empty;
-                }
-                $item['channel'] = $channel;
-                $item['content_id'] = $item['id'];
-                $item['publish_date'] = date('Y-m-d', strtotime($item['publish_time'] ?? '2024-01-01'));
+            $item['url'] = $item['link'] ?: ($item['channel_path'] == '#' ? '#' : self::$path .  self::resolveChannelPath($item) . '.html');
+        } else if ($table == 'cms_content') {
+            $channelScope = Table::defaultScope($table);
+            $channel = $dbNameSpace::name('cms_channel')
+                ->where('id', $item['channel_id'])
+                ->where($channelScope)
+                ->cache('cms_channel_' . $item['channel_id'], 0, 'cms_channel')
+                ->find();
+            if ($channel) {
+                $item['url'] = $item['link'] ?: self::$path  . self::resolveContentPath($item, $channel) . '.html';
+                $item['channel_url'] = $channel['link'] ?: self::$path .  self::resolveChannelPath($channel) . '.html';
+            } else {
+                $empty = new EmptyData;
+                return $empty;
             }
+            $item['channel'] = $channel;
+            $item['content_id'] = $item['id'];
+            $item['publish_date'] = date('Y-m-d', strtotime($item['publish_time'] ?? '2024-01-01'));
         } else if ($table == 'cms_banner') {
             $item['url'] = $item['link'];
         } else if ($table == 'cms_tag') {
@@ -143,10 +146,27 @@ class Processer
             $item['url'] = $item['link'] ?: self::$path . self::resolveChannelPath($item) . '.html';
         } else if ($table == 'cms_content') {
             $channelScope = Table::defaultScope($table);
-            $channel = $dbNameSpace::name('cms_channel')->where('id', $item['channel_id'])->where($channelScope)->cache('cms_channel_' . $item['channel_id'])->find();
+            $channel = $dbNameSpace::name('cms_channel')
+                ->where('id', $item['channel_id'])
+                ->where($channelScope)
+                ->cache('cms_channel_' . $item['channel_id'], 0, 'cms_channel')
+                ->find();
             if ($channel) {
                 $item['url'] = $item['link'] ?: self::$path  . self::resolveContentPath($item, $channel) . '.html';
-                $item['channel_url'] = $channel['link'] ?: self::$path .  self::resolveChannelPath($channel) . '.html';
+                $item['channel_url'] = $item['link'] ?: ($item['channel_path'] == '#' ? '#' : self::$path .  self::resolveChannelPath($item) . '.html');
+                $childrenIds = [];
+                if ($channel['type'] == 1 || $channel['type'] == 2) { //不限|目录
+                    $childrenIds = $dbNameSpace::name('cms_channel')
+                        ->where('parent_id', $item['id'])
+                        ->where($channelScope)
+                        ->where('type', '<>', 2)
+                        ->cache('cms_channel_children_ids_' . $item['channel_id'], 0, 'cms_channel')
+                        ->colunm('id');
+                    if ($channel['type'] == 1) {
+                        $childrenIds = array_merge([$channel['id']], $childrenIds);
+                    }
+                }
+                $item['children_ids'] = $childrenIds;
             } else {
                 $empty = new EmptyData;
                 return $empty;
@@ -155,9 +175,15 @@ class Processer
             $item['content_id'] = $item['id'];
             $item['publish_date'] = date('Y-m-d', strtotime($item['publish_time'] ?? '2024-01-01'));
             if (!empty($item['reference_id'])) {
-                $detail = $dbNameSpace::name('cms_content_detail')->where('main_id', $item['reference_id'])->find();
+                $detail = $dbNameSpace::name('cms_content_detail')
+                    ->where('main_id', $item['reference_id'])
+                    ->cache('cms_content_detail_' . $item['id'], 3600, $table)
+                    ->find();
             } else {
-                $detail = $dbNameSpace::name('cms_content_detail')->where('main_id', $item['id'])->find();
+                $detail = $dbNameSpace::name('cms_content_detail')
+                    ->where('main_id', $item['id'])
+                    ->cache('cms_content_detail_' . $item['id'], 3600, $table)
+                    ->find();
             }
             $item['content'] = $detail ? $detail['content'] : '';
         } else if ($table == 'cms_banner') {
@@ -217,6 +243,6 @@ class Processer
     {
         $dbNameSpace = self::getDbNamespace();
 
-        return $dbNameSpace::name($table)->where($idKey, $id)->cache($table . '_' . $id)->find();
+        return $dbNameSpace::name($table)->where($idKey, $id)->cache($table . '_' . $id, 3600, $table)->find();
     }
 }

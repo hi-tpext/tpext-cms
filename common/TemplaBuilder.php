@@ -45,7 +45,7 @@ class TemplaBuilder
 
         if (in_array('channel', $types) || in_array('content', $types)) {
             $channelSize = 3;
-            $contentSize = 20;
+            $contentSize = 50;
             $channelList = [];
             $channelCount = 0;
             $contentCount = 0;
@@ -147,16 +147,22 @@ class TemplaBuilder
     }
 
     /**
-     * 生成栏目页
+     * 生成栏目第一页
      *
      * @param array|CmsTemplate $template
      * @param array|CmsChannel $channel
      * @return array
      */
-    protected function makeChannel($template, $channel)
+    public function makeChannel($template, $channel)
     {
         $page = new Page();
-        $output = $page->channel($template['id'], $channel['id']);
+        $output = '';
+        if ($channel['channel_path'] == '#') {
+            $output = '<!--不生成-->';
+        } else {
+            $output = $page->channel($channel['id'], $template['id']);
+        }
+
         $outPath = Processer::getChannelOutPath();
         file_put_contents($outPath . Processer::resolveChannelPath($channel) . '.html', $output);
         file_put_contents($outPath . Processer::resolveChannelPath($channel) . '-1.html', $output);
@@ -171,10 +177,10 @@ class TemplaBuilder
      * @param array|CmsContent $content
      * @return array
      */
-    protected function makeContent($template, $channel, $content)
+    public function makeContent($template, $channel, $content)
     {
         $page = new Page();
-        $output = $page->content($template['id'], $content['id']);
+        $output = $page->content($content['id'], $template['id']);
 
         $outPath = Processer::getContentOutPath();
         $contentPath = Processer::resolveContentPath($content, $channel) . '.html';
@@ -201,7 +207,7 @@ class TemplaBuilder
      * @param array|CmsTemplate $template
      * @return array
      */
-    protected function makeIndex($template)
+    public function makeIndex($template)
     {
         $page = new Page();
         $output = $page->index($template['id']);

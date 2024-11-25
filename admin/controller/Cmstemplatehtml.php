@@ -95,6 +95,8 @@ class Cmstemplatehtml extends Controller
             if (!$template) {
                 $this->error('模板不存在');
             }
+            $view_path = App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'];
+            CmsTemplate::initPath($view_path);
             TemplateHtmlModel::scanPageFiles($template_id,  App::getRootPath() . 'theme/' . $template['view_path']);
         }
     }
@@ -140,9 +142,9 @@ class Cmstemplatehtml extends Controller
                 $this->dataModel->where('id', $d['id'])->delete(); //真实文件不存在，删除记录
             }
 
-            if ($d['type'] == 'channel') {
+            if ($d['type'] == 'channel' && $d['is_default'] == 0) {
                 $d['conut'] = '栏目：' . CmsContentPage::where('html_type', 'channel')->where('html_id', $d['id'])->count();
-            } else if ($d['type'] == 'content') {
+            } else if ($d['type'] == 'content' && $d['is_default'] == 0) {
                 $d['conut'] = '栏目：' . CmsContentPage::where('html_type', 'content')->where('html_id', $d['id'])->count();
             } else if ($d['type'] == 'single') {
                 $d['conut'] = '文章：' . CmsContentPage::where('html_type', 'single')->where('html_id', $d['id'])->count();

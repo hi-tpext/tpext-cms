@@ -7,6 +7,7 @@ use tpext\builder\traits\actions;
 use tpext\cms\common\model\CmsTemplateHtml;
 use tpext\cms\common\model\CmsTemplate;
 use tpext\think\App;
+use tpext\cms\common\Render;
 
 /**
  * Undocumented class
@@ -93,7 +94,9 @@ class Cmstemplatestatic extends Controller
 
         $table->getToolbar()
             ->btnAdd(url('add', ['template_id' => input('template_id/d')]))
-            ->btnRefresh();
+            ->btnRefresh()
+            ->btnToggleSearch()
+            ->btnLink(url('copyStatic', ['template_id' => input('template_id/d')]), '发布静态资源', 'btn-danger', 'mdi-content-copy');
 
         $table->getActionbar()
             ->btnEdit(url('edit', ['path' => '__data.fpath__', 'ext' => '__data.ext__']), '代码', 'btn-warning', 'mdi-table-edit', 'target="_blank"')
@@ -103,6 +106,25 @@ class Cmstemplatestatic extends Controller
             $d['fpath'] = str_replace(['/', '\\'], '--ds--', $d['path']);
         }
     }
+
+    /**
+     * 发布静态资源
+     * @return mixed
+     */
+    public function copyStatic()
+    {
+        $template_id = input('template_id/d');
+        $template = CmsTemplate::where('id', $template_id)->find();
+        if (!$template) {
+            $this->error('模板不存在');
+        }
+
+        $render = new Render();
+        $res = $render->copyStatic($template);
+
+        return $this->builder()->layer()->close($res['code'], $res['msg']);
+    }
+
 
     public function edit()
     {

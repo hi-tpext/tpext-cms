@@ -2,10 +2,11 @@
 
 namespace tpext\cms\admin\controller;
 
+use tpext\think\App;
 use think\Controller;
 use tpext\builder\traits\actions;
+use tpext\cms\common\RouteBuilder;
 use tpext\cms\common\model\CmsTemplate as TemplateModel;
-use tpext\think\App;
 
 /**
  * Undocumented class
@@ -81,11 +82,11 @@ class Cmstemplate extends Controller
         $table = $this->table;
 
         $table->show('id', 'ID');
-        $table->show('name', '标题')->getWrapper()->addStyle('max-width:200px');
+        $table->show('name', '标题');
         $table->match('platform', '类型')->options(self::$platforms)->mapClassGroup([['pc', 'info'], ['mobile', 'success']]);
         $table->raw('view_path', '模板路径')->to('<code>theme/{val}</code>');
         $table->raw('prefix', '生成路径前缀')->to('<a href="{val}" target="_blank">{val}</a>');
-        $table->show('description', '描述')->default('暂无')->getWrapper()->addStyle('max-width:200px');
+        $table->show('description', '描述')->default('暂无');
         $table->show('pages_count', '页面数量');
         $table->raw('pages_manage', '模板页面')->to('<a class="label label-secondary" data-title="[{name}]文件管理" onclick="top.$.fn.multitabs().create(this, true); return false;" href="/admin/cmstemplatehtml/index?template_id={id}">[管理<i title="打开文件管理页面" class="mdi mdi-arrow-top-right"></i>]</a>');
         $table->raw('static_manage', '静态资源')->to('<a class="label label-secondary" data-title="[{name}]静态文件管理" onclick="top.$.fn.multitabs().create(this, true); return false;" href="/admin/cmstemplatestatic/index?template_id={id}">[管理<i title="打开静态文件管理页面" class="mdi mdi-arrow-top-right"></i>]</a>');
@@ -93,19 +94,32 @@ class Cmstemplate extends Controller
         $table->fields('times', '添加/修改时间')->with(
             $table->show('create_time', '添加时间'),
             $table->show('update_time', '修改时间')
-        )->getWrapper()->addStyle('width:180px');
+        );
 
         $table->sortable('id,name,platform,sort,prefix,create_time,update_time');
 
         $table->getToolbar()
             ->btnAdd()
-            ->btnRefresh();
+            ->btnRefresh()
+            ->btnToggleSearch()
+            ->btnLink(url('makeRoute'), '生成路由', 'btn-danger', 'mdi-link-variant');
 
         $table->getActionbar()
             ->btnEdit()
             ->btnView()
-            ->btnLink('build', url('/admin/cmstemplatemake/make', ['id' => '__data.pk__']), '生成', 'btn-success', 'mdi-cloud-braces ', 'data-layer-size="98%,98%"')
+            ->btnLink('make', url('/admin/cmstemplatemake/make', ['template_id' => '__data.pk__']), '生成', 'btn-success', 'mdi-cloud-braces ', 'data-layer-size="98%,98%"')
             ->btnDelete();
+    }
+
+    /**
+     * @title 生成路由
+     * @return mixed
+     */
+    public function makeRoute()
+    {
+        $routeBuilder = new RouteBuilder;
+        $routeBuilder->builder(true);
+        return $this->builder()->layer()->closeRefresh(1, '已生成路由');
     }
 
     /**
@@ -131,7 +145,6 @@ class Cmstemplate extends Controller
             $form->divider('模板信息');
 
             $view_path = App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $data['view_path'];
-
             TemplateModel::initPath($view_path);
 
             $form->raw('index', '首页页模板')->value('<code>index.html</code>：' . (is_file($view_path . '/index.html') ? '<label class="label label-success">存在</label>' : '<label class="label label-danger">不存在</label>'));

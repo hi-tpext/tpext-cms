@@ -18,6 +18,39 @@ use tpext\cms\common\taglib\Table;
 class Page
 {
     /**
+     * @var CmsTemplate
+     */
+    protected $template = null;
+
+    public function __construct()
+    {
+        $this->template = new CmsTemplate;
+    }
+
+    /**
+     * 首页
+     * @param int $tpl_id
+     * @return string
+     */
+    public function index($tpl_id)
+    {
+        $template = $this->template->where('id', $tpl_id)
+            ->cache('cms_template_' . $tpl_id, 3600, 'cms_template')
+            ->find();
+
+        if (!$template) {
+            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>未能找到them-' . $tpl_id . '</h4></body></html>';
+        }
+
+        $render = new Render();
+        $res = $render->index($template);
+        if ($res['code'] == 0) {
+            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>' . $res['msg'] . '</h4></body></html>';
+        }
+        return $res['data'];
+    }
+
+    /**
      * 栏目
      * @param int $id
      * @param int $tpl_id
@@ -26,15 +59,22 @@ class Page
      */
     public function channel($id, $tpl_id, $page = 1)
     {
-        $template = CmsTemplate::where('id', $tpl_id)->cache('cms_template_' . $tpl_id)->find();
+        $template = $this->template->where('id', $tpl_id)
+            ->cache('cms_template_' . $tpl_id, 3600, 'cms_template')
+            ->find();
+
         if (!$template) {
             return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>未能找到them-' . $tpl_id . '</h4></body></html>';
         }
+
         $table = 'cms_channel';
 
         $dbNameSpace = Processer::getDbNamespace();
         $channelScope = Table::defaultScope($table);
-        $channel = $dbNameSpace::name($table)->where('id', $id)->where($channelScope)->find();
+        $channel = $dbNameSpace::name($table)->where('id', $id)
+            ->where($channelScope)
+            ->cache('cms_channel_' . $id, 3600, $table)
+            ->find();
 
         if (!$channel) {
             return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>页面不存在</h4></body></html>';
@@ -57,15 +97,24 @@ class Page
      */
     public function content($id, $tpl_id)
     {
-        $template = CmsTemplate::where('id', $tpl_id)->cache('cms_template_' . $tpl_id)->find();
+        $template = $this->template->where('id', $tpl_id)
+            ->cache('cms_template_' . $tpl_id, 3600, 'cms_template')
+            ->find();
+
         if (!$template) {
             return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>未能找到them-' . $tpl_id . '</h4></body></html>';
         }
+
         $table = 'cms_content';
 
         $dbNameSpace = Processer::getDbNamespace();
         $channelScope = Table::defaultScope($table);
-        $content = $dbNameSpace::name($table)->where('id', $id)->where($channelScope)->find();
+        $content = $dbNameSpace::name($table)
+            ->where('id', $id)
+            ->where($channelScope)
+            ->cache('cms_content_' . $id, 3600, $table)
+            ->find();
+
         if (!$content) {
             return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>页面不存在</h4></body></html>';
         }
@@ -80,25 +129,6 @@ class Page
     }
 
     /**
-     * 首页
-     * @param int $tpl_id
-     * @return string
-     */
-    public function index($tpl_id)
-    {
-        $template = CmsTemplate::where('id', $tpl_id)->cache('cms_template_' . $tpl_id)->find();
-        if (!$template) {
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>未能找到them-' . $tpl_id . '</h4></body></html>';
-        }
-        $render = new Render();
-        $res = $render->index($template);
-        if ($res['code'] == 0) {
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>' . $res['msg'] . '</h4></body></html>';
-        }
-        return $res['data'];
-    }
-
-    /**
      * 动态页面
      * @param int $html_id
      * @param int $tpl_id
@@ -106,7 +136,10 @@ class Page
      */
     public function dynamic($html_id, $tpl_id)
     {
-        $template = CmsTemplate::where('id', $tpl_id)->cache('cms_template_' . $tpl_id)->find();
+        $template = $this->template->where('id', $tpl_id)
+            ->cache('cms_template_' . $tpl_id, 3600, 'cms_template')
+            ->find();
+
         if (!$template) {
             return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>未能找到them-' . $tpl_id . '</h4></body></html>';
         }

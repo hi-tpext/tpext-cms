@@ -77,7 +77,7 @@ class Cms extends Taglib
                 }
             }
         } else if ($cid_key) {
-            $cid_val = "\${$cid_key}";
+            $cid_val = "\${$cid_key}s" ?: "\${$cid_key}";
         } else {
             $cid_val = '0';
         }
@@ -148,7 +148,7 @@ class Cms extends Taglib
             ->field('{$fields}')
             ->order(\$__order_by__)
             ->limit((\$__page__ - 1) * \$__take__, \$__take__)
-            ->cache({$cacheKey}, {$cacheTime})
+            ->cache({$cacheKey}, {$cacheTime}, '{$table}')
             ->select();
         foreach(\$__data__ as \$__d__) {
             \$__list__[] = \\tpext\\cms\\common\\taglib\\Processer::item('{$table}', \$__d__);
@@ -289,7 +289,7 @@ EOT;
             ->where('{$scope}')
             ->order('{$order}')
             ->field('{$fields}')
-            ->cache({$cacheKey}, {$cacheTime})
+            ->cache({$cacheKey}, {$cacheTime}, '{$table}')
             ->find();
         \$__detail__ = \\tpext\\cms\\common\\taglib\\Processer::detail('{$table}', \$__detail__);
         ?>

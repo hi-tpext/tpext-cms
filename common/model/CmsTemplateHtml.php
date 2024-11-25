@@ -36,21 +36,21 @@ class CmsTemplateHtml extends Model
     public static function onAfterUpdate($data)
     {
         if (isset($data['id'])) {
-            cache('cms_template_html_' . $data['id'], null);
+            cache('cms_html_' . $data['id'], null);
         }
 
         if (isset($data['is_default']) && isset($data['type']) && isset($data['template_id'])) {
             
             if ($data['type'] == 'content' && $data['is_default'] == 1) {
-                cache('cms_template_html_content_default_' . $data['template_id'], null);
+                cache('cms_html_content_default_' . $data['template_id'], null);
             }
 
             if ($data['type'] == 'channel' && $data['is_default'] == 1) {
-                cache('cms_template_html_channel_default_' . $data['template_id'], null);
+                cache('cms_html_channel_default_' . $data['template_id'], null);
             }
 
             if ($data['type'] == 'index') {
-                cache('cms_template_html_index_' . $data['template_id'], null);
+                cache('cms_html_index_' . $data['template_id'], null);
             }
         }
     }

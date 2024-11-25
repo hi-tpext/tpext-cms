@@ -12,6 +12,7 @@
 namespace tpext\cms\common\model;
 
 use think\Model;
+use tpext\common\ExtLoader;
 use think\model\concern\SoftDelete;
 
 class CmsContent extends Model
@@ -28,19 +29,15 @@ class CmsContent extends Model
             self::beforeInsert(function ($data) {
                 return self::onBeforeInsert($data);
             });
-
             self::afterInsert(function ($data) {
                 return self::onAfterInsert($data);
             });
-
             self::afterUpdate(function ($data) {
                 return self::onAfterUpdate($data);
             });
-
             self::afterDelete(function ($data) {
                 return self::onAfterDelete($data);
             });
-
             self::beforeWrite(function ($data) {
                 return self::onBeforeWrite($data);
             });
@@ -77,6 +74,8 @@ class CmsContent extends Model
             'main_id' => $id,
             'content' => !empty($data['reference_id']) ? '@' . $data['reference_id'] :  $data->getData('content'),
         ]);
+
+        ExtLoader::trigger('cms_content_on_after_insert', $data);
     }
 
     public static function onAfterUpdate($data)
@@ -84,21 +83,28 @@ class CmsContent extends Model
         if (!isset($data['id'])) {
             return;
         }
-        $id = $data['id'];
+        cache('cms_content_' . $data['id'], null);
 
-        $detail = CmsContentDetail::where('main_id', $id)->find();
+        $detail = CmsContentDetail::where('main_id', $data['id'])->find();
         if (!$detail) {
             $detail = new CmsContentDetail;
+        } else {
+            cache('cms_content_detail_' . $detail['id'], null);
         }
         $detail->save([
-            'main_id' => $id,
+            'main_id' => $data['id'],
             'content' => !empty($data['reference_id']) ? '@' . $data['reference_id'] : $data->getData('content')
         ]);
+
+        ExtLoader::trigger('cms_content_on_after_update', $data);
     }
 
     public static function onAfterDelete($data)
     {
         CmsContentDetail::where('main_id', $data['id'])->delete();
+        ExtLoader::trigger('cms_content_on_after_delete', $data);
+        
+        cache('cms_content_' . $data['id'], null);
     }
 
     protected static function getDesc($content)

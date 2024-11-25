@@ -11,9 +11,10 @@
 
 namespace tpext\cms\common;
 
+use tpext\think\App;
+use tpext\common\ExtLoader;
 use tpext\common\Module as baseModule;
 use tpext\cms\common\model\CmsTemplate;
-use tpext\think\App;
 
 class Module extends baseModule
 {
@@ -74,6 +75,12 @@ class Module extends baseModule
                     'sort' => 6,
                     'url' => '/admin/cmstag/index',
                     'icon' => 'mdi mdi-tag-outline'
+                ],
+                [
+                    'title' => '设置',
+                    'sort' => 7,
+                    'url' => '/admin/config/edit/key/tpext-cms-common-Module',
+                    'icon' => 'mdi mdi-settings'
                 ]
             ]
         ]
@@ -99,5 +106,20 @@ class Module extends baseModule
         }
 
         return $success;
+    }
+
+    public function loaded()
+    {
+        ExtLoader::watch('cms_content_on_after_update', function ($data) {
+            trace('cms_content_on_after_update' . json_encode($data));
+        });
+
+        ExtLoader::watch('cms_content_on_after_insert', function ($data) {
+            trace('cms_content_on_after_insert' . json_encode($data));
+        });
+
+        ExtLoader::watch('cms_content_on_after_delete', function ($data) {
+            trace('cms_content_on_after_delete' . json_encode($data));
+        });
     }
 }

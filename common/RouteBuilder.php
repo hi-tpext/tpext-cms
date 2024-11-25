@@ -76,6 +76,9 @@ class RouteBuilder
         $rules = [];
         foreach ($urlPaths as $url) {
             $path = $url['path'];
+            if ($path == '#') {
+                continue;
+            }
             if (stristr($path, '[id]') === false) {
                 $ids = $url['ids'];
                 foreach ($ids as $id) {
