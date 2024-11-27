@@ -4,8 +4,9 @@ namespace tpext\cms\admin\controller;
 
 use think\Controller;
 use tpext\builder\traits\actions;
-use tpext\cms\common\model\CmsContentPage;
+use tpext\cms\common\taglib\Processer;
 use tpext\cms\common\model\CmsTemplate;
+use tpext\cms\common\model\CmsContentPage;
 use tpext\cms\common\model\CmsTemplateHtml;
 use tpext\cms\common\model\CmsChannel as ChannelModel;
 
@@ -52,7 +53,7 @@ class Cmschannel extends Controller
     {
         $table = $this->table;
         $table->show('id', 'ID');
-        $table->raw('__text__', '结构')->getWrapper()->addStyle('text-align:left;');
+        $table->raw('__text__', '结构')->to('<a href="{preview_url}" target="_blank">{val}</a>')->getWrapper()->addStyle('text-align:left;');
         $table->image('logo', '封面图')->thumbSize(50, 50);
         $table->show('link', '链接')->default('暂无');
         $table->text('name', '名称')->autoPost('', true);
@@ -91,8 +92,12 @@ class Cmschannel extends Controller
                 ]
             ]);
 
+        $template = CmsTemplate::find();
+        Processer::setPath($template['prefix']);
+
         foreach ($data as &$d) {
             $d['__hi_add__'] = $d['type'] == 3;
+            $d['preview_url'] = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $template['prefix']) . Processer::resolveChannelPath($d) . '.html';
         }
     }
 
@@ -162,12 +167,16 @@ class Cmschannel extends Controller
             $form->show('create_time', '添加时间');
             $form->show('update_time', '修改时间');
         }
+
+        $list = $this->dataModel->order('sort')->select();
+
         $form->tab('生成设置');
         $form->number('pagesize', '分页大小')->default(20)->required();
+        $form->text('order_by', '内容排序方式')->help('默认为：sort desc,publish_time desc,id desc');
         $form->text('channel_path', '栏目生成路径')->required()->size(2, 6)->beforSymbol('channel/')->afterSymbol('[-page].html')->default('c[id]')->help('[id]为栏目编号变量。如不生成，填入#');
         $form->text('content_path', '内容生成路径')->required()->size(2, 6)->beforSymbol('content/')->afterSymbol('.html')->default('a[id]')->help('[id]为内容编号变量');
         $form->text('link', '跳转链接')->help('设置后覆盖栏目生成地址，用于外链或站内跳转');
-        $form->text('order_by', '内容排序方式')->help('默认为：sort desc,publish_time desc,id desc');
+        $form->selectTree('extend_ids', '附加栏目')->optionsData($list, 'name', 'id', 'parent_id', '')->help('可选多个附加栏目，此栏目列表页同时显示其他栏目内容');
 
         if ($isEdit) {
             $form->hidden('id');
@@ -212,11 +221,31 @@ class Cmschannel extends Controller
         return null;
     }
 
-    public function autopost()
+    protected function _autopost()
     {
+        $this->checkToken();
+
         $id = input('post.id/d', '');
-        cache('cms_content_' . $id, null);
-        return $this->_autopost();
+        $name = input('post.name', '');
+        $value = input('post.value', '');
+
+        if (empty($id) || empty($name)) {
+            $this->error(__blang('bilder_parameter_error'));
+        }
+
+        if (!empty($this->postAllowFields) && !in_array($name, $this->postAllowFields)) {
+            $this->error(__blang('bilder_field_not_allowed'));
+        }
+
+        $info = $this->dataModel->where($this->getPk(), $id)->find();
+
+        $res = $info && $info->save([$name => $value]);
+
+        if ($res) {
+            $this->success(__blang('bilder_update_succeeded'));
+        } else {
+            $this->error(__blang('bilder_update_failed_or_no_changes'));
+        }
     }
 
     protected function save($id = 0)
@@ -233,6 +262,7 @@ class Cmschannel extends Controller
             'sort',
             'channel_path',
             'content_path',
+            'extend_ids',
             'order_by',
         ], 'post');
 

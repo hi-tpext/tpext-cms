@@ -13,6 +13,7 @@
 namespace tpext\cms\common\taglib;
 
 use tpext\common\ExtLoader;
+use tpext\cms\common\Module;
 
 class Table
 {
@@ -181,6 +182,10 @@ class Table
     {
         if (!static::$init) {
             ExtLoader::trigger('tpext_cms_get_tables'); //监听此事件以扩展标签
+            $tables = Module::getInstance()->config('allow_tables', '');
+            if (!empty($tables)) {
+                static::$allowTables = array_merge(static::$allowTables, explode(',', $tables));
+            }
             static::$init = true;
         }
         return static::$tables;
@@ -194,6 +199,10 @@ class Table
      */
     public static function isAllowTable($table)
     {
+        if (stristr($table, 'admin')) {
+            return false;
+        }
+
         $tables = static::getTables();
         return in_array($table, array_keys($tables)) || in_array($table, static::$allowTables);
     }

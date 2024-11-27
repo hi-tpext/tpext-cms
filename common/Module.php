@@ -12,7 +12,7 @@
 namespace tpext\cms\common;
 
 use tpext\think\App;
-use tpext\common\ExtLoader;
+use tpext\cms\common\event\MakeStatic;
 use tpext\common\Module as baseModule;
 use tpext\cms\common\model\CmsTemplate;
 
@@ -110,16 +110,11 @@ class Module extends baseModule
 
     public function loaded()
     {
-        ExtLoader::watch('cms_content_on_after_update', function ($data) {
-            trace('cms_content_on_after_update' . json_encode($data));
-        });
+        $makeMtatic = self::config('make_static', 1);
 
-        ExtLoader::watch('cms_content_on_after_insert', function ($data) {
-            trace('cms_content_on_after_insert' . json_encode($data));
-        });
-
-        ExtLoader::watch('cms_content_on_after_delete', function ($data) {
-            trace('cms_content_on_after_delete' . json_encode($data));
-        });
+        if ($makeMtatic) {
+            $maker = new MakeStatic;
+            $maker->watch();
+        }
     }
 }

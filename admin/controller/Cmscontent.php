@@ -3,11 +3,12 @@
 namespace tpext\cms\admin\controller;
 
 use think\Controller;
+use tpext\cms\common\Module;
 use tpext\builder\traits\actions;
 use tpext\cms\common\model\CmsChannel;
+use tpext\cms\common\taglib\Processer;
+use tpext\cms\common\model\CmsTemplate;
 use tpext\cms\common\model\CmsContent as ContentModel;
-use tpext\cms\common\model\CmsTag;
-use tpext\cms\common\Module;
 
 /**
  * Undocumented class
@@ -127,7 +128,7 @@ class Cmscontent extends Controller
 
         $table->show('id', 'ID');
         $table->image('logo', '封面图')->thumbSize(60, 60);
-        $table->text('title', '标题')->autoPost()->getWrapper()->addStyle('max-width:200px');
+        $table->raw('title', '标题')->to('<a href="{preview_url}" target="_blank">{val}</a>');
         $table->show('channel_id', '栏目')->to('{channel.full_name}');
         $table->show('author', '作者')->default('暂无');
         $table->show('source', '来源')->default('暂无');
@@ -156,6 +157,23 @@ class Cmscontent extends Controller
             ->br()
             ->btnLink('copy', url('copy', ['id' => '__data.pk__']), '', 'btn-success', 'mdi-content-copy', 'data-layer-size="1000px,auto" title="复制"')
             ->btnDelete();
+
+        $template = CmsTemplate::find();
+        Processer::setPath($template['prefix']);
+
+        foreach ($data as &$d) {
+            $channel = $d['channel'];
+            if ($channel) {
+                $d['preview_url'] = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $template['prefix']) . Processer::resolveContentPath($d, $channel) . '.html';
+            }
+        }
+
+        $this->builder()->addStyleSheet('
+        .table > tbody > tr > td .row-title,.table > tbody > tr > td .row-tag_names
+        {
+            white-space:normal;
+        }
+        ');
     }
 
     /**
@@ -298,11 +316,31 @@ class Cmscontent extends Controller
         }
     }
 
-    public function autopost()
+    protected function _autopost()
     {
+        $this->checkToken();
+
         $id = input('post.id/d', '');
-        cache('cms_content_' . $id, null);
-        return $this->_autopost();
+        $name = input('post.name', '');
+        $value = input('post.value', '');
+
+        if (empty($id) || empty($name)) {
+            $this->error(__blang('bilder_parameter_error'));
+        }
+
+        if (!empty($this->postAllowFields) && !in_array($name, $this->postAllowFields)) {
+            $this->error(__blang('bilder_field_not_allowed'));
+        }
+
+        $info = $this->dataModel->where($this->getPk(), $id)->find();
+
+        $res = $info && $info->save([$name => $value]);
+
+        if ($res) {
+            $this->success(__blang('bilder_update_succeeded'));
+        } else {
+            $this->error(__blang('bilder_update_failed_or_no_changes'));
+        }
     }
 
     /**

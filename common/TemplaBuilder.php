@@ -43,6 +43,8 @@ class TemplaBuilder
             return ['code' => 0, 'msg' => '生成类型[栏目/内容/首页/静态资源]至少指定其中一种', 'over' => 1];
         }
 
+        Processer::setPath($template['prefix']);
+
         if (in_array('channel', $types) || in_array('content', $types)) {
             $channelSize = 3;
             $contentSize = 50;
@@ -85,7 +87,7 @@ class TemplaBuilder
                             continue;
                         }
                         $contentDone += 1;
-                        $msgArr[] = '[内容详情进度](当前栏目：' . CmsContent::where('channel_id', $channel['id'])->where('id', '<=', $content['id'])->count() . '/' . $contentCount . ') | (全部：' . $contentDone . '/' . $contentTotal . ')';
+                        $msgArr[] = '[内容详情进度](当前栏目：' . CmsContent::withTrashed()->where('channel_id', $channel['id'])->where('id', '<=', $content['id'])->count() . '/' . $contentCount . ') | (全部：' . $contentDone . '/' . $contentTotal . ')';
 
                         $fromContentId = $content['id'];
                         $msgArr[] = $resB['msg'];
@@ -140,6 +142,16 @@ class TemplaBuilder
                 $msgArr[] = '[路由]未选择生成';
             }
 
+            if (in_array('channel', $types) && empty($channelIds)) {
+                $outPath = Processer::getContentOutPath();
+                $this->delfiles($outPath, time() - 3600 * 4, 100); //删除7天前的文件
+            }
+
+            if (in_array('content', $types) && empty($channelIds)) {
+                $outPath = Processer::getChannelOutPath();
+                $this->delfiles($outPath, time() - 3600 * 4, 100); //删除7天前的文件
+            }
+
             $msgArr[] = '[完成]已全部处理';
         }
 
@@ -157,8 +169,8 @@ class TemplaBuilder
     {
         $page = new Page();
         $output = '';
-        if ($channel['channel_path'] == '#') {
-            $output = '<!--不生成-->';
+        if (empty($channel['channel_path']) || $channel['channel_path'] == '#') {
+            return ['code' => 0, 'msg' => '[' . $channel['name'] . ']channel_path为空不生成页面'];
         } else {
             $output = $page->channel($channel['id'], $template['id']);
         }
@@ -166,7 +178,7 @@ class TemplaBuilder
         $outPath = Processer::getChannelOutPath();
         file_put_contents($outPath . Processer::resolveChannelPath($channel) . '.html', $output);
         file_put_contents($outPath . Processer::resolveChannelPath($channel) . '-1.html', $output);
-        return ['code' => 0, 'msg' => '[' . $channel['name'] . ']栏目第一页生成成功，路径：' . Processer::resolveChannelPath($channel)];
+        return ['code' => 1, 'msg' => '[' . $channel['name'] . ']栏目第一页生成成功，路径：' . Processer::resolveChannelPath($channel)];
     }
 
     /**
@@ -233,5 +245,51 @@ class TemplaBuilder
         $res = $render->copyStatic($template);
 
         return $res;
+    }
+
+    /**
+     * 删除长时间未更新的文件
+     *
+     * @param string $path 路径
+     * @param int|string $timeBefor 时间限制
+     * @param integer $limit 删除数量
+     * @return int
+     */
+    protected function delfiles($path, $timeBefor, $limit = 100)
+    {
+        if (!is_dir($path)) {
+            return 0;
+        }
+
+        //要删除的文件类型
+        $exts = ['html'];
+        $count = 0;
+        $files = scandir($path);
+        //日期升序扫描文件
+        usort($files, function ($a, $b) use ($path) {
+            return filemtime("{$path}/{$a}") - filemtime("{$path}/{$b}");
+        });
+
+        foreach ($files as $file) {
+            if (($file != '.') && ($file != '..')) {
+                $fielPath = rtrim($path, "\\\/") . DIRECTORY_SEPARATOR . $file;
+                if (is_dir($fielPath)) {
+                    continue;
+                }
+                $extType = strtolower(pathinfo($fielPath, PATHINFO_EXTENSION));
+                $time = filemtime($fielPath);
+                if (!in_array($extType, $exts) || $time > $timeBefor) {
+                    continue;
+                }
+                //删除文件
+                @unlink($fielPath);
+                $count += 1;
+                if ($count >= $limit) {
+                    break;
+                }
+            }
+        }
+
+        return $count;
     }
 }

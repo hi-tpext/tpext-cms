@@ -13,6 +13,7 @@ namespace tpext\cms\common\model;
 
 use think\Model;
 use tpext\think\App;
+use tpext\common\ExtLoader;
 use tpext\cms\common\DirFilter;
 
 class CmsTemplateHtml extends Model
@@ -40,28 +41,32 @@ class CmsTemplateHtml extends Model
         }
 
         if (isset($data['is_default']) && isset($data['type']) && isset($data['template_id'])) {
-            
             if ($data['type'] == 'content' && $data['is_default'] == 1) {
                 cache('cms_html_content_default_' . $data['template_id'], null);
             }
-
             if ($data['type'] == 'channel' && $data['is_default'] == 1) {
                 cache('cms_html_channel_default_' . $data['template_id'], null);
             }
-
             if ($data['type'] == 'index') {
                 cache('cms_html_index_' . $data['template_id'], null);
             }
         }
+
+        ExtLoader::trigger('cms_template_html_on_after_update', $data);
     }
 
     public static function onAfterDelete($data)
     {
         $file = App::getRootPath() . $data['path'];
+
         if (is_file($file)) {
             @copy($file, $file .  date('YmdHis') . '.del');
             @unlink($file);
         }
+
+        CmsContentPage::where(['html_id' => $data['id']])->delete();
+        
+        ExtLoader::trigger('cms_template_html_on_after_delete', $data);
     }
 
     public function template()

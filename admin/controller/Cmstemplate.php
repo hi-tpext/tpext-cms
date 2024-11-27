@@ -108,7 +108,11 @@ class Cmstemplate extends Controller
             ->btnEdit()
             ->btnView()
             ->btnLink('make', url('/admin/cmstemplatemake/make', ['template_id' => '__data.pk__']), '生成', 'btn-success', 'mdi-cloud-braces ', 'data-layer-size="98%,98%"')
-            ->btnDelete();
+            ->btnDelete()->mapClass([
+                'delete' => ['disabled' => function ($data) {
+                    return $data['id'] == 1;
+                }]
+            ]);
     }
 
     /**

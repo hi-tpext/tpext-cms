@@ -397,6 +397,10 @@ class Cmstemplatehtml extends Controller
 
         $page = $this->dataModel->where('id', $id)->find();
 
+        if (!$page) {
+            $this->error('保存失败，页面不存在！');
+        }
+
         $file_path = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $page['path']);
 
         $res = file_put_contents($file_path, $data['content']);
@@ -404,6 +408,10 @@ class Cmstemplatehtml extends Controller
         if (!$res) {
             $this->error('保存失败');
         }
+
+        $page->save([
+            'version' => $page['version'] + 1,
+        ]);
 
         $this->success('保存成功，页面即将刷新~', null, '', 1);
     }

@@ -156,8 +156,7 @@
 
 <h3>直接使用list或get</h3>
 <p>其实常用的数据表，直接使用上面的标签就可完成了。单对于没有支持的其他表，可以支持使用list或get标签。</p>
-<p>使用其他表，需要配置，详见<code>tpext\cms\common\taglib\Table.php，addAllowTables</code>，监听<code>tpext_cms_get_tables</code>事件添加。tp5.1使用<code>application/tags.php</code>，tp6使用<code>app/event.php</code>
-</p>
+<p>使用其他表，需要配置</p>
 <p>需要指定表名，如<code>table="cms_content"</code>，默认是content</p>
 <p>表达式只支持主键<code>id="xxx"</code>，不支持<code>channel_id="xxx"</code></p>
 

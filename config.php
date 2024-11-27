@@ -2,18 +2,22 @@
 
 return [
     'name' => 'Tpext CMS系统',
+    'keywords' => 'Tpext CMS系统,cms,内容管理系统,thinkphp,php',
     'description' => 'Tpext CMS系统',
-    'copyright' => 'Copyright &copy; 2020. <a target="_blank" href="#">Tpext CMS系统</a> All rights reserved.',
+    'copyright' => 'Copyright &copy; ' . date('Y') . '. <a target="_blank" href="#">Tpext CMS系统</a> All rights reserved.',
     'assets_ver' => '1.0',
     'editor' => 'wangEditor',
     'make_static' => 1,
+    'allow_tables' => '',
     //配置描述
     '__config__' => [
-        'name' => ['type' => 'text', 'label' => '名称'],
+        'name' => ['type' => 'text', 'label' => '网站名称'],
+        'keywords' => ['type' => 'textarea', 'label' => '关键字', 'help' => '多个关键字之间用英文逗号分隔'],
         'description' => ['type' => 'textarea', 'label' => '描述'],
         'copyright' => ['type' => 'textarea', 'label' => '版权'],
         'assets_ver' => ['type' => 'text', 'label' => '静态资源版本号', 'size' => [2, 4]],
         'editor' => ['type' => 'radio', 'label' => '编辑器', 'options' => ['wangEditor' => 'wangEditor', 'ueditor' => 'UEditor', 'ckeditor' => 'CKEditor', 'mdeditor' => 'MDEditor', 'tinymce' => 'Tinymce']],
-        'make_static' => ['type' => 'radio', 'label' => '生成静态', 'options' => ['0' => '否', '1' => '是']],
+        'make_static' => ['type' => 'radio', 'label' => '生成静态', 'options' => ['0' => '否', '1' => '是'], 'help' => '文章或栏目修改后，自动生成静态页面'],
+        'allow_tables' => ['type' => 'textarea', 'label' => '允许表名', 'help' => '除cms默认的表外，允许使用cms标签的表名（不包含表前缀），多个表名之间用英文逗号分隔'],
     ],
 ];

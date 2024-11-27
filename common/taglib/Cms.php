@@ -37,7 +37,7 @@ class Cms extends Taglib
     {
         $table = $tag['table'] ?? '';
         if (!Table::isAllowTable($table)) {
-            return "数据表：{$table}未允许使用标签。";
+            return "<!--数据表：{$table}未允许使用标签-->";
         }
         $cid_key = $tag['cid_key'] ?? '';
         $id_key = $tag['id_key'] ?? 'id';
@@ -66,7 +66,7 @@ class Cms extends Taglib
 
         if ($cid_val !== '') {
             if ($cid_val[0] == '$' || $cid_val[0] == ':') { //变量或方法
-                $cid_val = $this->autoBuildVar($cid_val);
+                $cid_val = $this->filterIdVar($cid_val);
             } else if (is_int($cid_val)) {
                 $cid_val = "{$cid_val}";
             } else {
@@ -77,7 +77,7 @@ class Cms extends Taglib
                 }
             }
         } else if ($cid_key) {
-            $cid_val = "\${$cid_key}s" ?: "\${$cid_key}";
+            $cid_val = "(!empty(\${$cid_key}s) ? \${$cid_key}s : (\${$cid_key} ?? 0))";
         } else {
             $cid_val = '0';
         }
@@ -88,7 +88,7 @@ class Cms extends Taglib
         }
         if ($id_val !== '') {
             if ($id_val[0] == '$' || $id_val[0] == ':') { //解析变量或方法
-                $id_val = $this->autoBuildVar($id_val);
+                $id_val = $this->filterIdVar($id_val);
                 $where .= "and {$id_key} = {$id_val}";
             } else if (is_int($id_val)) {
                 $id_val = "{$id_val}";
@@ -118,7 +118,7 @@ class Cms extends Taglib
         if(\$__cid_key__) {
             \$__cid_val__ = {$cid_val} ?? 0;
             if(\$__cid_val__) {
-                if(strstr(\$__cid_val__, ',')) {
+                if(is_array(\$__cid_val__) || strstr(\$__cid_val__, ',')) {
                     \$__where__[] = [\$__cid_key__, 'in', \$__cid_val__];
                 } else {
                     \$__where__[] = [\$__cid_key__, '=', \$__cid_val__];
@@ -185,7 +185,7 @@ EOT;
     {
         $table = $tag['table'] ?? '';
         if (!Table::isAllowTable($table)) {
-            return "数据表：{$table}未允许使用标签。";
+            return "<!--数据表：{$table}未允许使用标签-->";
         }
         $pid_key = $tag['pid_key'] ?? 'parent_id';
         $id_key = $tag['id_key'] ?? 'id';
@@ -202,7 +202,7 @@ EOT;
 
         if ($id_val !== '') {
             if ($id_val[0] == '$' || $id_val[0] == ':') { //解析变量或方法
-                $id_val = $this->autoBuildVar($id_val);
+                $id_val = $this->filterIdVar($id_val);
             } else if (is_int($id_val)) {
                 $id_val = "{$id_val}";
             }
@@ -235,7 +235,7 @@ EOT;
     {
         $table = $tag['table'] ?? '';
         if (!Table::isAllowTable($table)) {
-            return "数据表：{$table}未允许使用标签。";
+            return "<!--数据表：{$table}未允许使用标签-->";
         }
         $id_key = $tag['id_key'] ?? 'id';
         $assign = !empty($tag['assign']) ? $tag['assign'] : ($tag['default_assign'] ?? 'data');
@@ -252,7 +252,7 @@ EOT;
         }
         if ($id_val !== '') {
             if ($id_val[0] == '$' || $id_val[0] == ':') { //解析变量或方法
-                $id_val = $this->autoBuildVar($id_val);
+                $id_val = $this->filterIdVar($id_val);
             } else if (is_int($id_val)) {
                 $id_val = "{$id_val}";
             } else {
@@ -311,6 +311,21 @@ EOT;
         $where = str_ireplace(['gt', 'eq', 'lt', '!='], ['>', '=', '<', '<>'], $where);
 
         return $where;
+    }
+
+    /**
+     * 安全转换变量
+     * 
+     * @param string $var
+     * @return string
+     */
+    protected function filterIdVar($var)
+    {
+        $var = $this->autoBuildVar($var);
+        if (preg_match('/\$_(SERVER|REQUEST|GET|POST|COOKIE|SESSION)/i', $var) || preg_match('/app\(/i', $var)) {
+            $var = "filter_var({$var}, FILTER_VALIDATE_INT)";
+        }
+        return $var;
     }
 
     /**

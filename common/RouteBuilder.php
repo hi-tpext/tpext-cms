@@ -62,7 +62,6 @@ class RouteBuilder
     {
         return [
             "Route::get('__prefix__', Page::class . '@index')",
-            "Route::get('__prefix__index', Page::class . '@index')",
         ];
     }
 

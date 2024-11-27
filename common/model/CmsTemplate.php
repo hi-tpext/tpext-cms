@@ -12,6 +12,7 @@
 namespace tpext\cms\common\model;
 
 use think\Model;
+use tpext\common\ExtLoader;
 use tpext\cms\common\Module;
 
 class CmsTemplate extends Model
@@ -47,15 +48,20 @@ class CmsTemplate extends Model
         if (!isset($data['id'])) {
             return;
         }
+
         cache('cms_template_' . $data['id'], null);
+
+        ExtLoader::trigger('cms_template_on_after_update', $data);
     }
 
     public static function onAfterDelete($data)
     {
+        cache('cms_template_' . $data['id'], null);
+
+        ExtLoader::trigger('cms_template_on_after_delete', $data);
+
         CmsTemplateHtml::where(['template_id' => $data['id']])->delete();
         CmsContentPage::where(['template_id' => $data['id']])->delete();
-
-        cache('cms_template_' . $data['id'], null);
     }
 
     public function getPagesCountAttr($value, $data)

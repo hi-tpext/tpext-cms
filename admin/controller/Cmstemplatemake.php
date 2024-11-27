@@ -9,6 +9,7 @@ use tpext\cms\common\TemplaBuilder;
 use tpext\cms\common\model\CmsTemplate;
 use tpext\cms\common\model\CmsChannel;
 use tpext\cms\common\model\CmsTemplateHtml;
+use tpext\cms\common\taglib\Processer;
 
 /**
  * Undocumented class
@@ -56,6 +57,7 @@ class Cmstemplatemake extends Controller
             $form->bottomButtons(false);
             $form->btnSubmit('生&nbsp;&nbsp;成', '12 col-lg-12 col-sm-12 col-xs-12');
         } else {
+            Processer::setIsAdmin(true);
             $templateBuilder = new TemplaBuilder;
             if (is_string($types)) {
                 $types = explode(',', $types);
@@ -118,6 +120,7 @@ class Cmstemplatemake extends Controller
             }
 
             $builder = $this->builder('页面生成', '栏目：' . $channel['name'] . '，模板：' . $template['name']);
+            Processer::setIsAdmin(true);
             $templateBuilder = new TemplaBuilder;
             if (is_string($types)) {
                 $types = explode(',', $types);

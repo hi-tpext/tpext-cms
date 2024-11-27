@@ -83,6 +83,7 @@ class CmsContent extends Model
         if (!isset($data['id'])) {
             return;
         }
+        
         cache('cms_content_' . $data['id'], null);
 
         $detail = CmsContentDetail::where('main_id', $data['id'])->find();
@@ -102,9 +103,10 @@ class CmsContent extends Model
     public static function onAfterDelete($data)
     {
         CmsContentDetail::where('main_id', $data['id'])->delete();
-        ExtLoader::trigger('cms_content_on_after_delete', $data);
-        
+
         cache('cms_content_' . $data['id'], null);
+
+        ExtLoader::trigger('cms_content_on_after_delete', $data);
     }
 
     protected static function getDesc($content)

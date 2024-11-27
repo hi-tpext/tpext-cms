@@ -13,6 +13,8 @@ namespace tpext\cms\common\model;
 
 use think\Model;
 
+use tpext\common\ExtLoader;
+
 class CmsContentPage extends Model
 {
     protected $name = 'cms_content_page';
@@ -37,6 +39,8 @@ class CmsContentPage extends Model
             return;
         }
         cache('cms_page_' . $data['template_id'] . '_' . $data['html_type'] . '_' . $data['to_id'], null);
+
+        ExtLoader::trigger('cms_content_page_on_after_update', $data);
     }
 
     public static function onAfterDelete($data)
@@ -45,6 +49,8 @@ class CmsContentPage extends Model
             return;
         }
         cache('cms_page_' . $data['template_id'] . '_' . $data['html_type'] . '_' . $data['to_id'], null);
+
+        ExtLoader::trigger('cms_content_page_on_after_delete', $data);
     }
 
     public function template()

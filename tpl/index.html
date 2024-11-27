@@ -1,12 +1,14 @@
 <div> <!--网站首页-->
-    {channel@list num="10"}
-    <img src="{$channel.logo}">
-    <a target="_blank" href="{$channel.url}">{$channel.name}</a>
-    {content@list channel_id="$channel.id"}
+    {channel@list num="20"}
     <div>
-        <a target="_blank" href="{$content.url}">{$content.title}</a>
-        <p>{$content.publish_time}</p>
+        <img src="{$channel.logo}">
+        <a target="_blank" href="{$channel.url}">{$channel.name}</a>
+        {content@list channel_id="$channel.id"}
+        <div>
+            <a target="_blank" href="{$content.url}">{$content.title}</a>
+            <p>{$content.publish_time}</p>
+        </div>
+        {/content@list}
     </div>
-    {/content@list}
     {/channel@list}
 </div>

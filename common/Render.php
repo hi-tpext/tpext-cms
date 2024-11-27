@@ -107,19 +107,14 @@ class Render
             if ($channel['is_show'] == 0 || $channel['delete_time'] || $channel['channel_path'] == '#') {
                 return ['code' => 0, 'msg' => '页面不存在'];
             } else {
-                $channel_ids = [];
-                if ($channel['type'] == 1) { //不限
-                    $channel_ids = [$channel['id']];
-                } else if ($channel['type'] == 2) { //目录
-                    $channel_ids = [$channel['id']];
-                } else { //分类
-                    //
-                }
+                $channel_ids = $channel['children_ids'] ?? [];
+                $channel_ids = array_merge([$channel['id']], $channel_ids, explode(',', $channel['extend_ids']));
+
                 $vars = [
                     'page' => $page,
                     'id' => $channel['id'],
                     'channel_id' => $channel['id'],
-                    'channel_ids' => $channel_ids,
+                    'channel_ids' => implode(',', array_unique($channel_ids)),
                     'channel' => $channel,
                     '__site_home__' => $template['prefix'],
                     '__page_type__' => 'channel',
