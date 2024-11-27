@@ -4,11 +4,13 @@ namespace tpext\cms\admin\controller;
 
 use think\Controller;
 use tpext\builder\traits\actions;
+use tpext\cms\common\taglib\Processer;
+use tpext\cms\common\model\CmsTemplate;
 use tpext\cms\common\model\CmsTag as TagModel;
 
 /**
  * Undocumented class
- * @title 标签管理
+ * @title 合集管理
  */
 class Cmstag extends Controller
 {
@@ -31,7 +33,7 @@ class Cmstag extends Controller
     {
         $this->dataModel = new TagModel;
 
-        $this->pageTitle = '标签管理';
+        $this->pageTitle = '合集管理';
         $this->sortOrder = 'id desc';
         $this->pagesize = 8;
 
@@ -73,10 +75,10 @@ class Cmstag extends Controller
         $table = $this->table;
         $table->show('id', 'ID');
         $table->image('logo', '封面')->thumbSize(50, 50);
-        $table->text('name', '名称')->autoPost('', true);
-        $table->show('description', '描述')->getWrapper()->addStyle('width:30%;');
-        $table->switchBtn('is_show', '显示')->default(1)->autoPost()->getWrapper()->addStyle('width:120px');
-        $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:120px');
+        $table->raw('name', '名称')->to('<a href="{preview_url}" target="_blank">{val}</a>');
+        $table->show('description', '描述');
+        $table->switchBtn('is_show', '显示')->default(1)->autoPost();
+        $table->text('sort', '排序')->autoPost('', true);
 
         $table->sortable('id,sort');
 
@@ -84,6 +86,13 @@ class Cmstag extends Controller
             ->btnEdit()
             ->btnView()
             ->btnDelete();
+
+        $template = CmsTemplate::find();
+        Processer::setPath($template['prefix']);
+
+        foreach ($data as &$d) {
+            $d['preview_url'] = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $template['prefix']) . Processer::resolveTagPath($d) . '.html';
+        }
     }
 
     /**

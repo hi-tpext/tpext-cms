@@ -8,15 +8,9 @@ use tpext\common\ExtLoader;
 
 class View
 {
-    protected static $shareVars = [];
     protected $vars = [];
     protected $content = null;
-    protected $isContent = false;
-    /**
-     * 原始数据
-     * @var mixed
-     */
-    protected $data = [];
+    protected $tpl = '';
 
     protected $app;
 
@@ -27,9 +21,9 @@ class View
      */
     protected $engine;
 
-    public function __construct($data = '', $vars = [], $config = [])
+    public function __construct($tpl = '', $vars = [], $config = [])
     {
-        $this->data = $data;
+        $this->tpl = $tpl;
         $this->vars = $vars;
 
         $config = array_merge([
@@ -61,51 +55,11 @@ class View
      */
     public function getContent()
     {
-        if (null == $this->content) {
-            $this->content = $this->fetch($this->data) ?: '';
+        if (null === $this->content) {
+            $this->content = $this->fetch($this->tpl) ?: '';
         }
 
         return $this->content;
-    }
-
-    public function isContent($content = true)
-    {
-        $this->isContent = $content;
-        return $this;
-    }
-
-    public function assign($name, $value = '')
-    {
-        if (is_array($name)) {
-            $this->vars = array_merge($this->vars, $name);
-        } else {
-            $this->vars[$name] = $value;
-        }
-
-        return $this;
-    }
-
-    public static function share($name, $value = '')
-    {
-        if (is_array($name)) {
-            self::$shareVars = array_merge(self::$shareVars, $name);
-        } else {
-            self::$shareVars[$name] = $value;
-        }
-    }
-
-    public static function getShare()
-    {
-        return self::$shareVars;
-    }
-
-    public function clear()
-    {
-        self::$shareVars  = [];
-        $this->data = [];
-        $this->vars = [];
-
-        return $this;
     }
 
     protected function fetch($template = '')
@@ -118,14 +72,8 @@ class View
             ob_implicit_flush(0);
         }
 
-        $vars = array_merge(self::$shareVars, $this->vars);
-
         try {
-            if ($this->isContent) {
-                $this->engine->display($template, $vars);
-            } else {
-                $this->engine->fetch($template, $vars);
-            }
+            $this->engine->fetch($template, $this->vars);
         } catch (\Exception $e) {
             ob_end_clean();
             throw $e;

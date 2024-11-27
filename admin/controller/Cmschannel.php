@@ -57,12 +57,12 @@ class Cmschannel extends Controller
         $table->image('logo', '封面图')->thumbSize(50, 50);
         $table->show('link', '链接')->default('暂无');
         $table->text('name', '名称')->autoPost('', true);
-        $table->switchBtn('is_show', '显示')->default(1)->autoPost()->getWrapper()->addStyle('width:80px');
+        $table->switchBtn('is_show', '显示')->default(1)->autoPost();
         $table->match('type', '类型')->default(1)->options([1 => '不限', 2 => '目录', 3 => '分类'])->mapClassGroup([[1, 'success'], [2, 'info'], [3, 'warning']])->getWrapper()->addStyle('width:80px');
-        $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:80px');
-        $table->text('pagesize', '分页大小')->autoPost()->getWrapper()->addStyle('width:80px');
+        $table->text('sort', '排序')->autoPost('', true);
+        $table->text('pagesize', '分页大小')->autoPost();
         $table->show('order_by', '内容排序方式');
-        $table->show('content_count', '内容统计')->getWrapper()->addStyle('width:80px');
+        $table->show('content_count', '内容统计');
         $table->fields('page_path', '生成路径')->with(
             $table->show('channel_path', '栏目生成路径')->to('channel/{val}.html'),
             $table->show('content_path', '内容生成路径')->to('content/{val}.html')
@@ -70,7 +70,7 @@ class Cmschannel extends Controller
         $table->fields('create_time', '添加/修改时间')->with(
             $table->show('create_time', '添加时间'),
             $table->show('update_time', '修改时间'),
-        )->getWrapper()->addStyle('width:160px');
+        );
 
         $table->sortable([]);
 
@@ -193,6 +193,10 @@ class Cmschannel extends Controller
                 $form->raw('template_' . $tpl['id'], $tpl['name'])->to('<a class="label label-secondary" data-title="[' . $tpl['name'] . ']文件管理" onclick="top.$.fn.multitabs().create(this, true); return false;" href="/admin/cmstemplatehtml/index?template_id=' . $tpl['id'] . '">[管理<i title="打开文件管理页面" class="mdi mdi-arrow-top-right"></i>]</a>');
             }
         }
+
+        $form->tab('SEO设置');
+        $form->text('keywords', '关键字')->maxlength(255)->help('多个关键字请用英文逗号隔开');
+        $form->textarea('description', '摘要')->maxlength(255)->help('留空则自动从内容中提取');
     }
 
     /**
@@ -264,6 +268,8 @@ class Cmschannel extends Controller
             'content_path',
             'extend_ids',
             'order_by',
+            'keywords',
+            'description',
         ], 'post');
 
         $result = $this->validate($data, [

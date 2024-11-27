@@ -44,7 +44,7 @@ class Cmstemplatemake extends Controller
         $builder = $this->builder('页面生成', '模板：' . $template['name']);
         $types = input('types', '');
         if (empty($types)) {
-            CmsTemplateHtml::scanPageFiles($template_id,  App::getRootPath() . 'theme/' . $template['view_path']);
+            CmsTemplateHtml::scanPageFiles($template_id, App::getRootPath() . 'theme/' . $template['view_path']);
             $form = $builder->form();
             $form->checkbox('types', '生成类型')
                 ->options(['channel' => '栏目静态', 'content' => '内容静态', 'index' => '首页静态', 'route' => '生成路由文件', 'static' => '发布静态资源'])
@@ -63,7 +63,15 @@ class Cmstemplatemake extends Controller
                 $types = explode(',', $types);
             }
 
-            $res = $templateBuilder->make($template_id, [], $types, input('from_channel_id/d', 0), input('from_content_id/d', 0), input('content_done/d', 0));
+            $res = $templateBuilder->make(
+                $template_id,
+                [],
+                $types,
+                input('from_channel_id/d', 0),
+                input('from_content_id/d', 0),
+                input('content_done/d', 0),
+                input('start_time/d', time())
+            );
 
             if ($res['code'] == 1) {
                 $msgArr = $res['msg_arr'] ?? [];
@@ -78,6 +86,7 @@ class Cmstemplatemake extends Controller
                         'from_channel_id' => $res['from_channel_id'] ?: 0,
                         'from_content_id' => $res['from_content_id'] ?: 0,
                         'content_done' => $res['content_done'] ?: 0,
+                        'start_time' => $res['start_time'] ?: time(),
                     ];
                     $res['url'] = url('make', $params);
                     $builder->content()->display('{$msg|raw}<div class="hidden" id="goon">若页面长时间未刷新，可点此<a href="{$url|raw}">继续</a></div><script>setTimeout(function(){location.href="{$url|raw}"},1000);setTimeout(function(){$("#goon").removeClass("hidden")},20000);</script>', $res);
@@ -126,7 +135,15 @@ class Cmstemplatemake extends Controller
                 $types = explode(',', $types);
             }
 
-            $res = $templateBuilder->make($template_id, [$channel_id], $types, 0, input('from_content_id/d', 0), input('content_done/d', 0));
+            $res = $templateBuilder->make(
+                $template_id,
+                [$channel_id],
+                $types,
+                0,
+                input('from_content_id/d', 0),
+                input('content_done/d', 0),
+                input('start_time/d', time())
+            );
 
             if ($res['code'] == 1) {
                 $msgArr = $res['msg_arr'] ?? [];
@@ -139,9 +156,10 @@ class Cmstemplatemake extends Controller
                         'template_id' => $template_id,
                         'types' => implode(',', $types),
                         'channel_id' => $channel_id,
-                        'from_channel_id' =>  0,
+                        'from_channel_id' => 0,
                         'from_content_id' => $res['from_content_id'] ?: 0,
                         'content_done' => $res['content_done'] ?: 0,
+                        'start_time' => $res['start_time'] ?: time(),
                     ];
                     $res['url'] = url('makeChannel', $params);
                     $builder->content()->display('{$msg|raw}<div class="hidden" id="goon">若页面长时间未刷新，可点此<a href="{$url|raw}">继续</a></div><script>setTimeout(function(){location.href="{$url|raw}"},1000);setTimeout(function(){$("#goon").removeClass("hidden")},20000);</script>', $res);

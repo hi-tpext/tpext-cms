@@ -130,9 +130,9 @@ class Cmscontent extends Controller
         $table->image('logo', '封面图')->thumbSize(60, 60);
         $table->raw('title', '标题')->to('<a href="{preview_url}" target="_blank">{val}</a>');
         $table->show('channel_id', '栏目')->to('{channel.full_name}');
-        $table->show('author', '作者')->default('暂无');
-        $table->show('source', '来源')->default('暂无');
-        $table->show('tag_names', '标签');
+        $table->show('author', '作者')->cut(10)->default('暂无');
+        $table->show('source', '来源')->cut(10)->default('暂无');
+        $table->show('tag_names', '合集')->cut(20);
         $table->switchBtn('is_show', '显示')->default(1)->autoPost();
         $table->checkbox('attr', '属性')->autoPost(url('editAttr'))->options(['is_recommend' => '推荐', 'is_top' => '置顶', 'is_hot' => '热门'])->inline(false);
         $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:80px');
@@ -224,29 +224,50 @@ class Cmscontent extends Controller
     {
         $id = input('id/d');
 
-        $content = $this->dataModel->where('id', $id)->find();
+        $content = $this->dataModel->where('id', $id)->withAttr(['content'])->find();
 
         $builder = $this->builder($this->pageTitle, '复制');
+        if (!$content) {
+            return $builder->layer()->closeRefresh(0, '数据不存在');
+        }
+
         if (request()->isGet()) {
-            if (!$content) {
-                return $builder->layer()->closeRefresh(0, '数据不存在');
-            }
             $form = $builder->form();
             $form->show('title', '标题')->value($content['title']);
             $form->selectTree('channel_id', '复制到栏目')->multiple(false)->optionsData($this->channelModel->select(), 'name', 'id', 'parent_id', '')->required();
+            if ($content['reference_id'] > 0) {
+                $form->radio('copy_type', '方式')->blockStyle()->options(['reference' => '引用'])->default('reference')->required()
+                    ->help('引用：引用当前内容，原内容修改后同步更新，当前内容为引用，只能复制为引用类型。')->readonly();
+            } else {
+                $form->radio('copy_type', '方式')->blockStyle()->options(['copy' => '复制', 'reference' => '引用'])->default('copy')->required()
+                    ->help('复制：复制当前内容，生成一个新的内容，之后再无关联；引用：引用当前内容，原内容修改后同步更新。');
+            }
 
             return $builder;
         }
-        $data = request()->post();
-        if ($data['channel_id'] == $content['channel_id']) {
+        $channel_id = input('post.channel_id/d');
+        $copy_type = input('post.copy_type', 'copy');
+
+        if ($channel_id == $content['channel_id']) {
             $this->error('复制到栏目不能和原栏目相同');
         }
-        $newData = new ContentModel;
-        $content['reference_id'] = $id;
-        $content['content'] = '@' . $id;
-        $content['channel_id'] = $data['channel_id'];
-        unset($content['id']);
-        $res = $newData->save($content->toArray());
+        $newModel = new ContentModel;
+        $newData = $content->toArray();
+        $newData['channel_id'] = $channel_id;
+        unset($newData['id']);
+
+        if ($copy_type == 'copy') {
+            $newData['content'] = $content['content'];
+        } else {
+            $reference_id = $id;
+            if ($newData['reference_id'] > 0) {
+                $reference_id = $newData['reference_id'];
+            }
+            $newData['reference_id'] = $reference_id;
+            $newData['content'] = '@' . $reference_id;
+        }
+
+        $res = $newModel->save($newData);
 
         if ($res) {
             return $builder->layer()->closeRefresh(1, '复制成功');
@@ -267,53 +288,55 @@ class Cmscontent extends Controller
 
         $form = $this->form;
 
-        $admin = !$isEdit ? (session('admin_user') ?: []) : null;
-
-        $form->fields('', '', 7)->size(0, 12)->showLabel(false);
         $form->defaultDisplayerSize(12, 12);
 
         $form->hidden('id');
-        $form->text('title', '标题')->required()->maxlength(55);
-        $form->selectTree('channel_id', '栏目')->multiple(false)->optionsData($this->channelModel->order('sort')->select(), 'name', 'id', 'parent_id', '')->required();
-        $form->multipleSelect('tags', '标签')->dataUrl(url('/admin/cmstag/selectPage'))->help('可到【标签管理】菜单添加标签');
-        $form->tags('keyword', '关键字');
-        $form->text('link', '跳转链接')->help('设置后覆盖默认的页面地址');
-        $form->textarea('description', '摘要')->help('留空则自动从内容中提取')->maxlength(255);
+        $form->hidden('reference_id');
 
-        $editor = 'editor';
-        if (!empty($config['editor'])) {
-            $editor = $config['editor'];
-        }
-        if ($isEdit && $data['reference_id'] > 0) {
-            $form->raw('content_html', '内容')->to('<div>复制于<label class="label label-default">@{reference_id}</label>，内容只读，去<a title="点击去编辑" href="' . url('edit', ['id' => $data['reference_id']]) . '">[编辑]</a></div>' . $data['content']);
-            $form->hidden('content')->value('@' . $data['reference_id']);
-            $form->hidden('reference_id');
-        } else {
-            $form->$editor('content', '内容')->required();
-        }
+        $form->left(7)->with(
+            function () use ($form, $config, $isEdit, $data) {
+                $form->text('title', '标题')->required()->maxlength(125);
+                $form->selectTree('channel_id', '栏目', 6)->multiple(false)->optionsData($this->channelModel->order('sort')->select(), 'name', 'id', 'parent_id', '')->required();
+                $form->multipleSelect('tags', '合集', 6)->dataUrl(url('/admin/cmstag/selectPage'))->help('可到【合集管理】菜单添加合集');
+                $form->text('keywords', '关键字')->readonly($data['reference_id'] > 0)->maxlength(255)->help('多个关键字请用英文逗号隔开');
+                $form->textarea('description', '摘要')->readonly($data['reference_id'] > 0)->maxlength(255)->help('留空则自动从内容中提取');
 
+                $editor = 'editor';
+                if (!empty($config['editor'])) {
+                    $editor = $config['editor'];
+                }
+                if ($isEdit && $data['reference_id'] > 0) {
+                    $form->raw('content_html', '内容')->to('<div>复制于<label class="label label-default">@{reference_id}</label>，内容只读，去<a title="点击去编辑" href="' . url('edit', ['id' => $data['reference_id']]) . '">[编辑]</a></div>' . $data['content']);
+                    $form->hidden('content')->value('@' . $data['reference_id']);
+                } else {
+                    $form->$editor('content', '内容')->required();
+                }
+            }
+        );
 
-        $form->fieldsEnd();
+        $form->right(5)->with(function () use ($form, $isEdit, $data) {
+            $admin = !$isEdit ? (session('admin_user') ?: []) : null;
+            $form->image('logo', '封面图', 6)->smallSize()->readonly($data['reference_id'] > 0);
+            $form->file('attachment', '附件', 6)->smallSize()->readonly($data['reference_id'] > 0);
+            
+            $form->switchBtn('is_show', '显示', 4)->default(1);
+            $form->text('author', '作者', 4)->readonly($data['reference_id'] > 0)->maxlength(32)->default($admin ? $admin['name'] : '');
+            $form->text('source', '来源', 4)->readonly($data['reference_id'] > 0)->maxlength(32)->default($admin && $admin['group'] ? $admin['group']['name'] : '');
+            
 
-        $form->fields('', '', 5)->size(0, 12)->showLabel(false);
+            $form->number('click', '点击量', 4)->default(0);
+            $form->number('sort', '排序', 4)->default(0);
 
-        $form->image('logo', '封面图')->smallSize();
-        $form->file('attachment', '附件')->smallSize();
-        $form->text('author', '作者', 6)->maxlength(33)->default($admin ? $admin['name'] : '');
-        $form->text('source', '来源', 6)->maxlength(55)->default($admin && $admin['group'] ? $admin['group']['name'] : '');
-        $form->datetime('publish_time', '发布时间')->required()->default(date('Y-m-d H:i:s'));
-        $form->number('click', '点击量', 6)->default(0);
-        $form->number('sort', '排序', 6)->default(0);
+            $form->checkbox('attr', '属性')->options(['is_recommend' => '推荐', 'is_top' => '置顶', 'is_hot' => '热门'])
+                ->help('推荐：优先在首页显示（前提是此栏目在首页有位置）；置顶：栏目页优先显示（只在栏目列表有效）；热门：排序无影响，可以在样式上突出显示。');
+            $form->text('link', '跳转链接')->help('设置后覆盖默认的页面地址')->readonly($data['reference_id'] > 0);
 
-        $form->checkbox('attr', '属性')->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶'])
-            ->help('推荐：优先在首页显示，前提此内容在首页显示；置顶：栏目页时优先显示（只在所在栏目有效）；热门：排序无影响，可以在样式上突出显示。');
-        $form->switchBtn('is_show', '显示')->default(1);
-
-        if ($isEdit) {
-            $form->hidden('id');
-            $form->show('create_time', '添加时间', 6);
-            $form->show('update_time', '修改时间', 6);
-        }
+            $form->datetime('publish_time', '发布时间', 4)->required()->default(date('Y-m-d H:i:s'));
+            if ($isEdit) {
+                $form->show('create_time', '添加时间', 4);
+                $form->show('update_time', '修改时间', 4);
+            }
+        });
     }
 
     protected function _autopost()
@@ -356,9 +379,10 @@ class Cmscontent extends Controller
             'title',
             'channel_id',
             'tags',
-            'keyword',
+            'keywords',
             'description',
             'logo',
+            'link',
             'attachment',
             'author',
             'source',

@@ -54,7 +54,7 @@ class Processer
      */
     public static function resolveContentPath($content, $channel)
     {
-        return  'content/' . str_replace('[id]', $content['id'], ltrim($channel['content_path'], '/'));
+        return 'content/' . str_replace('[id]', $content['id'], ltrim($channel['content_path'], '/'));
     }
 
     /**
@@ -65,24 +65,19 @@ class Processer
      */
     public static function resolveTagPath($tag)
     {
-        return  'dynamic/tag?id=' . $tag['id'];
+        return 'dynamic/tag-' . $tag['id'];
     }
 
-    public static function getChannelOutPath()
+    public static function getOutPath()
     {
-        $outPath = App::getPublicPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, self::$path);
+        $outPath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, App::getPublicPath() . ltrim(self::$path, '/'));
         if (!is_dir($outPath . 'channel/')) {
             mkdir($outPath . 'channel/', 0755, true);
         }
-        return $outPath;
-    }
-
-    public static function getContentOutPath()
-    {
-        $outPath = App::getPublicPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, self::$path);
         if (!is_dir($outPath . 'content/')) {
             mkdir($outPath . 'content/', 0755, true);
         }
+
         return $outPath;
     }
 
@@ -103,7 +98,7 @@ class Processer
         $dbNameSpace = self::getDbNamespace();
         if ($table == 'cms_channel') {
             $item['channel_id'] = $item['id'];
-            $item['url'] = $item['link'] ?: ($item['channel_path'] == '#' ? '#' : self::$path .  self::resolveChannelPath($item) . '.html');
+            $item['url'] = $item['link'] ?: ($item['channel_path'] == '#' ? '#' : self::$path . self::resolveChannelPath($item) . '.html');
         } else if ($table == 'cms_content') {
             $channelScope = Table::defaultScope($table);
             $channel = $dbNameSpace::name('cms_channel')
@@ -112,8 +107,8 @@ class Processer
                 ->cache(static::$isAdmin ? false : 'cms_channel_' . $item['channel_id'], 0, 'cms_channel')
                 ->find();
             if ($channel) {
-                $item['url'] = $item['link'] ?: self::$path  . self::resolveContentPath($item, $channel) . '.html';
-                $item['channel_url'] = $channel['link'] ?: ($channel['channel_path'] == '#' ? '#' : self::$path .  self::resolveChannelPath($channel) . '.html');
+                $item['url'] = $item['link'] ?: self::$path . self::resolveContentPath($item, $channel) . '.html';
+                $item['channel_url'] = $channel['link'] ?: ($channel['channel_path'] == '#' ? '#' : self::$path . self::resolveChannelPath($channel) . '.html');
             } else {
                 $empty = new EmptyData;
                 return $empty;
@@ -170,8 +165,8 @@ class Processer
                 ->cache(static::$isAdmin ? false : 'cms_channel_' . $item['channel_id'], 0, 'cms_channel')
                 ->find();
             if ($channel) {
-                $item['url'] = $item['link'] ?: self::$path  . self::resolveContentPath($item, $channel) . '.html';
-                $item['channel_url'] = $channel['link'] ?: ($channel['channel_path'] == '#' ? '#' : self::$path .  self::resolveChannelPath($channel) . '.html');
+                $item['url'] = $item['link'] ?: self::$path . self::resolveContentPath($item, $channel) . '.html';
+                $item['channel_url'] = $channel['link'] ?: ($channel['channel_path'] == '#' ? '#' : self::$path . self::resolveChannelPath($channel) . '.html');
             } else {
                 $empty = new EmptyData;
                 return $empty;

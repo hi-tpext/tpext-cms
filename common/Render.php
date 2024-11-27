@@ -55,7 +55,7 @@ class Render
         }
 
         try {
-            $tplFile =  str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
+            $tplFile = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
             Processer::setPath($template['prefix']);
             $vars = [
                 '__site_home__' => $template['prefix'],
@@ -63,18 +63,18 @@ class Render
                 '__wconf__' => Module::getInstance()->config(),
             ];
             $config = [
-                'tpl_replace_string' => ['@static' => $template['prefix'] . 'static'],
                 'cache_prefix' => $tplHtml['path'],
+                'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/'],
                 'view_path' => App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR,
                 'tpl_cache' => true,
             ];
-            $view = new View(App::getRootPath() . $tplFile, $vars,  $config);
+            $view = new View(App::getRootPath() . $tplFile, $vars, $config);
             $out = $view->getContent();
             $out = $this->replaceStaticPath($template, $out);
             return ['code' => 1, 'msg' => 'ok', 'data' => $out];
         } catch (\Throwable $e) {
             trace($e->__toString());
-            return ['code' => 0, 'msg' => '[首页]生成出错，' .  str_replace(App::getRootPath(), '', $e->getFile())  . '#' . $e->getLine() . '|' . $e->getMessage()];
+            return ['code' => 0, 'msg' => '[首页]生成出错，' . str_replace(App::getRootPath(), '', $e->getFile()) . '#' . $e->getLine() . '|' . $e->getMessage()];
         }
     }
 
@@ -125,11 +125,11 @@ class Render
                 ];
                 $config = [
                     'cache_prefix' => $tplHtml['path'],
-                    'tpl_replace_string' => ['@static' => $template['prefix'] . 'static'],
+                    'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/'],
                     'view_path' => App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR,
                     'tpl_cache' => true,
                 ];
-                $view = new View(App::getRootPath() . $tplFile, $vars,  $config);
+                $view = new View(App::getRootPath() . $tplFile, $vars, $config);
                 $out = $view->getContent();
                 $out = $this->replaceStaticPath($template, $out);
             }
@@ -169,7 +169,7 @@ class Render
 
         try {
             Processer::setPath($template['prefix']);
-            $tplFile =  str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
+            $tplFile = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
             $out = '';
             if ($content['is_show'] == 0 || $content['delete_time']) {
                 return ['code' => 0, 'msg' => '页面不存在'];
@@ -185,11 +185,11 @@ class Render
                 ];
                 $config = [
                     'cache_prefix' => $tplHtml['path'],
-                    'tpl_replace_string' => ['@static' => $template['prefix'] . 'static'],
+                    'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/'],
                     'view_path' => App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR,
                     'tpl_cache' => true,
                 ];
-                $view = new View(App::getRootPath() . $tplFile, $vars,  $config);
+                $view = new View(App::getRootPath() . $tplFile, $vars, $config);
                 $out = $view->getContent();
                 $out = $this->replaceStaticPath($template, $out);
             }
@@ -218,27 +218,27 @@ class Render
         }
 
         try {
-            $tplFile =  str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
+            $tplFile = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
             Processer::setPath($template['prefix']);
             $vars = [
                 '__site_home__' => $template['prefix'],
                 '__wconf__' => Module::getInstance()->config(),
             ];
-            $get = request()->get();
-            $vars = array_merge($vars, $get);
+            $param = request()->param();
+            $vars = array_merge($vars, $param);
             $config = [
-                'tpl_replace_string' => ['@static' => $template['prefix'] . 'static'],
                 'cache_prefix' => $tplHtml['path'],
+                'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/'],
                 'view_path' => App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR,
                 'tpl_cache' => true,
             ];
-            $view = new View(App::getRootPath() . $tplFile, $vars,  $config);
+            $view = new View(App::getRootPath() . $tplFile, $vars, $config);
             $out = $view->getContent();
             $out = $this->replaceStaticPath($template, $out);
             return ['code' => 1, 'msg' => 'ok', 'data' => $out];
         } catch (\Throwable $e) {
             trace($e->__toString());
-            return ['code' => 0, 'msg' => '[页面]生成出错，' .  str_replace(App::getRootPath(), '', $e->getFile())  . '#' . $e->getLine() . '|' . $e->getMessage()];
+            return ['code' => 0, 'msg' => '[页面]生成出错，' . str_replace(App::getRootPath(), '', $e->getFile()) . '#' . $e->getLine() . '|' . $e->getMessage()];
         }
     }
 
@@ -284,14 +284,14 @@ class Render
             file_put_contents(
                 App::getPublicPath() . $staticDir . DIRECTORY_SEPARATOR . '不要修改此目录中文件.txt',
                 '此目录是存放模板静态资源的，' . "\n"
-                    . '不要修改、替换文件或上传新文件到此目录及子目录，' . "\n"
-                    . '否则重新发布模板资源后改动文件将还原或丢失，' . "\n"
-                    . '原始文件存放于' . $staticPath . '目录下。'
+                . '不要修改、替换文件或上传新文件到此目录及子目录，' . "\n"
+                . '否则重新发布模板资源后改动文件将还原或丢失，' . "\n"
+                . '原始文件存放于' . $staticPath . '目录下。'
             );
             return ['code' => 1, 'msg' => '[静态资源]发布成功：' . "{$staticPath} => public" . DIRECTORY_SEPARATOR . "{$staticDir}"];
         }
 
-        return ['code' => 0, 'msg' =>  '[静态资源]发布失败：' . "{$staticPath} => public" . DIRECTORY_SEPARATOR . "{$staticDir}"];
+        return ['code' => 0, 'msg' => '[静态资源]发布失败：' . "{$staticPath} => public" . DIRECTORY_SEPARATOR . "{$staticDir}"];
     }
 
     /**
@@ -303,7 +303,7 @@ class Render
     public function replaceStaticPath($template, $content)
     {
         $v = Module::getInstance()->config('assets_ver', '1.0');
-        $staticDir = '/theme/' . $template['view_path']  . '/';
+        $staticDir = '/theme/' . $template['view_path'] . '/';
         $content = preg_replace('/(<link\s+[^>]*?href=[\'\"])(?:\.{1,2}\/)?static\/(.+?\.css)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
         $content = preg_replace('/(<script\s+[^>]*?src=[\'\"])(?:\.{1,2}\/)?static\/(.+?\.js)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
         $content = preg_replace('/(<img\s+[^>]*?src=[\'\"])(?:\.{1,2}\/)?static\/(.+?\.\w+)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);

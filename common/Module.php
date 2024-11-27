@@ -71,7 +71,7 @@ class Module extends baseModule
                     'icon' => 'mdi mdi-image-multiple'
                 ],
                 [
-                    'title' => '标签管理',
+                    'title' => '合集管理',
                     'sort' => 6,
                     'url' => '/admin/cmstag/index',
                     'icon' => 'mdi mdi-tag-outline'

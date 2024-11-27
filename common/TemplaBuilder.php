@@ -30,9 +30,10 @@ class TemplaBuilder
      * @param int $fromChannelId
      * @param int $fromContentId
      * @param int $contentDone
+     * @param int $startTime
      * @return array
      */
-    public function make($templateId, $channelIds = [], $types = ['channel', 'content', 'index', 'static', 'route'], $fromChannelId = 0, $fromContentId = 0, $contentDone = 0)
+    public function make($templateId, $channelIds = [], $types = ['channel', 'content', 'index', 'static', 'route'], $fromChannelId = 0, $fromContentId = 0, $contentDone = 0, $startTime = 0)
     {
         $template = CmsTemplate::where('id', $templateId)->cache('cms_template_' . $templateId)->find();
 
@@ -54,15 +55,15 @@ class TemplaBuilder
             $contentTotal = 0;
             if (empty($channelIds)) {
                 $channelList = CmsChannel::withTrashed()->where('id', '>', $fromChannelId)->limit($channelSize)->order('id asc')->select();
-                $channelCount = CmsChannel::count();
+                $channelCount = CmsChannel::withTrashed()->count();
                 if (in_array('content', $types)) {
-                    $contentTotal =  CmsContent::count();
+                    $contentTotal = CmsContent::withTrashed()->count();
                 }
             } else {
                 $channelList = CmsChannel::withTrashed()->where('id', 'in', $channelIds)->where('id', '>', $fromChannelId)->limit($channelSize)->order('id asc')->select();
-                $channelCount = CmsChannel::where('id', 'in', $channelIds)->count();
+                $channelCount = CmsChannel::withTrashed()->where('id', 'in', $channelIds)->count();
                 if (in_array('content', $types)) {
-                    $contentTotal =  CmsContent::where('channel_id', 'in', $channelIds)->count();
+                    $contentTotal = CmsContent::withTrashed()->where('channel_id', 'in', $channelIds)->count();
                 }
             }
 
@@ -72,11 +73,11 @@ class TemplaBuilder
 
             foreach ($channelList as $channel) {
                 if (empty($channelIds)) {
-                    $msgArr[] = '[栏目进度]' . $channel['name'] . '(' . CmsChannel::where('id', '<=', $channel['id'])->count() . '/' . $channelCount . ')';
+                    $msgArr[] = '[栏目进度]' . $channel['name'] . '(' . CmsChannel::withTrashed()->where('id', '<=', $channel['id'])->count() . '/' . $channelCount . ')，已用时：' . $this->formatTime(time() - $startTime);
                 } else {
-                    $msgArr[] = '[栏目进度]' . $channel['name'] . '(' .  CmsChannel::where('id', 'in', $channelIds)->where('id', '<=', $channel['id'])->count() . '/' . $channelCount . ')';
+                    $msgArr[] = '[栏目进度]' . $channel['name'] . '(' . CmsChannel::withTrashed()->where('id', 'in', $channelIds)->where('id', '<=', $channel['id'])->count() . '/' . $channelCount . ')，已用时：' . $this->formatTime(time() - $startTime);
                 }
-                $contentCount = CmsContent::where('channel_id', $channel['id'])->count();
+                $contentCount = CmsContent::withTrashed()->where('channel_id', $channel['id'])->count();
                 //生成内容
                 if (in_array('content', $types)) {
                     $contentList = CmsContent::withTrashed()->where('channel_id', $channel['id'])->where('id', '>', $fromContentId)->limit($contentSize)->order('id asc')->select();
@@ -91,11 +92,11 @@ class TemplaBuilder
 
                         $fromContentId = $content['id'];
                         $msgArr[] = $resB['msg'];
-                        if ($contentDone % $contentSize  == 0) {
+                        if ($contentDone % $contentSize == 0) {
                             break;
                         }
                     }
-                    $isContentOver = count($contentList)  < $contentSize;
+                    $isContentOver = count($contentList) < $contentSize;
                 } else {
                     $isContentOver = true;
                 }
@@ -143,19 +144,37 @@ class TemplaBuilder
             }
 
             if (in_array('channel', $types) && empty($channelIds)) {
-                $outPath = Processer::getContentOutPath();
-                $this->delfiles($outPath, time() - 3600 * 4, 100); //删除7天前的文件
+                $htmlPath = Processer::getOutPath() . 'channel/';
+                $count = $this->delfiles($htmlPath, $startTime - 60, 100);
+                $msgArr[] = '清理过期html文件' . $template['prefix'] . 'channel/*.html' . $count . '个';
             }
-
             if (in_array('content', $types) && empty($channelIds)) {
-                $outPath = Processer::getChannelOutPath();
-                $this->delfiles($outPath, time() - 3600 * 4, 100); //删除7天前的文件
+                $htmlPath = Processer::getOutPath() . 'content/';
+                $count = $this->delfiles($htmlPath, $startTime - 60 * 4, 100);
+                $msgArr[] = '清理过期html文件' . $template['prefix'] . 'content/*.html' . $count . '个';
             }
 
             $msgArr[] = '[完成]已全部处理';
+            $msgArr[] = '[累计用时]' . $this->formatTime(time() - $startTime);
         }
 
-        return ['code' => 1, 'msg' =>  '成功', 'msg_arr' => $msgArr, 'is_over' => $isChannelOver && $isContentOver, 'from_channel_id' => $fromChannelId, 'from_content_id' => $fromContentId, 'content_done' => $contentDone];
+        return ['code' => 1, 'msg' => '成功', 'msg_arr' => $msgArr, 'is_over' => $isChannelOver && $isContentOver, 'from_channel_id' => $fromChannelId, 'from_content_id' => $fromContentId, 'content_done' => $contentDone, 'start_time' => $startTime];
+    }
+
+    /**
+     * 格式化时间
+     * @param mixed $seconds
+     * @return string
+     */
+    protected function formatTime($seconds)
+    {
+        if ($seconds < 60) {
+            return $seconds . '秒';
+        } elseif ($seconds < 3600) {
+            return floor($seconds / 60) . '分' . ($seconds % 60) . '秒';
+        } else {
+            return floor($seconds / 3600) . '时' . floor(($seconds % 3600) / 60) . '分' . ($seconds % 60) . '秒';
+        }
     }
 
     /**
@@ -175,7 +194,7 @@ class TemplaBuilder
             $output = $page->channel($channel['id'], $template['id']);
         }
 
-        $outPath = Processer::getChannelOutPath();
+        $outPath = Processer::getOutPath();
         file_put_contents($outPath . Processer::resolveChannelPath($channel) . '.html', $output);
         file_put_contents($outPath . Processer::resolveChannelPath($channel) . '-1.html', $output);
         return ['code' => 1, 'msg' => '[' . $channel['name'] . ']栏目第一页生成成功，路径：' . Processer::resolveChannelPath($channel)];
@@ -194,7 +213,7 @@ class TemplaBuilder
         $page = new Page();
         $output = $page->content($content['id'], $template['id']);
 
-        $outPath = Processer::getContentOutPath();
+        $outPath = Processer::getOutPath();
         $contentPath = Processer::resolveContentPath($content, $channel) . '.html';
         file_put_contents($outPath . $contentPath, $output);
 

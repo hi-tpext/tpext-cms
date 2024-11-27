@@ -72,7 +72,7 @@ class CmsContent extends Model
         $detail = new CmsContentDetail;
         $detail->save([
             'main_id' => $id,
-            'content' => !empty($data['reference_id']) ? '@' . $data['reference_id'] :  $data->getData('content'),
+            'content' => !empty($data['reference_id']) ? '@' . $data['reference_id'] : $data->getData('content'),
         ]);
 
         ExtLoader::trigger('cms_content_on_after_insert', $data);
@@ -83,7 +83,7 @@ class CmsContent extends Model
         if (!isset($data['id'])) {
             return;
         }
-        
+
         cache('cms_content_' . $data['id'], null);
 
         $detail = CmsContentDetail::where('main_id', $data['id'])->find();
@@ -96,6 +96,19 @@ class CmsContent extends Model
             'main_id' => $data['id'],
             'content' => !empty($data['reference_id']) ? '@' . $data['reference_id'] : $data->getData('content')
         ]);
+
+        if ($data['reference_id'] == 0) {
+            self::where('reference_id', $data['id'])
+                ->update([
+                    'keywords' => $data['keywords'],
+                    'link' => $data['link'],
+                    'description' => $data['description'],
+                    'author' => $data['author'],
+                    'source' => $data['source'],
+                    'logo' => $data['logo'],
+                    'attachment' => $data['attachment'],
+                ]);
+        }
 
         ExtLoader::trigger('cms_content_on_after_update', $data);
     }
