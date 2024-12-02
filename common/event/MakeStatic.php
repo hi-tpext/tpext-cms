@@ -11,9 +11,10 @@
 
 namespace tpext\cms\common\event;
 
+use tpext\cms\common\model;
 use tpext\common\ExtLoader;
 use tpext\cms\common\TemplaBuilder;
-use tpext\cms\common\model;
+use tpext\cms\common\taglib\Processer;
 
 class MakeStatic
 {
@@ -52,10 +53,16 @@ class MakeStatic
         $buiilder = new TemplaBuilder;
         $templates = model\CmsTemplate::select();
         $channel = model\CmsChannel::withTrashed()->where('id', $data['channel_id'])->find();
+        trace('文章[' . $data['title'] . ']修改触发静态生成', 'info');
         foreach ($templates as $template) {
-            $buiilder->makeContent($template, $channel, $data);
-            $buiilder->makeChannel($template, $channel);
-            $buiilder->makeIndex($template);
+            trace('处理模板：' . $template['name'], 'info');
+            Processer::setPath($template['prefix']);
+            $res = $buiilder->makeContent($template, $channel, $data);
+            trace('[' . $data['title'] . ']生成静态文件：' . $res['msg'], 'info');
+            $res = $buiilder->makeChannel($template, $channel);
+            trace('[' . $channel['name'] . ']列表第一页生成静态文件：' . $res['msg'], 'info');
+            $res = $buiilder->makeIndex($template);
+            trace('[模板首页]成静态文件：' . $res['msg'], 'info');
         }
     }
 
@@ -68,9 +75,14 @@ class MakeStatic
     {
         $buiilder = new TemplaBuilder;
         $templates = model\CmsTemplate::select();
+        trace('栏目[' . $data['name'] . ']修改触发静态生成', 'info');
         foreach ($templates as $template) {
-            $buiilder->makeChannel($template, $data);
-            $buiilder->makeIndex($template);
+            trace('处理模板：' . $template['name'], 'info');
+            Processer::setPath($template['prefix']);
+            $res = $buiilder->makeChannel($template, $data);
+            trace('[' . $data['name'] . ']列表第一页生成静态文件：' . $res['msg'], 'info');
+            $res = $buiilder->makeIndex($template);
+            trace('[模板首页]成静态文件：' . $res['msg'], 'info');
         }
     }
 }

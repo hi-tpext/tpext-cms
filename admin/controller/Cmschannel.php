@@ -59,8 +59,8 @@ class Cmschannel extends Controller
         $table->text('name', '名称')->autoPost('', true);
         $table->switchBtn('is_show', '显示')->default(1)->autoPost();
         $table->match('type', '类型')->default(1)->options([1 => '不限', 2 => '目录', 3 => '分类'])->mapClassGroup([[1, 'success'], [2, 'info'], [3, 'warning']])->getWrapper()->addStyle('width:80px');
-        $table->text('sort', '排序')->autoPost('', true);
-        $table->text('pagesize', '分页大小')->autoPost();
+        $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:80px');
+        $table->text('pagesize', '分页大小')->autoPost()->getWrapper()->addStyle('width:80px');
         $table->show('order_by', '内容排序方式');
         $table->show('content_count', '内容统计');
         $table->fields('page_path', '生成路径')->with(

@@ -4,6 +4,7 @@ namespace tpext\cms\admin\controller;
 
 use tpext\think\App;
 use think\Controller;
+use tpext\common\Tool;
 use tpext\builder\traits\actions;
 use tpext\cms\common\RouteBuilder;
 use tpext\cms\common\model\CmsTemplate as TemplateModel;
@@ -102,17 +103,20 @@ class Cmstemplate extends Controller
             ->btnAdd()
             ->btnRefresh()
             ->btnToggleSearch()
-            ->btnLink(url('makeRoute'), '生成路由', 'btn-danger', 'mdi-link-variant');
+            ->btnLink(url('makeRoute'), '生成路由', 'btn-danger', 'mdi-link-variant')
+            ->btnLink(url('clearTemp'), '清除页面缓存', 'btn-warning', 'mdi-delete-forever');
 
         $table->getActionbar()
             ->btnEdit()
             ->btnView()
             ->btnLink('make', url('/admin/cmstemplatemake/make', ['template_id' => '__data.pk__']), '生成', 'btn-success', 'mdi-cloud-braces ', 'data-layer-size="98%,98%"')
             ->btnDelete()->mapClass([
-                'delete' => ['disabled' => function ($data) {
-                    return $data['id'] == 1;
-                }]
-            ]);
+                    'delete' => [
+                        'disabled' => function ($data) {
+                            return $data['id'] == 1;
+                        }
+                    ]
+                ]);
     }
 
     /**
@@ -123,7 +127,13 @@ class Cmstemplate extends Controller
     {
         $routeBuilder = new RouteBuilder;
         $routeBuilder->builder(true);
-        return $this->builder()->layer()->closeRefresh(1, '已生成路由');
+        return $this->builder()->layer()->closeRefresh(1, '已生成路由route/tpex-tcms.php');
+    }
+
+    public function clearTemp()
+    {
+        Tool::deleteDir(App::getRuntimePath() . 'temp' . DIRECTORY_SEPARATOR . 'theme');
+        return $this->builder()->layer()->closeRefresh(1, '已清除缓存目录runtime/temp/theme');
     }
 
     /**
@@ -190,11 +200,11 @@ class Cmstemplate extends Controller
             $this->error($result);
         }
 
-        $data['view_path'] =  preg_replace('/[^\w\-]/', '', trim(strtolower($data['view_path']), '/\\'));
+        $data['view_path'] = preg_replace('/[^\w\-]/', '', trim(strtolower($data['view_path']), '/\\'));
         if ($data['prefix'] == '') {
             $data['prefix'] = '/';
         } else if ($data['prefix'] !== '/') {
-            $data['prefix'] = '/' . preg_replace('/[^\w\-]/', '',  trim(strtolower($data['prefix']), '/\\')) . '/';
+            $data['prefix'] = '/' . preg_replace('/[^\w\-]/', '', trim(strtolower($data['prefix']), '/\\')) . '/';
         }
 
         $view_path = App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $data['view_path'];

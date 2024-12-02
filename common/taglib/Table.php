@@ -23,7 +23,6 @@ class Table
      * tag_name：标签名称
      * id_key：主键名
      * cid_key：分类键名
-     * category_table：分类表名
      * default_order：默认排序
      * default_fields：默认字段
      * default_scope：默认查询条件
@@ -36,7 +35,6 @@ class Table
             'tag_name' => 'channel',
             'id_key' => 'id',
             'cid_key' => 'parent_id',
-            'category_table' => 'cms_channel',
             'default_order' => 'sort asc,id asc',
             'default_fields' => '*',
             'default_scope' => 'is_show=1',
@@ -46,7 +44,6 @@ class Table
             'tag_name' => 'content',
             'id_key' => 'id',
             'cid_key' => 'channel_id',
-            'category_table' => 'cms_channel',
             'default_order' => 'sort desc,publish_time desc,id desc',
             'default_fields' => '*',
             'default_scope' => 'is_show=1 and delete_time is null',
@@ -56,7 +53,6 @@ class Table
             'tag_name' => 'banner',
             'id_key' => 'id',
             'cid_key' => 'position_id',
-            'category_table' => 'cms_position',
             'default_order' => 'sort asc,id asc',
             'default_fields' => '*',
             'default_scope' => 'is_show=1 and delete_time is null',
@@ -66,7 +62,6 @@ class Table
             'tag_name' => 'position',
             'id_key' => 'id',
             'cid_key' => '',
-            'category_table' => '',
             'default_order' => 'sort asc,id asc',
             'default_fields' => '*',
             'default_scope' => 'is_show=1',
@@ -76,7 +71,6 @@ class Table
             'tag_name' => 'tag',
             'id_key' => 'id',
             'cid_key' => '',
-            'category_table' => '',
             'default_order' => 'sort asc,id asc',
             'default_fields' => '*',
             'default_scope' => 'is_show=1',

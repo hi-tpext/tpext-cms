@@ -12,6 +12,7 @@
 namespace tpext\cms\common;
 
 use tpext\think\App;
+use tpext\common\Tool;
 use tpext\cms\common\event\MakeStatic;
 use tpext\common\Module as baseModule;
 use tpext\cms\common\model\CmsTemplate;
@@ -106,6 +107,39 @@ class Module extends baseModule
         }
 
         return $success;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return boolean
+     */
+    public function afterCopyAssets()
+    {
+        Tool::deleteDir(App::getRuntimePath() . 'temp' . DIRECTORY_SEPARATOR . 'theme');
+        return true;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return boolean
+     */
+    public function uninstall($runSql = true)
+    {
+        Tool::deleteDir(App::getRuntimePath() . 'temp' . DIRECTORY_SEPARATOR . 'theme');
+        return parent::uninstall($runSql);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return boolean
+     */
+    public function upgrade()
+    {
+        Tool::deleteDir(App::getRuntimePath() . 'temp' . DIRECTORY_SEPARATOR . 'theme');
+        return parent::upgrade();
     }
 
     public function loaded()

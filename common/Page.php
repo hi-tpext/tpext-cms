@@ -80,6 +80,11 @@ class Page
             return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>页面不存在</h4></body></html>';
         }
 
+        if ($channel['link']) {
+            $redirectUrl = Processer::resolveWebPath($channel['link']);
+            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>跳转...</title><meta http-equiv="refresh" content="0;url=' . $redirectUrl . '"></head><body></body></html>';
+        }
+
         $channel = Processer::detail($table, $channel);
         $render = new Render();
         $res = $render->channel($template, $channel, $page);
@@ -117,6 +122,11 @@ class Page
 
         if (!$content) {
             return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>页面不存在</h4></body></html>';
+        }
+
+        if ($content['link']) {
+            $redirectUrl = Processer::resolveWebPath($content['link']);
+            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>跳转...</title><meta http-equiv="refresh" content="0;url=' . $redirectUrl . '"></head><body></body></html>';
         }
 
         $content = Processer::detail($table, $content);

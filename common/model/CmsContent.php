@@ -204,6 +204,15 @@ class CmsContent extends Model
         return is_array($value) ? ',' . implode(',', $value) . ',' : ',' . trim($value, ',') . ',';
     }
 
+    public function setMentionIdsAttr($value)
+    {
+        if (empty($value)) {
+            return '';
+        }
+
+        return is_array($value) ? implode(',', $value) : trim($value, ',');
+    }
+
     public function getTagNamesAttr($value, $data)
     {
         $ids = trim($data['tags'], ',');

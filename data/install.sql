@@ -23,11 +23,11 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_channel`  (
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`),
   KEY `parent_id` (`parent_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='文章栏目';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='栏目';
 
 CREATE TABLE IF NOT EXISTS `__PREFIX__cms_content`  (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '文章ID',
-  `title` varchar(125) NOT NULL DEFAULT '' COMMENT '文章名称',
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '内容ID',
+  `title` varchar(125) NOT NULL DEFAULT '' COMMENT '标题',
   `channel_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '所属分类',
   `author` varchar(32) NOT NULL DEFAULT '' COMMENT '作者',
   `source` varchar(32) NOT NULL DEFAULT '' COMMENT '来源',
@@ -46,17 +46,18 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_content`  (
   `click` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '点击量',
   `admin_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '添加人',
   `reference_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '引用id',
+  `mention_ids` varchar(255) NOT NULL DEFAULT '' COMMENT '关联文章ids',
   `create_time` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '添加时间',
   `update_time` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '更新时间',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`),
   KEY `channel_id` (`channel_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='文章';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='内容';
 
 CREATE TABLE IF NOT EXISTS `__PREFIX__cms_content_detail`  (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '内容ID',
-  `main_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '文章ID',
-  `content` text DEFAULT NULL COMMENT '文章内容',
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `main_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '内容ID',
+  `content` text DEFAULT NULL COMMENT '内容',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='文章详情';
 

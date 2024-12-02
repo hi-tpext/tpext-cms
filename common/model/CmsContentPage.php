@@ -12,7 +12,6 @@
 namespace tpext\cms\common\model;
 
 use think\Model;
-
 use tpext\common\ExtLoader;
 
 class CmsContentPage extends Model

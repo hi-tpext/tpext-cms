@@ -152,7 +152,7 @@ class Render
         $tplHtml = $this->getHtml($template, 'single', $content['id']); //获取绑定的单页模板
 
         if (!$tplHtml) {
-            $tplHtml = $this->getHtml($template, 'content', $content['id']); //获取绑定的内容模板
+            $tplHtml = $this->getHtml($template, 'content', $content['channel_id']); //获取绑定的内容模板
         }
 
         if (!$tplHtml) {
@@ -210,7 +210,7 @@ class Render
     {
         $tplHtml = $this->htmlModel->where('id', $tplHtmlId)
             ->where(['type' => 'dynamic', 'template_id' => $template['id']])
-            ->cache('cms_html_' . $template['id'], 3600)
+            ->cache('cms_html_' . $template['id'], 3600, 'cms_html')
             ->find();
 
         if (!$tplHtml) {
