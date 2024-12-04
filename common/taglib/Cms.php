@@ -49,7 +49,7 @@ class Cms extends Taglib
         $item = ltrim($item, '$');
         $assign = ltrim($assign, '$');
         $cache = explode(',', $tag['cache'] ?? '');
-        $cacheKey =  empty($cache[0]) ? 'false' : "'" . trim($cache[0]) . "'";
+        $cacheKey = empty($cache[0]) ? 'false' : "'" . trim($cache[0]) . "'";
         $cacheTime = intval($cache[1] ?? 360);
         $tagOrder = !empty($tag['order']) ? $tag['order'] : Table::defaultOrder($table);
         $fields = $tag['fields'] ?? Table::defaultFields($table);
@@ -241,7 +241,7 @@ EOT;
         $assign = !empty($tag['assign']) ? $tag['assign'] : ($tag['default_assign'] ?? 'data');
         $assign = ltrim($assign, '$');
         $cache = explode(',', $tag['cache'] ?? '');
-        $cacheKey =  empty($cache[0]) ? 'false' : "'" . trim($cache[0]) . "'";
+        $cacheKey = empty($cache[0]) ? 'false' : "'" . trim($cache[0]) . "'";
         $cacheTime = intval($cache[1] ?? 360);
         $order = $tag['order'] ?? '';
         $fields = $tag['fields'] ?? Table::defaultFields($table);
@@ -339,26 +339,32 @@ EOT;
         $where = $this->whereExp($where);
 
         $binds = [];
-        preg_match_all('/([\$:][\w\.]+)\b/', $where, $matches);
+        preg_match_all('/\%?(\$[\w\.]+)\%?/', $where, $matches);
         if (isset($matches[1]) && count($matches[1]) > 0) {
-            $keys = [];
-            $replace = [];
             foreach ($matches[1] as $i => $match) {
                 $varName = preg_replace('/\W/is', '_', $match) . $i;
-                $keys[] = $match;
-                $replace[] = ':' . $varName;
+                $replace = ':' . $varName;
+                $bind = '';
                 if (strpos($match, '.') !== false) {
-                    $names  = explode('.', $match);
+                    $names = explode('.', $match);
                     $first = array_shift($names);
-                    $binds[] = '\'' . $varName . '\' => ' . $first . '[\'' . implode('\'][\'', $names) . '\']';
+                    $bind = $first . '[\'' . implode('\'][\'', $names) . '\']';
                 } else {
-                    if ($match[0] == ':') {
-                        $match = substr($match, 1);
-                    }
-                    $binds[] = '\'' . $varName . '\' => ' . $match;
+                    $bind = $match;
                 }
+                $find = "\\{$match}";
+                if ($matches[0][$i][0] == '%') {
+                    $find = '%' . $find;
+                    $bind = "'%' . {$bind}";
+                }
+                if ($matches[0][$i][-1] == '%') {
+                    $find = $find . '%';
+                    $bind = "{$bind} . '%'";
+                }
+                trace('find:' . $find);
+                $binds[] = '\'' . $varName . '\' => ' . $bind;
+                $where = preg_replace("/{$find}/", $replace, $where, 1);
             }
-            $where = str_replace($keys, $replace, $where);
         }
         return [$where, implode(', ', $binds)];
     }
@@ -446,7 +452,7 @@ EOT;
                     $tag['id_key'] = $info['id_key'] ?? 'id';
                     $where = '';
                     if (empty($tag['where'])) {
-                        $cid_key =  $info['cid_key'] ?? '';
+                        $cid_key = $info['cid_key'] ?? '';
                         if ($cid_key) {
                             $where = $cid_key . "=\${$tagArr[0]}." . $cid_key;
                         } else {
@@ -472,7 +478,7 @@ EOT;
                     $isDesc = stripos($orders[0], 'desc') !== false;
                     $cmp = $isDesc ? '>' : '<';
                     $tag['where'] = "{$tag['id_key']} != {$id} and {$first} {$cmp} {$sort} and " . $where;
-                    $tag['order']  = implode(',', $fields);
+                    $tag['order'] = implode(',', $fields);
                     $tag[$tag['id_key']] = '';
                     return $this->tagGet($tag, $content);
                 }
@@ -484,7 +490,7 @@ EOT;
                     $tag['id_key'] = $info['id_key'] ?? 'id';
                     $where = '';
                     if (empty($tag['where'])) {
-                        $cid_key =  $info['cid_key'] ?? '';
+                        $cid_key = $info['cid_key'] ?? '';
                         if ($cid_key) {
                             $where = $cid_key . "=\${$tagArr[0]}." . $cid_key;
                         } else {
@@ -501,7 +507,7 @@ EOT;
                     $isDesc = stripos($orders[0], 'desc') !== false;
                     $cmp = $isDesc ? '<' : '>';
                     $tag['where'] = "{$tag['id_key']} != {$id} and {$first} {$cmp} {$sort} and " . $where;
-                    $tag['order']  = $order;
+                    $tag['order'] = $order;
                     $tag[$tag['id_key']] = '';
                     return $this->tagGet($tag, $content);
                 }

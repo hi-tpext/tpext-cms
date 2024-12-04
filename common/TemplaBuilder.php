@@ -146,12 +146,12 @@ class TemplaBuilder
             if (in_array('channel', $types) && empty($channelIds)) {
                 $htmlPath = Processer::getOutPath() . 'channel/';
                 $count = $this->delfiles($htmlPath, $startTime - 60, 100);
-                $msgArr[] = '清理过期html文件' . $template['prefix'] . 'channel/*.html' . $count . '个';
+                $msgArr[] = '清理过期html文件' . $template['prefix'] . 'channel/*.html (' . $count . ')个';
             }
             if (in_array('content', $types) && empty($channelIds)) {
                 $htmlPath = Processer::getOutPath() . 'content/';
                 $count = $this->delfiles($htmlPath, $startTime - 60 * 4, 100);
-                $msgArr[] = '清理过期html文件' . $template['prefix'] . 'content/*.html' . $count . '个';
+                $msgArr[] = '清理过期html文件' . $template['prefix'] . 'content/*.html (' . $count . ')个';
             }
 
             $msgArr[] = '[完成]已全部处理';

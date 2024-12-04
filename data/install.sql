@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_channel`  (
   `full_name` varchar(255) NOT NULL DEFAULT '' COMMENT '完整类目名称',
   `parent_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '上级ID',
   `logo` varchar(255) NOT NULL DEFAULT '' COMMENT '封面图',
-  `dir` varchar(255) NOT NULL DEFAULT '' COMMENT 'url目录',
+  `is_index_navi` tinyint(1) unsigned NOT NULL DEFAULT 1 COMMENT '首页导航',
   `type` tinyint(1) NOT NULL DEFAULT 1 COMMENT '栏目类型',
   `link` varchar(255) NOT NULL DEFAULT '' COMMENT '跳转链接',
   `deep` tinyint(2) unsigned NOT NULL DEFAULT 0 COMMENT '层级',

@@ -1,5 +1,5 @@
 <div> <!--网站首页-->
-    {channel@list num="20"}
+    {channel@list where="is_index_navi=1" num="20"}
     <div>
         <img src="{$channel.logo}">
         <a target="_blank" href="{$channel.url}">{$channel.name}</a>

@@ -104,8 +104,8 @@ class Render
         try {
             Processer::setPath($template['prefix']);
             $tplFile = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
-            if ($channel['is_show'] == 0 || $channel['delete_time'] || $channel['channel_path'] == '#') {
-                return ['code' => 0, 'msg' => '页面不存在'];
+            if ($channel['is_show'] != 1 || $channel['delete_time'] || $channel['channel_path'] == '#') {
+                return ['code' => 0, 'msg' => '栏目不存在'];
             } else {
                 $channel_ids = $channel['children_ids'] ?? [];
                 $channel_ids = array_merge([$channel['id']], $channel_ids, explode(',', $channel['extend_ids']));
@@ -171,8 +171,8 @@ class Render
             Processer::setPath($template['prefix']);
             $tplFile = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
             $out = '';
-            if ($content['is_show'] == 0 || $content['delete_time']) {
-                return ['code' => 0, 'msg' => '页面不存在'];
+            if ($content['is_show'] != 1 || $content['delete_time']) {
+                return ['code' => 0, 'msg' => '内容不存在'];
             } else {
                 $vars = [
                     'id' => $content['id'],
@@ -220,9 +220,18 @@ class Render
         try {
             $tplFile = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
             Processer::setPath($template['prefix']);
+
+            $page_path = '';
+            $get = request()->get();
+            if (!empty($get)) {
+                unset($get['page']);
+                $page_path = '?' . (empty($get) ? '' : http_build_query($get) . '&') . 'page=[PAGE]';
+            }
+
             $vars = [
                 '__site_home__' => $template['prefix'],
                 '__wconf__' => Module::getInstance()->config(),
+                '__set_page_path__' => $page_path,
             ];
             $param = request()->param();
             $vars = array_merge($vars, $param);
@@ -278,6 +287,9 @@ class Render
         $staticPath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $staticPath);
         $staticDir = 'theme' . DIRECTORY_SEPARATOR . $template['view_path'];
 
+        if (is_dir(App::getPublicPath() . $staticDir)) {
+            Tool::copyDir($staticPath, App::getPublicPath() . $staticDir . date('YmdHis'));
+        }
         Tool::deleteDir(App::getPublicPath() . $staticDir);
         $res = Tool::copyDir($staticPath, App::getPublicPath() . $staticDir);
         if ($res) {
@@ -286,7 +298,8 @@ class Render
                 '此目录是存放模板静态资源的，' . "\n"
                 . '不要修改、替换文件或上传新文件到此目录及子目录，' . "\n"
                 . '否则重新发布模板资源后改动文件将还原或丢失，' . "\n"
-                . '原始文件存放于' . $staticPath . '目录下。'
+                . '原始文件存放于' . $staticPath . '目录下。' . "\n"
+                . '请修改原始文件，再发布静态资源到此目录。'
             );
             return ['code' => 1, 'msg' => '[静态资源]发布成功：' . "{$staticPath} => public" . DIRECTORY_SEPARATOR . "{$staticDir}"];
         }

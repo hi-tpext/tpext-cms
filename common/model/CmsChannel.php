@@ -76,6 +76,13 @@ class CmsChannel extends Model
         }
 
         ExtLoader::trigger('cms_channel_on_after_update', $data);
+
+        //循环触发子栏目更新
+        $children = static::where('parent_id', $data['id'])->select();
+        foreach ($children as $child) {
+            $child['update_time'] = date('Y-m-d H:i:s');
+            $child->save();
+        }
     }
 
     public static function onBeforeWrite($data)
@@ -90,15 +97,12 @@ class CmsChannel extends Model
                 $names = [];
                 $ids = [];
                 foreach ($upNodes as $node) {
-                    if (!empty($data['id']) && $node['id'] == $data['id']) {
-                        continue;
-                    }
                     $names[] = $node['name'];
                     $ids[] = $node['id'];
                 }
-                $data['full_name'] =  implode('->', array_reverse($names));
-                $data['path'] = ',' . implode(',', array_reverse($ids)) . ',';
-                $data['deep'] =  count($ids);
+                $data['full_name'] = implode(' / ', array_reverse($names));
+                $data['path'] = implode(',', array_reverse($ids));
+                $data['deep'] = count($ids);
             }
         }
     }

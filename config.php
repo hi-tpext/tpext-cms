@@ -17,7 +17,7 @@ return [
         'copyright' => ['type' => 'textarea', 'label' => '版权'],
         'assets_ver' => ['type' => 'text', 'label' => '静态资源版本号', 'size' => [2, 4]],
         'editor' => ['type' => 'radio', 'label' => '编辑器', 'options' => ['wangEditor' => 'wangEditor', 'ueditor' => 'UEditor', 'ckeditor' => 'CKEditor', 'mdeditor' => 'MDEditor', 'tinymce' => 'Tinymce']],
-        'make_static' => ['type' => 'radio', 'label' => '生成静态', 'options' => ['0' => '否', '1' => '是'], 'help' => '文章或栏目修改后，自动生成静态页面'],
+        'make_static' => ['type' => 'radio', 'label' => '生成静态', 'options' => ['0' => '否', '1' => '是'], 'help' => '若开启，文章或栏目修改后，自动生成静态页面。如果不想使用静态生成，请设置为否，然后手动删除已生成的静态文件。'],
         'allow_tables' => ['type' => 'textarea', 'label' => '允许表名', 'help' => '除cms默认的表外，允许使用cms标签的表名（不包含表前缀），多个表名之间用英文逗号分隔'],
     ],
 ];

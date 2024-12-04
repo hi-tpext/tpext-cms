@@ -5,6 +5,7 @@ namespace tpext\cms\admin\controller;
 use tpext\think\App;
 use think\Controller;
 use tpext\common\Tool;
+use think\facade\Cache;
 use tpext\builder\traits\actions;
 use tpext\cms\common\RouteBuilder;
 use tpext\cms\common\model\CmsTemplate as TemplateModel;
@@ -132,6 +133,12 @@ class Cmstemplate extends Controller
 
     public function clearTemp()
     {
+        $tags = ['cms_html', 'cms_page', 'cms_template', 'cms_channel', 'cms_content', 'cms_position', 'cms_banner', 'cms_tag'];
+        
+        foreach ($tags as $tag) {
+            Cache::clear($tag);
+        }
+
         Tool::deleteDir(App::getRuntimePath() . 'temp' . DIRECTORY_SEPARATOR . 'theme');
         return $this->builder()->layer()->closeRefresh(1, '已清除缓存目录runtime/temp/theme');
     }

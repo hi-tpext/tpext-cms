@@ -57,10 +57,11 @@ class Cmschannel extends Controller
         $table->image('logo', '封面图')->thumbSize(50, 50);
         $table->show('link', '链接')->default('暂无');
         $table->text('name', '名称')->autoPost('', true);
-        $table->switchBtn('is_show', '显示')->default(1)->autoPost();
-        $table->match('type', '类型')->default(1)->options([1 => '不限', 2 => '目录', 3 => '分类'])->mapClassGroup([[1, 'success'], [2, 'info'], [3, 'warning']])->getWrapper()->addStyle('width:80px');
-        $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:80px');
-        $table->text('pagesize', '分页大小')->autoPost()->getWrapper()->addStyle('width:80px');
+        $table->switchBtn('is_index_navi', '首页导航')->autoPost();
+        $table->switchBtn('is_show', '显示')->autoPost();
+        $table->match('type', '类型')->options([1 => '不限', 2 => '目录', 3 => '分类'])->mapClassGroup([[1, 'success'], [2, 'info'], [3, 'warning']])->getWrapper()->addStyle('width:80px');
+        $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:60px');
+        $table->text('pagesize', '分页大小')->autoPost()->getWrapper()->addStyle('width:60px');
         $table->show('order_by', '内容排序方式');
         $table->show('content_count', '内容统计');
         $table->fields('page_path', '生成路径')->with(
@@ -77,7 +78,7 @@ class Cmschannel extends Controller
         $table->getToolbar()
             ->btnAdd()
             ->btnRefresh()
-            ->btnLink(url('refresh'), '刷新层级', 'btn-success', 'mdi-autorenew');
+            ->btnLink(url('refresh'), '刷新层级', 'btn-success', 'mdi-autorenew', 'data-layer-size="300px,100px" title="重新整理栏目上下级关系"');
 
         $table->getActionbar()
             ->btnLink('add', url('add', ['parend_id' => '__data.pk__']), '', 'btn-secondary', 'mdi-plus', 'title="添加下级"')
@@ -107,10 +108,10 @@ class Cmschannel extends Controller
      */
     public function refresh()
     {
-        $builder = $this->builder('栏目管理', '刷新层级关系');
+        $builder = $this->builder();
         $step = input('step', '0');
         $list = [];
-        $maxLevel = $this->dataModel->max('deep');
+        $maxLevel = $this->dataModel->max('deep') + 1;
         if ($step <= $maxLevel) {
             $list = $this->dataModel->where('deep', $step)->select();
             foreach ($list as $li) {
@@ -118,23 +119,20 @@ class Cmschannel extends Controller
                 $names = [];
                 $ids = [];
                 foreach ($upNodes as $node) {
-                    if ($node['id'] == $li['id']) {
-                        continue;
-                    }
                     $names[] = $node['name'];
                     $ids[] = $node['id'];
                 }
-                $data['full_name'] = $li['deep'] == 0 ? $li['name'] : implode('->', array_reverse($names));
-                $data['path'] = $li['parent_id'] == 0 ? ',0,' : ',' . implode(',', array_reverse($ids)) . ',';
-                $data['deep'] = $li['parent_id'] == 0 ? 1 : count($ids);
-
+                $data = [];
+                $data['full_name'] = implode(' / ', array_reverse($names));
+                $data['path'] = implode(',', array_reverse($ids));
+                $data['deep'] = count($ids);
                 $li->save($data);
             }
             $next = $step + 1;
             $url = url('refresh', ['step' => $next]);
             $builder->display('<h4>（{$step}/{$maxLevel}）栏目层级已处理</h4><script>setTimeout(function(){location.href=\'{$url}\'},1000)</script>', ['step' => $step, 'maxLevel' => $maxLevel, 'url' => $url]);
         } else {
-            $builder->display('<h4>完成</h4>');
+            return $builder->layer()->close(1, '栏目层级刷新完成');
         }
 
         return $builder;
@@ -160,6 +158,7 @@ class Cmschannel extends Controller
         $form->radio('type', '类型')->default(1)->options([1 => '不限', 2 => '目录', 3 => '分类'])->required()->help('目录有下级，不能存文章。分类无下级，只能存文章');
         // $form->select('channel_template_id', '栏目模板')->dataUrl(url('/admin/cmstemplate/selectpage'));
         // $form->select('content_template_id', '内容模板')->dataUrl(url('/admin/cmstemplate/selectpage'));
+        $form->switchBtn('is_index_navi', '首页导航')->default(1);
         $form->switchBtn('is_show', '显示')->default(1);
         $form->number('sort', '排序')->default(0)->required();
 

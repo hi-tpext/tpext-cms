@@ -106,6 +106,8 @@ class CmsTemplate extends Model
             if (mkdir($view_path . '/dynamic', 0775, true)) {
                 $text = self::getTemplatePart('tpl/tag.html');
                 file_put_contents($view_path . '/dynamic/tag.html', str_replace('__content__', $text, $newTpl));
+                $text = self::getTemplatePart('tpl/search.html');
+                file_put_contents($view_path . '/dynamic/search.html', str_replace('__content__', $text, $newTpl));
                 $text = self::getTemplatePart('tpl/demo.html');
                 file_put_contents($view_path . '/dynamic/demo.html', str_replace('__content__', $text, $newTpl));
             }

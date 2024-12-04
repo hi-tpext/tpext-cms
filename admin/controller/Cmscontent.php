@@ -319,7 +319,7 @@ class Cmscontent extends Controller
             $form->text('author', '作者', 6)->readonly($isReference)->maxlength(32)->default($admin ? $admin['name'] : '');
             $form->text('source', '来源', 6)->readonly($isReference)->maxlength(32)->default($admin && $admin['group'] ? $admin['group']['name'] : '');
 
-            $form->radio('is_show', '显示', 4)->yesOrNo()->default(1)->blockStyle();
+            $form->radio('is_show', '显示', 4)->options([1 => '是', 0 => '否'])->default(9)->blockStyle();
             $form->number('click', '点击量', 4)->default(0);
             $form->number('sort', '排序', 4)->default(0);
 
