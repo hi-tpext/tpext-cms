@@ -1,0 +1,136 @@
+/*网站样式*/
+@charset "UTF-8";
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", sans-serif;
+  color: #222;
+  line-height: 1.5;
+  font-size: 14px;
+  overflow-x: hidden;
+  background-color: #f5f6fa;
+}
+html,
+body {
+  height: 100%;
+}
+a {
+  color: #222;
+  -webkit-transition: 0.2s linear;
+  transition: 0.2s linear;
+}
+a:hover,
+a:focus {
+  color: #4d5259;
+  text-decoration: none;
+  outline: none;
+}
+a:hover,
+a:focus,
+a:active {
+  text-decoration: none;
+}
+a,
+button,
+a:focus,
+a:active,
+button:focus,
+button:active {
+  outline: none !important;
+}
+blockquote {
+  font-size: 16px;
+}
+img {
+  max-width: 100%;
+}
+pre {
+  background-color: #f9fafb;
+  border: none;
+  border-left: 5px solid #ebebeb;
+  padding: 12px;
+  border-radius: 3px;
+  color: #616a78;
+}
+
+code {
+  padding: 2px 4px;
+  color: #c7254e;
+  background-color: #f9f2f4;
+  border-radius: 4px;
+}
+
+p {
+  line-height: 28px;
+  padding: 5px;
+  text-indent: 10px;
+  margin: 0;
+}
+
+.main-container {
+  width: 1300px;
+  margin: 0 auto;
+}
+
+.main-content {
+  min-height: 700px;
+}
+
+.main-content .title {
+  font-weight: bold;
+  font-size: 24px;
+  color: #000;
+  text-align: center;
+  line-height: 80px;
+}
+
+.main-content .info {
+  font-size: 18px;
+  color: #333;
+  text-align: center;
+  border-bottom: #ccc dashed 1px;
+  line-height: 40px;
+  padding-bottom: 10px;
+}
+
+.main-content .info span {
+  padding: 5px 10px;
+  line-height: 36px;
+}
+
+.main-content .content {
+  margin-top: 20px;
+  line-height: 28px;
+  text-indent: 10px;
+  font-size: 16px;
+  color: #333;
+}
+
+.next-prev .prev,
+.next-prev .next {
+  line-height: 40px;
+}
+
+.footer {
+  width: 100%;
+  padding: 20px 0;
+  background: #8ac4dfc4;
+}
+
+.copyright {
+  text-align: center;
+}
+
+.kwd-txt {
+  color: red;
+}
+
+.pagination {
+  text-align: center;
+}
+
+.pagination li {
+  display: inline-block;
+  margin: 0 3px;
+}

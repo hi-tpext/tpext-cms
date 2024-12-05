@@ -85,6 +85,7 @@ class CmsContent extends Model
         }
 
         cache('cms_content_' . $data['id'], null);
+        cache('cms_content_click_' . $data['id'], null);
 
         $detail = CmsContentDetail::where('main_id', $data['id'])->find();
         if (!$detail) {
@@ -92,22 +93,32 @@ class CmsContent extends Model
         } else {
             cache('cms_content_detail_' . $detail['id'], null);
         }
-        $detail->save([
-            'main_id' => $data['id'],
-            'content' => !empty($data['reference_id']) ? '@' . $data['reference_id'] : $data->getData('content')
-        ]);
 
-        if ($data['reference_id'] == 0) {
-            self::where('reference_id', $data['id'])
-                ->update([
-                    'keywords' => $data['keywords'],
-                    'link' => $data['link'],
-                    'description' => $data['description'],
-                    'author' => $data['author'],
-                    'source' => $data['source'],
-                    'logo' => $data['logo'],
-                    'attachment' => $data['attachment'],
+        if (isset($data['reference_id'])) {
+            if ($data['reference_id'] > 0) {
+                $detail->save([
+                    'main_id' => $data['id'],
+                    'content' => '@' . $data['reference_id']
                 ]);
+            } else {
+                if (property_exists($data, 'content')) {
+                    $detail->save([
+                        'main_id' => $data['id'],
+                        'content' => $data->getData('content')
+                    ]);
+                }
+
+                self::where('reference_id', $data['id'])
+                    ->update([
+                        'keywords' => $data['keywords'],
+                        'link' => $data['link'],
+                        'description' => $data['description'],
+                        'author' => $data['author'],
+                        'source' => $data['source'],
+                        'logo' => $data['logo'],
+                        'attachment' => $data['attachment'],
+                    ]);
+            }
         }
 
         ExtLoader::trigger('cms_content_on_after_update', $data);
@@ -221,5 +232,10 @@ class CmsContent extends Model
         }
         $list = CmsTag::where('id', 'in', $ids)->column('name');
         return implode(',', $list);
+    }
+
+    public function getClickAttr($value, $data)
+    {
+        return cache('cms_content_click_' . $data['id']) ?: $data['click'];
     }
 }

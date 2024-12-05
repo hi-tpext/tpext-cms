@@ -1,12 +1,17 @@
-<div> <!--网站首页-->
-    {channel@list where="is_index_navi=1" num="20"}
-    <div>
-        <img src="{$channel.logo}">
-        <a target="_blank" href="{$channel.url}">{$channel.name}</a>
+<div class="index-grid"> <!--网站首页-->
+    {channel@list num="20"}
+    <div class="index-item">
+        <div class="title">
+            <img src="{$channel.logo}" class="logo" alt="{$channel.name}" />
+            <a href="{$channel.url}">{$channel.name}</a>
+        </div>
         {content@list channel_id="$channel.id"}
-        <div>
+        <div class="item-info">
             <a target="_blank" href="{$content.url}">{$content.title}</a>
-            <p>{$content.publish_time}</p>
+            {if $content.is_recommend==1}
+            <b style="color: red;">[荐]</b>
+            {/if}
+            <p>{$content.publish_date}</p>
         </div>
         {/content@list}
     </div>

@@ -1,21 +1,24 @@
 <!--文章详情(示例)-->
-<div>
+<div class="breadcrumb">
     当前位置：<a href="{$__site_home__}">首页</a>
     {channel@parents id="$content.channel_id"}
     &gt;<a href="{$channel.url}">{$channel.name}</a>
     {/channel@parents}
 </div>
-<div>
-    <div>{$content.title}</div>
-    <div>{$content.content|raw}</div>
-</div>
-<div>
-    <div>
-        {content@prev}
-        <p>上一篇：<a href="{$prev.url}">{$prev.title}</a></p>
+<div class="main-content">
+    <div class="title">{$content.title}</div>
+    <div class="info">
+        <span>发布日期：{$content.publish_date}</span>|<span>作者：{$content.author}</span>|<span>来源：{$content.source}</span>|<span>点击：{$content.click|raw}</span>
     </div>
-    <div>
+    <div class="content">{$content.content|raw}</div>
+</div>
+<div class="next-prev">
+    <div class="prev">
+        {content@prev}
+        上一篇：<a href="{$prev.url}">{$prev.title}</a>
+    </div>
+    <div class="next">
         {content@next}
-        <p>下一篇：<a href="{$next.url}">{$next.title}</a></p>
+        下一篇：<a href="{$next.url}">{$next.title}</a>
     </div>
 </div>

@@ -140,7 +140,8 @@ class Cms extends Taglib
             }
         }
         \$__list__ = [];
-        \$__order_by__ = !empty(\$__set_order_by__) ? \$__set_order_by__ : '{$tagOrder}';
+        \$__order_by__ = '{$table}' =='cms_content' && !empty(\$__set_order_by__) ? \$__set_order_by__ . '{$tagOrder}' : '{$tagOrder}';
+
         \$__data__ = {$dbNameSpace}::name('{$table}')
             ->where(\$__where__)
             ->whereRaw(\$__where_raw__, [{$binds}])
@@ -352,7 +353,7 @@ EOT;
                 } else {
                     $bind = $match;
                 }
-                $find = "\\{$match}";
+                $find = $match;
                 if ($matches[0][$i][0] == '%') {
                     $find = '%' . $find;
                     $bind = "'%' . {$bind}";
@@ -361,9 +362,8 @@ EOT;
                     $find = $find . '%';
                     $bind = "{$bind} . '%'";
                 }
-                trace('find:' . $find);
-                $binds[] = '\'' . $varName . '\' => ' . $bind;
-                $where = preg_replace("/{$find}/", $replace, $where, 1);
+                $binds[] = "'{$varName}' => {$bind}";
+                $where = substr_replace($where, $replace, strpos($where, $find), strlen($find));
             }
         }
         return [$where, implode(', ', $binds)];
@@ -395,10 +395,11 @@ EOT;
             $idVal = $this->whereExp($idVal);
             $where = " and {$idKey} {$idVal}";
         } else if (preg_match('/^(like|not\s*like)\s+(.+)$/is', $idVal, $mch)) {
-            if (!strstr($mch[2], '%')) {
-                $mch[2] = '%' . $mch[2] . '%';
+            $word = trim($mch[2], "'\"");
+            if (!strstr($word, '%')) {
+                $mch[2] = '%' . $word . '%';
             }
-            $where = " and {$idKey} {$mch[1]} {$mch[2]}";
+            $where = " and {$idKey} {$mch[1]} '{$word}'";
         } else if (preg_match('/^(between|not\s*between)\s+(.+)$/is', $idVal, $mch)) {
             $where = " and {$idKey} {$mch[1]} {$mch[2]}";
         } else {

@@ -13,11 +13,12 @@ namespace tpext\cms\common;
 
 use tpext\think\App;
 use tpext\common\Tool;
-use tpext\cms\common\model\CmsTemplate;
-use tpext\cms\common\model\CmsTemplateHtml;
-use tpext\cms\common\model\CmsContentPage;
-use tpext\cms\common\taglib\Processer;
+use think\facade\Cache;
 use tpext\cms\common\taglib\Table;
+use tpext\cms\common\taglib\Processer;
+use tpext\cms\common\model\CmsTemplate;
+use tpext\cms\common\model\CmsContentPage;
+use tpext\cms\common\model\CmsTemplateHtml;
 
 class Render
 {
@@ -30,6 +31,8 @@ class Render
      * @var CmsTemplateHtml
      */
     protected $htmlModel = null;
+
+    protected $cacheTime = 3600 * 24 * 7;
 
     public function __construct()
     {
@@ -47,7 +50,7 @@ class Render
     {
         $tplHtml = $this->htmlModel->where('is_default', 1)
             ->where(['type' => 'index', 'template_id' => $template['id']])
-            ->cache('cms_html_index_' . $template['id'], 3600, 'cms_html')
+            ->cache('cms_html_index_' . $template['id'], $this->cacheTime, 'cms_html')
             ->find();
 
         if (!$tplHtml) {
@@ -60,6 +63,7 @@ class Render
             $vars = [
                 '__site_home__' => $template['prefix'],
                 '__page_type__' => 'index',
+                '__set_order_by__' => 'is_recommend desc,',
                 '__wconf__' => Module::getInstance()->config(),
             ];
             $config = [
@@ -93,7 +97,7 @@ class Render
             //无绑定，使用默认模板
             $tplHtml = $this->htmlModel->where('is_default', 1)
                 ->where(['type' => 'channel', 'template_id' => $template['id']])
-                ->cache('cms_html_channel_default_' . $template['id'], 3600, 'cms_html')
+                ->cache('cms_html_channel_default_' . $template['id'], $this->cacheTime, 'cms_html')
                 ->find();
         }
 
@@ -119,7 +123,7 @@ class Render
                     '__site_home__' => $template['prefix'],
                     '__page_type__' => 'channel',
                     '__set_pagesize__' => $channel['pagesize'],
-                    '__set_order_by__' => 'is_top desc,' . ($channel['order_by'] ?: Table::defaultOrder('cms_content')),
+                    '__set_order_by__' => 'is_top desc,',
                     '__set_page_path__' => $template['prefix'] . Processer::resolveChannelPath($channel) . '-[PAGE].html',
                     '__wconf__' => Module::getInstance()->config(),
                 ];
@@ -144,10 +148,10 @@ class Render
      * 生成内容页
      * @param array|CmsTemplate $template
      * @param array|mixed $content
-     * @param int $page
+     * @param int $is_static
      * @return array
      */
-    public function content($template, $content)
+    public function content($template, $content, $is_static = 0)
     {
         $tplHtml = $this->getHtml($template, 'single', $content['id']); //获取绑定的单页模板
 
@@ -159,7 +163,7 @@ class Render
             //无绑定，使用默认模板
             $tplHtml = $this->htmlModel->where('is_default', 1)
                 ->where(['type' => 'content', 'template_id' => $template['id']])
-                ->cache('cms_html_content_default_' . $template['id'], 3600, 'cms_html')
+                ->cache('cms_html_content_default_' . $template['id'], $this->cacheTime, 'cms_html')
                 ->find();
         }
 
@@ -174,6 +178,11 @@ class Render
             if ($content['is_show'] != 1 || $content['delete_time']) {
                 return ['code' => 0, 'msg' => '内容不存在'];
             } else {
+                if ($is_static == 1) {
+                    $content['click'] = '<span id="__content_click__">-<span>';
+                } else {
+                    $content['click'] = $this->click($content['id']);
+                }
                 $vars = [
                     'id' => $content['id'],
                     'channel_id' => $content['channel_id'],
@@ -192,12 +201,72 @@ class Render
                 $view = new View(App::getRootPath() . $tplFile, $vars, $config);
                 $out = $view->getContent();
                 $out = $this->replaceStaticPath($template, $out);
+
+                if ($is_static == 1) {
+                    $out = str_replace('</body>', '    <script type="text/javascript">' . $this->clickScript($content['id']) . '</script>', $out);
+                }
             }
             return ['code' => 1, 'msg' => 'ok', 'data' => $out];
         } catch (\Throwable $e) {
             trace($e->__toString());
             return ['code' => 0, 'msg' => '[' . $content['title'] . ']内容生成出错，' . str_replace(App::getRootPath(), '', $e->getFile()) . '#' . $e->getLine() . '|' . $e->getMessage() . '。模板文件：' . $tplFile];
         }
+    }
+
+    /**
+     * 内容点击
+     * 
+     * @param int $id
+     * @return int
+     */
+    public function click($id)
+    {
+        $click = Cache::remember('cms_content_click_' . $id, function () use ($id) {
+            $table = 'cms_content';
+            $dbNameSpace = Processer::getDbNamespace();
+            $contentScope = Table::defaultScope($table);
+            $content = $dbNameSpace::name($table)
+                ->where('id', $id)
+                ->where($contentScope)
+                ->find();
+
+            return $content ? $content['click'] : 0;
+        });
+
+        $click += 1;
+        Cache::tag('cms_content')->set('cms_content_click_' . $id, $click);
+
+        if ($click % 10 == 0) {
+            $table = 'cms_content';
+            $dbNameSpace = Processer::getDbNamespace();
+            $contentScope = Table::defaultScope($table);
+            $dbNameSpace::name($table)
+                ->where('id', $id)
+                ->where($contentScope)
+                ->update(['click' => $click]);
+        }
+
+        return $click;
+    }
+
+    protected function clickScript($id)
+    {
+        $script = <<<EOT
+    var __content_click__ = document.getElementById("__content_click__");
+    if(__content_click__) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "__click__{$id}", true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                __content_click__.replaceWith(xhr.responseText);
+            }
+        };
+        xhr.send();
+    }
+EOT;
+
+        return $script;
+
     }
 
     /**
@@ -210,7 +279,7 @@ class Render
     {
         $tplHtml = $this->htmlModel->where('id', $tplHtmlId)
             ->where(['type' => 'dynamic', 'template_id' => $template['id']])
-            ->cache('cms_html_' . $template['id'], 3600, 'cms_html')
+            ->cache('cms_html_' . $template['id'], $this->cacheTime, 'cms_html')
             ->find();
 
         if (!$tplHtml) {
@@ -260,12 +329,12 @@ class Render
     protected function getHtml($template, $type, $toId)
     {
         $pageInfo = $this->pageModel->where(['html_type' => $type, 'template_id' => $template['id'], 'to_id' => $toId])
-            ->cache('cms_page_' . $template['id'] . '_' . $type . '_' . $toId, 3600, 'cms_page')
+            ->cache('cms_page_' . $template['id'] . '_' . $type . '_' . $toId, $this->cacheTime, 'cms_page')
             ->find(); //获取绑定的模板
 
         if ($pageInfo) {
             $tplHtml = $this->htmlModel->where('id', $pageInfo['html_id'])
-                ->cache('cms_html_' . $pageInfo['html_id'], 3600, 'cms_html')
+                ->cache('cms_html_' . $pageInfo['html_id'], $this->cacheTime, 'cms_html')
                 ->find();
             if (!$tplHtml) {
                 $pageInfo->delete(); //删除无效的绑定记录

@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_channel`  (
   `is_show` tinyint(1) unsigned DEFAULT 1 COMMENT '是否显示',
   `sort` mediumint(8) unsigned NOT NULL DEFAULT 0 COMMENT '排序',
   `order_by` varchar(55) NOT NULL DEFAULT '' COMMENT '排序方式',
-  `pagesize` mediumint(8) unsigned NOT NULL DEFAULT 20 COMMENT '分页大小',
+  `pagesize` mediumint(8) unsigned NOT NULL DEFAULT 12 COMMENT '分页大小',
   `create_time` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '添加时间',
   `update_time` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '更新时间',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',

@@ -71,7 +71,8 @@ class CmsTemplate extends Model
 
     public static function initPath($view_path)
     {
-        $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');
+        $rootPath = Module::getInstance()->getRoot();
+        $newTpl = file_get_contents($rootPath . 'tpl/new.html');
 
         if (!is_dir($view_path . '/channel')) {
             if (mkdir($view_path . '/channel', 0775, true)) {
@@ -87,7 +88,7 @@ class CmsTemplate extends Model
         }
         if (!is_dir($view_path . '/static')) {
             if (mkdir($view_path . '/static/css', 0775, true)) {
-                file_put_contents($view_path . '/static/css/site.css', '/*网站样式*/' . PHP_EOL . '@charset "UTF-8";' . PHP_EOL);
+                file_put_contents($view_path . '/static/css/site.css', file_get_contents($rootPath . 'tpl/site.css'));
             }
             if (mkdir($view_path . '/static/js', 0775, true)) {
                 file_put_contents($view_path . '/static/js/site.js', '/*网站js*/' . PHP_EOL);
@@ -97,9 +98,10 @@ class CmsTemplate extends Model
         }
         if (!is_dir($view_path . '/common')) {
             if (mkdir($view_path . '/common', 0775, true)) {
-                file_put_contents($view_path . '/common/header.html', file_get_contents(Module::getInstance()->getRoot() . 'tpl/header.html'));
-                file_put_contents($view_path . '/common/footer.html', file_get_contents(Module::getInstance()->getRoot() . 'tpl/footer.html'));
-                file_put_contents($view_path . '/common/layout.html', file_get_contents(Module::getInstance()->getRoot() . 'tpl/layout.html'));
+                file_put_contents($view_path . '/common/header.html', file_get_contents($rootPath . 'tpl/header.html'));
+                file_put_contents($view_path . '/common/navi.html', file_get_contents($rootPath . 'tpl/navi.html'));
+                file_put_contents($view_path . '/common/footer.html', file_get_contents($rootPath . 'tpl/footer.html'));
+                file_put_contents($view_path . '/common/layout.html', file_get_contents($rootPath . 'tpl/layout.html'));
             }
         }
         if (!is_dir($view_path . '/dynamic')) {

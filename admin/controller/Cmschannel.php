@@ -170,7 +170,7 @@ class Cmschannel extends Controller
         $list = $this->dataModel->order('sort')->select();
 
         $form->tab('生成设置');
-        $form->number('pagesize', '分页大小')->default(20)->required();
+        $form->number('pagesize', '分页大小')->default(12)->required();
         $form->text('order_by', '内容排序方式')->help('默认为：sort desc,publish_time desc,id desc');
         $form->text('channel_path', '栏目生成路径')->required()->size(2, 6)->beforSymbol('channel/')->afterSymbol('[-page].html')->default('c[id]')->help('[id]为栏目编号变量。如不生成，填入#');
         $form->text('content_path', '内容生成路径')->required()->size(2, 6)->beforSymbol('content/')->afterSymbol('.html')->default('a[id]')->help('[id]为内容编号变量');

@@ -211,7 +211,7 @@ class TemplaBuilder
     public function makeContent($template, $channel, $content)
     {
         $page = new Page();
-        $output = $page->content($content['id'], $template['id']);
+        $output = $page->content($content['id'], $template['id'], 1);
 
         $outPath = Processer::getOutPath();
         $contentPath = Processer::resolveContentPath($content, $channel) . '.html';

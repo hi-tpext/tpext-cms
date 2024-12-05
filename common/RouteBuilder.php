@@ -61,7 +61,8 @@ class RouteBuilder
     public function makeIndexRoute()
     {
         return [
-            "Route::get('__prefix__', Page::class . '@index')",
+            "Route::get('__prefix__$', Page::class . '@index')",
+            "Route::get('__prefix__index$', Page::class . '@index')",
         ];
     }
 
@@ -106,6 +107,9 @@ class RouteBuilder
             $path = str_replace('[id]', '<id>', $path);
             $rules[] = "Route::get('__prefix__content/{$path}', Page::class . '@content')->pattern(['id' => '\d+'])";
         }
+
+        $rules[] = "Route::get('__prefix__content/__click__<id>', Page::class . '@click')->pattern(['id' => '\d+'])";
+
         return $rules;
     }
 
