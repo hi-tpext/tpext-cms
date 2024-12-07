@@ -3,6 +3,7 @@
 namespace tpext\cms\admin\controller;
 
 use think\Controller;
+use think\facade\Cache;
 use tpext\builder\traits\actions;
 use tpext\cms\common\taglib\Processer;
 use tpext\cms\common\model\CmsTemplate;
@@ -57,7 +58,7 @@ class Cmschannel extends Controller
         $table->image('logo', '封面图')->thumbSize(50, 50);
         $table->show('link', '链接')->default('暂无');
         $table->text('name', '名称')->autoPost('', true);
-        $table->switchBtn('is_index_navi', '首页导航')->autoPost();
+        $table->switchBtn('is_navi', '首页导航')->autoPost();
         $table->switchBtn('is_show', '显示')->autoPost();
         $table->match('type', '类型')->options([1 => '不限', 2 => '目录', 3 => '分类'])->mapClassGroup([[1, 'success'], [2, 'info'], [3, 'warning']])->getWrapper()->addStyle('width:80px');
         $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:60px');
@@ -73,12 +74,10 @@ class Cmschannel extends Controller
             $table->show('update_time', '修改时间'),
         );
 
-        $table->sortable([]);
-
         $table->getToolbar()
             ->btnAdd()
             ->btnRefresh()
-            ->btnLink(url('refresh'), '刷新层级', 'btn-success', 'mdi-autorenew', 'data-layer-size="300px,100px" title="重新整理栏目上下级关系"');
+            ->btnLink(url('refresh'), '刷新层级', 'btn-success', 'mdi-autorenew', 'data-layer-size="300px,150px" title="重新整理栏目上下级关系"');
 
         $table->getActionbar()
             ->btnLink('add', url('add', ['parend_id' => '__data.pk__']), '', 'btn-secondary', 'mdi-plus', 'title="添加下级"')
@@ -110,6 +109,9 @@ class Cmschannel extends Controller
     {
         $builder = $this->builder();
         $step = input('step', '0');
+        if ($step == 0) {
+            Cache::clear('cms_channel');
+        }
         $list = [];
         $maxLevel = $this->dataModel->max('deep') + 1;
         if ($step <= $maxLevel) {
@@ -158,7 +160,7 @@ class Cmschannel extends Controller
         $form->radio('type', '类型')->default(1)->options([1 => '不限', 2 => '目录', 3 => '分类'])->required()->help('目录有下级，不能存文章。分类无下级，只能存文章');
         // $form->select('channel_template_id', '栏目模板')->dataUrl(url('/admin/cmstemplate/selectpage'));
         // $form->select('content_template_id', '内容模板')->dataUrl(url('/admin/cmstemplate/selectpage'));
-        $form->switchBtn('is_index_navi', '首页导航')->default(1);
+        $form->switchBtn('is_navi', '导航')->default(1);
         $form->switchBtn('is_show', '显示')->default(1);
         $form->number('sort', '排序')->default(0)->required();
 

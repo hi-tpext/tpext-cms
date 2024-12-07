@@ -23,6 +23,9 @@ class CmsContentPage extends Model
     {
         /**是否为tp5**/
         if (method_exists(static::class, 'event')) {
+            self::afterInsert(function ($data) {
+                return self::onAfterInsert($data);
+            });
             self::afterUpdate(function ($data) {
                 return self::onAfterUpdate($data);
             });
@@ -30,6 +33,11 @@ class CmsContentPage extends Model
                 return self::onAfterDelete($data);
             });
         }
+    }
+
+    public static function onAfterInsert($data)
+    {
+        ExtLoader::trigger('cms_content_page_on_after_insert', $data);
     }
 
     public static function onAfterUpdate($data)

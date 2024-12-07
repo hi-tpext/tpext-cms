@@ -13,6 +13,7 @@ namespace tpext\cms\common\event;
 
 use tpext\cms\common\model;
 use tpext\common\ExtLoader;
+use tpext\cms\common\RouteBuilder;
 use tpext\cms\common\TemplaBuilder;
 use tpext\cms\common\taglib\Processer;
 
@@ -41,10 +42,19 @@ class MakeStatic
         ExtLoader::watch('cms_channel_on_after_delete', function ($data) {
             $this->channelChange($data);
         });
+
+        ExtLoader::watch('cms_template_on_after_insert', function ($data) {
+            $this->templateChange($data);
+        });
+        ExtLoader::watch('cms_template_on_after_update', function ($data) {
+            $this->templateChange($data);
+        });
+        ExtLoader::watch('cms_template_on_after_delete', function ($data) {
+            $this->templateChange($data);
+        });
     }
 
     /**
-     * Summary of contentChange
      * @param mixed $data
      * @return void
      */
@@ -67,7 +77,6 @@ class MakeStatic
     }
 
     /**
-     * Summary of channelChange
      * @param mixed $data
      * @return void
      */
@@ -84,5 +93,16 @@ class MakeStatic
             $res = $buiilder->makeIndex($template);
             trace('[模板首页]成静态文件：' . $res['msg'], 'info');
         }
+    }
+
+    /**
+     * @param mixed $data
+     * @return void
+     */
+    protected function templateChange($data)
+    {
+        $routeBuilder = new RouteBuilder;
+        $routeBuilder->builder(true);
+        trace('模板[' . $data['name'] . ']修改触路由生成', 'info');
     }
 }

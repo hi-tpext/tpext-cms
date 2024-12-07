@@ -221,25 +221,27 @@ class Render
      */
     public function click($id)
     {
-        $click = Cache::remember('cms_content_click_' . $id, function () use ($id) {
-            $table = 'cms_content';
-            $dbNameSpace = Processer::getDbNamespace();
-            $contentScope = Table::defaultScope($table);
+        $key = 'cms_content_click_' . $id;
+        $table = 'cms_content';
+        $dbNameSpace = Processer::getDbNamespace();
+        $contentScope = Table::defaultScope($table);
+
+        $click = 0;
+        if (Cache::has($key)) {
+            $click = Cache::get($key);
+        } else {
             $content = $dbNameSpace::name($table)
                 ->where('id', $id)
                 ->where($contentScope)
                 ->find();
 
-            return $content ? $content['click'] : 0;
-        });
+            $click = $content ? $content['click'] : 0;
+        }
 
         $click += 1;
         Cache::tag('cms_content')->set('cms_content_click_' . $id, $click);
 
         if ($click % 10 == 0) {
-            $table = 'cms_content';
-            $dbNameSpace = Processer::getDbNamespace();
-            $contentScope = Table::defaultScope($table);
             $dbNameSpace::name($table)
                 ->where('id', $id)
                 ->where($contentScope)
@@ -254,7 +256,7 @@ class Render
         $script = <<<EOT
     var __content_click__ = document.getElementById("__content_click__");
     if(__content_click__) {
-        var xhr = new XMLHttpRequest();
+        var xhr = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("");
         xhr.open("GET", "__click__{$id}", true);
         xhr.onreadystatechange = function () {
             if (xhr.readyState == 4 && xhr.status == 200) {
@@ -279,7 +281,7 @@ EOT;
     {
         $tplHtml = $this->htmlModel->where('id', $tplHtmlId)
             ->where(['type' => 'dynamic', 'template_id' => $template['id']])
-            ->cache('cms_html_' . $template['id'], $this->cacheTime, 'cms_html')
+            ->cache('cms_html_' . $tplHtmlId, $this->cacheTime, 'cms_html')
             ->find();
 
         if (!$tplHtml) {
@@ -357,7 +359,7 @@ EOT;
         $staticDir = 'theme' . DIRECTORY_SEPARATOR . $template['view_path'];
 
         if (is_dir(App::getPublicPath() . $staticDir)) {
-            Tool::copyDir($staticPath, App::getPublicPath() . $staticDir . date('YmdHis'));
+            Tool::copyDir(App::getPublicPath() . $staticDir, App::getPublicPath() . $staticDir . date('YmdHis'));
         }
         Tool::deleteDir(App::getPublicPath() . $staticDir);
         $res = Tool::copyDir($staticPath, App::getPublicPath() . $staticDir);

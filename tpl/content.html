@@ -8,9 +8,23 @@
 <div class="main-content">
     <div class="title">{$content.title}</div>
     <div class="info">
-        <span>发布日期：{$content.publish_date}</span>|<span>作者：{$content.author}</span>|<span>来源：{$content.source}</span>|<span>点击：{$content.click|raw}</span>
+        <span>发布日期：{$content.publish_date}</span>
+        |<span>作者：{$content.author}</span>
+        |<span>来源：{$content.source}</span>
+        |<span>点击：{$content.click|raw}</span>
     </div>
     <div class="content">{$content.content|raw}</div>
+
+    <!--如果有合集-->
+    {if $content.tags}
+    <div class="tags">
+        <span>所属合集：</span>
+        {tag@list id="in($content.tags)"}
+        <a href="{$tag.url}">{$tag.name}</a>
+        {/tag@list}
+    </div>
+    {/if}
+
 </div>
 <div class="next-prev">
     <div class="prev">

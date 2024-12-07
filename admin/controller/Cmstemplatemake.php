@@ -47,7 +47,7 @@ class Cmstemplatemake extends Controller
             CmsTemplateHtml::scanPageFiles($template_id, App::getRootPath() . 'theme/' . $template['view_path']);
             $form = $builder->form();
             $form->checkbox('types', '生成类型')
-                ->options(['channel' => '栏目静态', 'content' => '内容静态', 'index' => '首页静态', 'route' => '生成路由文件', 'static' => '发布静态资源'])
+                ->options(['channel' => '栏目静态', 'content' => '内容静态', 'index' => '首页静态', 'static' => '发布静态资源'])
                 ->inline(false)
                 ->checkallBtn()
                 ->required()

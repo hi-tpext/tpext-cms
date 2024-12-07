@@ -55,6 +55,7 @@ class CmsContent extends Model
     {
         if (empty($data['description']) && empty($data['reference_id'])) {
             $content = $data->getData('content');
+            $content = preg_replace('/<script[^>]*?>.*?<\/script>/is', '', $content);
             $content = strip_tags($content);
             $content = preg_replace('/[\r|\n|\t|\s]/is', '', $content);
             $content = str_replace(['\u00A0', '\u0020', '\u2800', '\u3000', '　', '&nbsp;', '&gt;', '&lt;', '&eq;', '&egt;', '&elt;'], '', $content);
@@ -212,7 +213,7 @@ class CmsContent extends Model
             return '';
         }
 
-        return is_array($value) ? ',' . implode(',', $value) . ',' : ',' . trim($value, ',') . ',';
+        return is_array($value) ? implode(',', $value) : trim($value, ',');
     }
 
     public function setMentionIdsAttr($value)

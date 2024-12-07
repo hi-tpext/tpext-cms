@@ -13,7 +13,7 @@ namespace tpext\cms\common;
 
 use tpext\think\App;
 use tpext\common\Tool;
-use tpext\cms\common\event\MakeStatic;
+use tpext\cms\common\event;
 use tpext\common\Module as baseModule;
 use tpext\cms\common\model\CmsTemplate;
 
@@ -147,8 +147,11 @@ class Module extends baseModule
         $makeMtatic = self::config('make_static', 1);
 
         if ($makeMtatic) {
-            $maker = new MakeStatic;
+            $maker = new event\MakeStatic;
             $maker->watch();
         }
+
+        $maker = new event\MakeRoute;
+        $maker->watch();
     }
 }

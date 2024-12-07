@@ -33,7 +33,7 @@ class TemplaBuilder
      * @param int $startTime
      * @return array
      */
-    public function make($templateId, $channelIds = [], $types = ['channel', 'content', 'index', 'static', 'route'], $fromChannelId = 0, $fromContentId = 0, $contentDone = 0, $startTime = 0)
+    public function make($templateId, $channelIds = [], $types = ['channel', 'content', 'index', 'static'], $fromChannelId = 0, $fromContentId = 0, $contentDone = 0, $startTime = 0)
     {
         $template = CmsTemplate::where('id', $templateId)->cache('cms_template_' . $templateId)->find();
 
@@ -135,13 +135,10 @@ class TemplaBuilder
             } else {
                 $msgArr[] = '[静态资源]未选择发布';
             }
-            if (in_array('route', $types)) {
-                $routeBuilder = new RouteBuilder;
-                $routeBuilder->builder(true);
-                $msgArr[] = '[路由]生成成功';
-            } else {
-                $msgArr[] = '[路由]未选择生成';
-            }
+
+            $routeBuilder = new RouteBuilder;
+            $routeBuilder->builder(true);
+            $msgArr[] = '[路由]生成成功';
 
             if (in_array('channel', $types) && empty($channelIds)) {
                 $htmlPath = Processer::getOutPath() . 'channel/';
@@ -195,8 +192,8 @@ class TemplaBuilder
         }
 
         $outPath = Processer::getOutPath();
-        file_put_contents($outPath . Processer::resolveChannelPath($channel) . '.html', $output);
-        file_put_contents($outPath . Processer::resolveChannelPath($channel) . '-1.html', $output);
+        $this->fileWrite($outPath . Processer::resolveChannelPath($channel) . '.html', $output);
+        $this->fileWrite($outPath . Processer::resolveChannelPath($channel) . '-1.html', $output);
         return ['code' => 1, 'msg' => '[' . $channel['name'] . ']栏目第一页生成成功，路径：' . Processer::resolveChannelPath($channel)];
     }
 
@@ -215,7 +212,7 @@ class TemplaBuilder
 
         $outPath = Processer::getOutPath();
         $contentPath = Processer::resolveContentPath($content, $channel) . '.html';
-        file_put_contents($outPath . $contentPath, $output);
+        $this->fileWrite($outPath . $contentPath, $output);
 
         $singlePage = CmsContentPage::where(['html_type' => 'single', 'template_id' => $template['id'], 'to_id' => $content['id']])
             ->find(); //获取绑定的单页模板
@@ -225,7 +222,7 @@ class TemplaBuilder
             if ($tplHtml) {
                 $singleOutPath = '.' . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $template['prefix']);
                 $singleName = preg_replace('/theme\/[\w\-]+?\/([\w\-]+?.html)$/i', '$1', $tplHtml['path']);
-                file_put_contents($singleOutPath . $singleName, $output);
+                $this->fileWrite($singleOutPath . $singleName, $output);
             }
         }
 
@@ -248,8 +245,24 @@ class TemplaBuilder
             mkdir($outPath, 0755, true);
         }
 
-        file_put_contents($outPath . "index.html", $output);
+        $this->fileWrite($outPath . "index.html", $output);
         return ['code' => 1, 'msg' => '[首页]生成成功'];
+    }
+
+    /**
+     * 写入静态文件
+     * @param string $path
+     * @param string $content
+     * @return bool|int
+     */
+    protected function fileWrite($path, $content)
+    {
+        //生成出错就不写入文件了
+        if (strstr($content, '<title>500</title></head>')) {
+            return false;
+        }
+
+        return file_put_contents($path, $content);
     }
 
     /**

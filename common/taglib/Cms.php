@@ -69,6 +69,8 @@ class Cms extends Taglib
                 $cid_val = $this->filterIdVar($cid_val);
             } else if (is_int($cid_val)) {
                 $cid_val = "{$cid_val}";
+            } else if (preg_match('/^[\d,]+$/', $cid_val)) {
+                $cid_val = "'{$cid_val}'";
             } else {
                 $whereExp = $this->parseIdVal($cid_key, $cid_val);
                 if ($whereExp) {
@@ -89,17 +91,20 @@ class Cms extends Taglib
         if ($id_val !== '') {
             if ($id_val[0] == '$' || $id_val[0] == ':') { //解析变量或方法
                 $id_val = $this->filterIdVar($id_val);
-                $where .= "and {$id_key} = {$id_val}";
             } else if (is_int($id_val)) {
                 $id_val = "{$id_val}";
-                $where .= "and {$id_key} = {$id_val}";
+            } else if (preg_match('/^[\d,]+$/', $id_val)) {
+                $id_val = "'{$id_val}'";
             } else {
                 $whereExp = $this->parseIdVal($id_key, $id_val);
                 if ($whereExp) {
                     $where .= $whereExp;
+                    $id_val = '0';
                 }
             }
             $cid_val = '0';
+        } else {
+            $id_val = '0';
         }
         $binds = '';
         if ($where && $where != '1=1') {
@@ -115,6 +120,8 @@ class Cms extends Taglib
         \$__where_raw__ = "{$where}";
         \$__where__ = [];
         \$__cid_key__ = '{$cid_key}';
+        \$__id_key__ = '{$id_key}';
+
         if(\$__cid_key__) {
             \$__cid_val__ = {$cid_val} ?? 0;
             if(\$__cid_val__) {
@@ -122,6 +129,16 @@ class Cms extends Taglib
                     \$__where__[] = [\$__cid_key__, 'in', \$__cid_val__];
                 } else {
                     \$__where__[] = [\$__cid_key__, '=', \$__cid_val__];
+                }
+            }
+        }
+        if(\$__id_key__) {
+            \$__id_val__ = {$id_val} ?? 0;
+            if(\$__id_val__) {
+                if(is_array(\$__id_val__) || strstr(\$__id_val__, ',')) {
+                    \$__where__[] = [\$__id_key__, 'in', \$__id_val__];
+                } else {
+                    \$__where__[] = [\$__id_key__, '=', \$__id_val__];
                 }
             }
         }
@@ -175,7 +192,7 @@ class Cms extends Taglib
         {/if}
         {assign name="{$assign}" value="\$__list__" /}
         <?php
-        unset(\$__data__, \$__where_raw__, \$__where__, \$__cid_key__, \$__id_key__, \$__cid_val__, \$__id_val__, \$__paginator__, \$__total__, \$__take__, \$__pagesize__, \$__page__);
+        unset(\$__data__, \$__where_raw__, \$__where__, \$__cid_key__, \$__cid_val__, \$__paginator__, \$__total__, \$__take__, \$__pagesize__, \$__page__);
         ?>
 EOT;
         $this->usedTags[] = $tag;
@@ -306,29 +323,6 @@ EOT;
         return $parseStr;
     }
 
-    protected function whereExp($where)
-    {
-        $where = str_ireplace(['egt', 'elt', 'neq'], ['>=', '<=', '<>'], $where);
-        $where = str_ireplace(['gt', 'eq', 'lt', '!='], ['>', '=', '<', '<>'], $where);
-
-        return $where;
-    }
-
-    /**
-     * 安全转换变量
-     * 
-     * @param string $var
-     * @return string
-     */
-    protected function filterIdVar($var)
-    {
-        $var = $this->autoBuildVar($var);
-        if (preg_match('/\$_(SERVER|REQUEST|GET|POST|COOKIE|SESSION)/i', $var) || preg_match('/app\(/i', $var)) {
-            $var = "filter_var({$var}, FILTER_VALIDATE_INT)";
-        }
-        return $var;
-    }
-
     /**
      * 解析where中的变量
      *
@@ -338,11 +332,10 @@ EOT;
     protected function parseWhere($where)
     {
         $where = $this->whereExp($where);
-
         $binds = [];
-        preg_match_all('/\%?(\$[\w\.]+)\%?/', $where, $matches);
-        if (isset($matches[1]) && count($matches[1]) > 0) {
-            foreach ($matches[1] as $i => $match) {
+        preg_match_all('/([\'\"])?\%?(\$[a-zA-Z_][a-zA-Z_\.\[\]\'\"]*)\%?\1?/', $where, $matches);
+        if (isset($matches[2]) && count($matches[2]) > 0) {
+            foreach ($matches[2] as $i => $match) {
                 $varName = preg_replace('/\W/is', '_', $match) . $i;
                 $replace = ':' . $varName;
                 $bind = '';
@@ -377,35 +370,58 @@ EOT;
      */
     protected function parseIdVal($idKey, $idVal)
     {
-        $where = '';
-        if (preg_match('/^\(?\d[,\d]+\)?$/is', $idVal)) {
-            $idVal = trim($idVal, '()');
-            $where = " and {$idKey} in ({$idVal})";
-        } else if (preg_match('/^in([^\(]+)/is', $idVal, $mch)) {
-            $where = " and {$idKey} in ({$mch[1]})";
-        } else if (preg_match('/^not\s*in([^\(]+)/is', $idVal, $mch)) {
-            $where = " and {$idKey} not in ({$mch[1]})";
-        } else if (preg_match('/^not\s*in(.+)$/is', $idVal, $mch)) {
-            $where = " and {$idKey} not in {$mch[1]}";
-        } else if (preg_match('/^!=(.+)$/is', $idVal, $mch)) {
-            $where = " and {$idKey} <> {$mch[1]}";
-        } else if (preg_match('/^(?:in|>|=|<|>=|<=|<>)/is', $idVal)) {
-            $where = " and {$idKey} {$idVal}";
-        } else if (preg_match('/^(?:gt|eq|lt|egt|elt|neq|!=)/is', $idVal)) {
-            $idVal = $this->whereExp($idVal);
-            $where = " and {$idKey} {$idVal}";
-        } else if (preg_match('/^(like|not\s*like)\s+(.+)$/is', $idVal, $mch)) {
-            $word = trim($mch[2], "'\"");
-            if (!strstr($word, '%')) {
-                $mch[2] = '%' . $word . '%';
+        $op = '=';
+        if (preg_match('/^\(?\d,[,\d]+\)?$/is', $idVal)) {
+            $op = 'in';
+            $idVal = trim($idVal, ',');
+        } else if (preg_match('/^(in|not\s*in)\s*\(?(.+?)\)?$/is', $idVal, $mch)) {
+            $op = $mch[1];
+            $idVal = '(' . trim($mch[2]) . ')';
+        } else if (preg_match('/^(between|not\s*between)\s*\(?(.+?)\)?$/is', $idVal, $mch)) {
+            $op = $mch[1];
+            $idVal = trim($mch[2]);
+            if (!strstr($idVal, 'and')) {
+                $idVal = str_replace(',', ' and ', $idVal);
             }
-            $where = " and {$idKey} {$mch[1]} '{$word}'";
-        } else if (preg_match('/^(between|not\s*between)\s+(.+)$/is', $idVal, $mch)) {
-            $where = " and {$idKey} {$mch[1]} {$mch[2]}";
-        } else {
-            $where = " and {$idKey} = {$idVal}";
+        } else if (preg_match('/^(>|=|<|>=|<=|<>)\s*(.+?)$/is', $idVal, $mch)) {
+            $op = $mch[1];
+            $idVal = trim($mch[2]);
+        } else if (preg_match('/^(gt|eq|lt|egt|elt|neq|!=)\s*(.+?)$/is', $idVal, $mch)) {
+            $op = $mch[1];
+            $idVal = trim($mch[2]);
+        } else if (preg_match('/^(like|not\s*like)\s+(.+)$/is', $idVal, $mch)) {
+            $op = $mch[1];
+            $idVal = trim($mch[2], "'\"");
+            if (!strstr($idVal, '%')) {
+                $mch[2] = '%' . $idVal . '%';
+            }
         }
+
+        return " and {$idKey} {$op} {$idVal}";
+    }
+
+    protected function whereExp($where)
+    {
+        $where = str_ireplace(['egt', 'elt', 'neq'], ['>=', '<=', '<>'], $where);
+        $where = str_ireplace(['gt', 'eq', 'lt', '!='], ['>', '=', '<', '<>'], $where);
+        $where = str_ireplace(['notbetween', 'notin', 'notlike'], ['not between', 'not in', 'not like'], $where);
+
         return $where;
+    }
+
+    /**
+     * 安全转换变量
+     * 
+     * @param string $var
+     * @return string
+     */
+    protected function filterIdVar($var)
+    {
+        $var = $this->autoBuildVar($var);
+        if (preg_match('/\$_(SERVER|REQUEST|GET|POST|COOKIE|SESSION)/i', $var) || preg_match('/app\(/i', $var)) {
+            $var = "filter_var({$var}, FILTER_VALIDATE_INT)";
+        }
+        return $var;
     }
 
     public function __call($name, $arguments = [])

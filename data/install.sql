@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_channel`  (
   `full_name` varchar(255) NOT NULL DEFAULT '' COMMENT '完整类目名称',
   `parent_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '上级ID',
   `logo` varchar(255) NOT NULL DEFAULT '' COMMENT '封面图',
-  `is_index_navi` tinyint(1) unsigned NOT NULL DEFAULT 1 COMMENT '首页导航',
   `type` tinyint(1) NOT NULL DEFAULT 1 COMMENT '栏目类型',
   `link` varchar(255) NOT NULL DEFAULT '' COMMENT '跳转链接',
   `deep` tinyint(2) unsigned NOT NULL DEFAULT 0 COMMENT '层级',
@@ -15,6 +14,7 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_channel`  (
   `description` varchar(255) NOT NULL DEFAULT '' COMMENT '摘要',
   `keywords` varchar(255) NOT NULL DEFAULT '' COMMENT '关键字',
   `is_show` tinyint(1) unsigned DEFAULT 1 COMMENT '是否显示',
+  `is_navi` tinyint(1) unsigned NOT NULL DEFAULT 1 COMMENT '首页导航',
   `sort` mediumint(8) unsigned NOT NULL DEFAULT 0 COMMENT '排序',
   `order_by` varchar(55) NOT NULL DEFAULT '' COMMENT '排序方式',
   `pagesize` mediumint(8) unsigned NOT NULL DEFAULT 12 COMMENT '分页大小',
@@ -149,5 +149,8 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_template_html` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='模板页面';
 
 INSERT INTO `__PREFIX__cms_template` (`id`, `name`, `platform`, `view_path`, `prefix`, `description`, `sort`, `is_open`, `create_time`, `update_time`) VALUES
-(1, 'default', 'pc', 'default', '/', 'pc端默认模板', 5, 1, '2022-09-16 14:53:08', '2022-09-16 15:03:24'),
-(2, 'mobile', 'mobile', 'mobile', '/m/', '手机端默认模板', 10, 1, '2022-09-16 14:53:29', '2022-09-16 15:03:45');
+(1, 'default', 'pc', 'default', '/', 'pc端默认模板', 5, 1, '2024-12-06 14:34:34', '2024-12-06 14:34:34'),
+(2, 'mobile', 'mobile', 'mobile', '/m/', '手机端默认模板', 10, 1, '2024-12-06 14:34:34', '2024-12-06 14:34:34');
+
+INSERT INTO `__PREFIX__cms_channel` (`id`, `name`, `full_name`, `parent_id`, `logo`, `type`, `link`, `deep`, `path`, `order_by`, `channel_path`, `content_path`, `description`, `keywords`, `extend_ids`, `is_show`, `is_navi`, `sort`, `pagesize`, `create_time`, `update_time`, `delete_time`) VALUES
+(1, '关于', '关于', 0, '', 3, '', 1, ',0,', '', 'c[id]', 'a[id]', '', '', '', 1, 1, 999, 12, '2024-12-06 14:34:34', '2024-12-06 15:21:43', NULL);

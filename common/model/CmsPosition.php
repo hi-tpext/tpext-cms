@@ -26,10 +26,6 @@ class CmsPosition extends Model
             self::beforeInsert(function ($data) {
                 return self::onBeforeInsert($data);
             });
-
-            self::afterDelete(function ($data) {
-                return self::onAfterDelete($data);
-            });
         }
     }
 
@@ -38,11 +34,6 @@ class CmsPosition extends Model
         if (empty($data['sort'])) {
             $data['sort'] = static::max('sort') + 5;
         }
-    }
-
-    public static function onAfterDelete($data)
-    {
-        Cmsbanner::where(['position_id' => $data['id']])->update(['position_id' => $data['parent_id']]);
     }
 
     public function getBannerCountAttr($value, $data)

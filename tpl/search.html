@@ -6,7 +6,7 @@
 {if !empty($kwd)}
 <div class="list">
     {content@list where="title like %$kwd% or description like %$kwd% or keywords like %$kwd%" pagesize="10"
-    asign="slist"}
+    assign="slist"}
     <dl class="list-item">
         <dd class="title">
             <a target="_blank" href="{$content.url}">{:str_replace($kwd, '<span class="kwd-txt">' . $kwd . '</span>',

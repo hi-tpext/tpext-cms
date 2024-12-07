@@ -27,6 +27,9 @@ class CmsTemplate extends Model
             self::beforeInsert(function ($data) {
                 return self::onBeforeInsert($data);
             });
+            self::afterInsert(function ($data) {
+                return self::onAfterInsert($data);
+            });
             self::afterUpdate(function ($data) {
                 return self::onAfterUpdate($data);
             });
@@ -41,6 +44,11 @@ class CmsTemplate extends Model
         if (empty($data['sort'])) {
             $data['sort'] = static::max('sort') + 5;
         }
+    }
+
+    public static function onAfterInsert($data)
+    {
+        ExtLoader::trigger('cms_template_on_after_insert', $data);
     }
 
     public static function onAfterUpdate($data)
@@ -91,7 +99,8 @@ class CmsTemplate extends Model
                 file_put_contents($view_path . '/static/css/site.css', file_get_contents($rootPath . 'tpl/site.css'));
             }
             if (mkdir($view_path . '/static/js', 0775, true)) {
-                file_put_contents($view_path . '/static/js/site.js', '/*网站js*/' . PHP_EOL);
+                file_put_contents($view_path . '/static/js/site.js', file_get_contents($rootPath . 'tpl/site.js'));
+                file_put_contents($view_path . '/static/js/jquery.min.js', file_get_contents($rootPath . 'tpl/jquery.min.js'));
             }
             mkdir($view_path . '/static/fonts', 0775, true);
             mkdir($view_path . '/static/images', 0775, true);

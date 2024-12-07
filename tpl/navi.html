@@ -2,12 +2,16 @@
     <div class="main-container">
         <ul class="top-navi">
             <li class="navi-item"><a href="{$__site_home__}">首页</a></li>
-            {channel@list where="is_index_navi=1" num="20"}
-            <li class="navi-item">
+            {channel@list where="is_navi=1" num="20" cache="navi,600"}
+            <li class="navi-item {if !empty($channel_id) && $channel_id==$channel.id}active{/if}">
                 <a href="{$channel.url}">{$channel.name}</a>
             </li>
             {/channel@list}
-            <li class="navi-item"><a href="{$__site_home__}dynamic/demo.html">演示</a></li>
+            <li class="navi-item"><a href="{$__site_home__}dynamic/demo.html">模板演示</a></li>
         </ul>
+        <div class="search-box">
+            <input type="text" placeholder="输入关键字搜索" value="{$kwd|default=''}" class="search-input">
+            <button class="search-btn">搜索</button>
+        </div>
     </div>
 </div>

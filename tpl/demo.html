@@ -12,7 +12,7 @@
 <p>{<code>content@list channel_id="3"</code>}</p>
 {content@list channel_id="3"}
 <div style="background-color: rgb(0, 162, 255);">
-    栏目id：{$content.channel_id}|文章id：{$content.id}<a target="_blank" href="{$content.url}">{$content.title}</a>
+    栏目id：{$content.channel_id}|文章id：{$content.id}|<a target="_blank" href="{$content.url}">{$content.title}</a>
 </div>
 {/content@list}
 <p>id可以是多个值固定值，相当于<code>in(ids)</code></p>
@@ -23,12 +23,12 @@
 </div>
 {/channel@list}
 
-<p>id一个表达式 <code>gt|eq|lt|egt|elt|neq|&lt;&gt;|=|!=|in|not in|like|not like|between|notbetween</code></p>
+<p>id一个表达式 <code>gt|eq|lt|egt|elt|neq|&lt;&gt;|=|!=|in|not in|like|not like|notlike|between|not between|notbetween</code></p>
 <p>避免使用尖括号<code>&gt;&nbsp;&lt;</code>，因为有些编辑器会识别为html标签起止符号，代码解析错误报警告</p>
 <p>{<code>content@list channel_id="gt 5"</code>}</p>
 {content@list channel_id="gt 5"}
 <div style="background-color: rgba(62, 139, 107, 0.678);">
-    栏目id：{$content.channel_id}|文章id：{$content.id}<a target="_blank" href="{$content.url}">{$content.title}</a>
+    栏目id：{$content.channel_id}|文章id：{$content.id}|<a target="_blank" href="{$content.url}">{$content.title}</a>
 </div>
 {/content@list}
 <p>注意：id只能一个条件，不支持and多条件写法，如 <code>id="gt 3 and lt 10"</code>是错误的</p>
@@ -37,7 +37,7 @@
 <p>{<code>content@list where="id gt 30 and id elt 40"</code>}</p>
 {content@list where="id gt 30 and id elt 40"}
 <div style="background-color: rgba(143, 141, 45, 0.678);">
-    栏目id：{$content.channel_id}|文章id：{$content.id}<a target="_blank" href="{$content.url}">{$content.title}</a>
+    栏目id：{$content.channel_id}|文章id：{$content.id}|<a target="_blank" href="{$content.url}">{$content.title}</a>
 </div>
 {/content@list}
 
@@ -59,9 +59,10 @@
 <p>注意区分<code>num</code>和<code>pagesize</code>，使用<code>num</code>不产生分页链接</p>
 <p>控制分页导航位置，正常情况下，分页连接跟随列表后面，可以使用<code>links="no"</code>列表下面的分页链接暂不显示</p>
 <p>然后可以在其他地方输出分页链接</p>
-{content@list id="between 70 and 200" pagesize="5" links="no"}
+<p>{<code>content@list id="between 70 and 90" pagesize="5" links="no"</code>}</p>
+{content@list id="between 70 and 90" pagesize="5" links="no"}
 <div style="background-color: rgba(192, 53, 157, 0.678);">
-    栏目id：{$content.channel_id}|文章id：{$content.id}<a target="_blank" href="{$content.url}">{$content.title}</a>
+    栏目id：{$content.channel_id}|文章id：{$content.id}|<a target="_blank" href="{$content.url}">{$content.title}</a>
 </div>
 {/content@list}
 <b>这里不输出分页了</b>
@@ -76,7 +77,7 @@
 输出上面的列表：
 {volist name="mylist" id="li"}
 <div style="background-color: rgba(43, 46, 80, 0.678);">
-    栏目id：{$content.channel_id}|文章id：{$content.id}<a target="_blank" href="{$content.url}">{$content.title}</a>
+    栏目id：{$content.channel_id}|文章id：{$content.id}|<a target="_blank" href="{$content.url}">{$content.title}</a>
 </div>
 {/volist}
 
@@ -85,7 +86,7 @@
 <p>{<code>content@get id="100"</code>}</p>
 {content@get id="100"}
 <div style="background-color: rgba(50, 134, 10, 0.678);">
-    栏目id：{$content.channel_id}|文章id：{$content.id}<a target="_blank" href="{$content.url}">{$content.title}</a>
+    栏目id：{$content.channel_id}|文章id：{$content.id}|<a target="_blank" href="{$content.url}">{$content.title}</a>
     |发布日期：{$content.publish_date}
     |栏目名称：{$content.channel.name}
 </div>
@@ -130,9 +131,9 @@
 <p>内容html</p>
 
 <h3>直接使用list或get</h3>
-<p>其实常用的数据表，直接使用上面的标签就可完成了。单对于没有支持的其他表，可以支持使用list或get标签。</p>
+<p>其实常用的数据表，直接使用上面的标签就可完成了。但对于没有支持的其他表，可以支持使用list或get标签。</p>
 <p>使用其他表，需要配置</p>
-<p>需要指定表名，如<code>table="cms_content"</code>，默认是content</p>
+<p>需要指定表名，如<code>table="cms_content"</code></p>
 <p>表达式只支持主键<code>id="xxx"</code>，不支持<code>channel_id="xxx"</code></p>
 
 <p>list</p>
