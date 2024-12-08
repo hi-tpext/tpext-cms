@@ -2,35 +2,23 @@
 <html lang="zh-CN">
 
 <head>
-    <!--header-->
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1, user-scalable=no" />
-    <title>{$__wconf__.name}</title>
-    <meta name="description" content="{$__wconf__.description}" />
-    <meta name="keywords" content="{$__wconf__.keywords}" />
-    <link href="../static/css/site.css" rel="stylesheet" />
+    {block name="header"}
+    <!--写<title>、<meta>等标签，引入了公共的头部header文件-->
+    {/block}
     {block name="style"}
-    <!--stylesheets-->
+    <!--style/.css-->
     {/block}
 </head>
 
 <body>
-    <div>主布局页面layout(可选)</div>
-    {block name="content"}
-    <!--content-->
+    {block name="main"}
+    <!--写页面主要内容-->
     {/block}
-    <!--footer-->
-    <div class="copyright">
-        {$__wconf__.copyright|raw}
-    </div>
-    <script type="text/javascript" src="../static/js/jquery.min.js" charset="utf-8"></script>
-    <script type="text/javascript" src="../static/js/site.js" charset="utf-8"></script>
-    <script type="text/javascript">
-        window.__wconf__ = JSON.parse('{$__wconf__|json_encode|raw}');
-        window.__site_home__ = '{__site_home__}';
-    </script>
+    {block name="footer"}
+    <!--写底部信息-->
+    {/block}
     {block name="script"}
-    <!--scripts-->
+    <!--script/.js-->
     {/block}
 </body>
 

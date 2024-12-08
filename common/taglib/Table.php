@@ -55,7 +55,7 @@ class Table
             'cid_key' => 'position_id',
             'default_order' => 'sort asc,id asc',
             'default_fields' => '*',
-            'default_scope' => 'is_show=1 and delete_time is null',
+            'default_scope' => 'is_show=1',
             'pid_key' => '',
         ],
         'cms_position' => [

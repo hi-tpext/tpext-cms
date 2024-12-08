@@ -118,19 +118,25 @@ class Processer
             $item['channel_id'] = $item['id'];
             $item['url'] = static::resolveWebPath($item['link']) ?: ($item['channel_path'] == '#' ? '#' : self::$path . self::resolveChannelPath($item) . '.html');
         } else if ($table == 'cms_content') {
-            $channelScope = Table::defaultScope($table);
-            $channel = $dbNameSpace::name('cms_channel')
-                ->where('id', $item['channel_id'])
-                ->where($channelScope)
-                ->cache(static::$isAdmin ? false : 'cms_channel_' . $item['channel_id'], 0, 'cms_channel')
-                ->find();
-            if ($channel) {
-                $item['url'] = static::resolveWebPath($item['link']) ?: self::$path . self::resolveContentPath($item, $channel) . '.html';
-                $item['channel_url'] = $channel['link'] ?: ($channel['channel_path'] == '#' ? '#' : self::$path . self::resolveChannelPath($channel) . '.html');
+
+            if (empty($item['channel_id'])) {
+                $channel = new EmptyData;
             } else {
-                $empty = new EmptyData;
-                return $empty;
+                $channelScope = Table::defaultScope($table);
+                $channel = $dbNameSpace::name('cms_channel')
+                    ->where('id', $item['channel_id'])
+                    ->where($channelScope)
+                    ->cache(static::$isAdmin ? false : 'cms_channel_' . $item['channel_id'], 0, 'cms_channel')
+                    ->find();
+                if ($channel) {
+                    $item['url'] = static::resolveWebPath($item['link']) ?: self::$path . self::resolveContentPath($item, $channel) . '.html';
+                    $item['channel_url'] = $channel['link'] ?: ($channel['channel_path'] == '#' ? '#' : self::$path . self::resolveChannelPath($channel) . '.html');
+                } else {
+                    $empty = new EmptyData;
+                    return $empty;
+                }
             }
+
             $item['channel'] = $channel;
             $item['content_id'] = $item['id'];
             $item['publish_date'] = date('Y-m-d', strtotime($item['publish_time'] ?? '2024-01-01'));
@@ -176,19 +182,25 @@ class Processer
             }
             $item['children_ids'] = $childrenIds;
         } else if ($table == 'cms_content') {
-            $channelScope = Table::defaultScope($table);
-            $channel = $dbNameSpace::name('cms_channel')
-                ->where('id', $item['channel_id'])
-                ->where($channelScope)
-                ->cache(static::$isAdmin ? false : 'cms_channel_' . $item['channel_id'], 0, 'cms_channel')
-                ->find();
-            if ($channel) {
-                $item['url'] = static::resolveWebPath($item['link']) ?: self::$path . self::resolveContentPath($item, $channel) . '.html';
-                $item['channel_url'] = $channel['link'] ?: ($channel['channel_path'] == '#' ? '#' : self::$path . self::resolveChannelPath($channel) . '.html');
+            
+            if (empty($item['channel_id'])) {
+                $channel = new EmptyData;
             } else {
-                $empty = new EmptyData;
-                return $empty;
+                $channelScope = Table::defaultScope($table);
+                $channel = $dbNameSpace::name('cms_channel')
+                    ->where('id', $item['channel_id'])
+                    ->where($channelScope)
+                    ->cache(static::$isAdmin ? false : 'cms_channel_' . $item['channel_id'], 0, 'cms_channel')
+                    ->find();
+                if ($channel) {
+                    $item['url'] = static::resolveWebPath($item['link']) ?: self::$path . self::resolveContentPath($item, $channel) . '.html';
+                    $item['channel_url'] = $channel['link'] ?: ($channel['channel_path'] == '#' ? '#' : self::$path . self::resolveChannelPath($channel) . '.html');
+                } else {
+                    $empty = new EmptyData;
+                    return $empty;
+                }
             }
+
             $item['channel'] = $channel;
             $item['content_id'] = $item['id'];
             $item['publish_date'] = date('Y-m-d', strtotime($item['publish_time'] ?? '2024-01-01'));

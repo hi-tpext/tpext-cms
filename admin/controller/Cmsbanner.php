@@ -154,7 +154,6 @@ class Cmsbanner extends Controller
 
         $result = $this->validate($data, [
             'title|标题' => 'require',
-            'image|图片' => 'require',
             'position_id|位置' => 'require',
         ]);
 

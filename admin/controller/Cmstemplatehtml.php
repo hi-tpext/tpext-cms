@@ -97,7 +97,7 @@ class Cmstemplatehtml extends Controller
             }
             $view_path = App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'];
             CmsTemplate::initPath($view_path);
-            TemplateHtmlModel::scanPageFiles($template_id,  App::getRootPath() . 'theme/' . $template['view_path']);
+            TemplateHtmlModel::scanPageFiles($template_id, App::getRootPath() . 'theme/' . $template['view_path']);
         }
     }
 
@@ -211,7 +211,7 @@ class Cmstemplatehtml extends Controller
             $form = $builder->form();
             $form->show('path', '模板基础路径');
             $form->match('type', '页面类型')->options($this->pageTypes);
-            if (str_replace('\\', '/',  'theme/' . $template['view_path'] . '/index.html') == str_replace('\\', '/', $page['path'])) {
+            if (str_replace('\\', '/', 'theme/' . $template['view_path'] . '/index.html') == str_replace('\\', '/', $page['path'])) {
                 $form->show('tips', ' ')->value('首页不需要分配');
                 $form->readonly();
             } else if (stripos($page['path'], 'common') !== false) {
@@ -342,40 +342,30 @@ class Cmstemplatehtml extends Controller
             $templatePath = str_replace(['\\', '/'], '/', $template['view_path']);
 
             $text = '新页面';
-            $static = '../static';
             $dir = $data['type'] . '/';
 
             if ($data['type'] == 'single') {
-                $static = './static';
                 $dir = '';
             }
 
             $path = 'theme/' . $templatePath . '/' . $dir . $data['name'] . '.html';
 
-            $newTpl = '';
+            $newTpl = CmsTemplate::getNewTpl();
 
-            if ($data['type'] == 'common') {
-                $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/common.html');
-            } else if ($data['type'] == 'content') {
+            if ($data['type'] == 'content') {
                 $text = CmsTemplate::getTemplatePart('tpl/content.html');
-                $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');
             } else if ($data['type'] == 'single') {
                 $text = CmsTemplate::getTemplatePart('tpl/single.html');
-                $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');
             } else if ($data['type'] == 'channel') {
                 $text = CmsTemplate::getTemplatePart('tpl/channel.html');
-                $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');
             } else if ($data['type'] == 'dynamic') {
                 $text = CmsTemplate::getTemplatePart('tpl/dynamic.html');
-                $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');
-            } else {
-                $newTpl = file_get_contents(Module::getInstance()->getRoot() . 'tpl/new.html');
             }
 
             $newFilePath = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $path);
 
             if (!is_file($newFilePath)) {
-                $newRes = file_put_contents($newFilePath, str_replace(['__content__', '../static'], [$text, $static], $newTpl));
+                $newRes = file_put_contents($newFilePath, str_replace('<!--__content__-->', $text, $newTpl));
                 if (!$newRes) {
                     $this->error('创建新文件失败');
                 }

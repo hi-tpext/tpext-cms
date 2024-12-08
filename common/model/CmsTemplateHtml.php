@@ -68,12 +68,12 @@ class CmsTemplateHtml extends Model
         $file = App::getRootPath() . $data['path'];
 
         if (is_file($file)) {
-            @copy($file, $file .  date('YmdHis') . '.del');
+            @copy($file, $file . date('YmdHis') . '.del');
             @unlink($file);
         }
 
         CmsContentPage::where(['html_id' => $data['id']])->delete();
-        
+
         ExtLoader::trigger('cms_template_html_on_after_delete', $data);
     }
 
@@ -156,7 +156,7 @@ class CmsTemplateHtml extends Model
                         'size' => round(filesize($file->getPathname()) / 1024, 2),
                         'is_default' => $isDefault,
                     ]);
-                } else {
+                } else if (strtotime($page['filemtime']) < filemtime($file->getPathname())) {
                     $page->save([
                         'path' => $path,
                         'size' => round(filesize($file->getPathname()) / 1024, 2),
