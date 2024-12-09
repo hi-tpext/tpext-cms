@@ -126,6 +126,7 @@ class CmsTemplateHtml extends Model
                     $page = new static;
                     $type = 'single';
                     $description = '单页';
+                    $to_id = 0;
                     if (stripos($path, 'channel') !== false) {
                         $type = 'channel';
                         $description = '栏目页' . ($isDefault ? '[默认模板]' : '');
@@ -141,6 +142,10 @@ class CmsTemplateHtml extends Model
                     } else if (preg_match('/theme\/[\w\-]+?\/index.html$/i', $path)) {
                         $type = 'index';
                         $description = '首页';
+                    } else if (preg_match('/theme\/[\w\-]+?\/about.html$/i', $path)) {
+                        $to_id = 1;
+                    } else if (preg_match('/theme\/[\w\-]+?\/contact.html$/i', $path)) {
+                        $to_id = 2;
                     }
 
                     $page->save([
@@ -155,6 +160,7 @@ class CmsTemplateHtml extends Model
                         'filemtime' => date('Y-m-d H:i:s', filemtime($file->getPathname())),
                         'size' => round(filesize($file->getPathname()) / 1024, 2),
                         'is_default' => $isDefault,
+                        'to_id' => $to_id,
                     ]);
                 } else if (strtotime($page['filemtime']) < filemtime($file->getPathname())) {
                     $page->save([

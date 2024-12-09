@@ -138,7 +138,7 @@
 
 <p>list</p>
 <p>循环变量默认为<code>item</code>，其他使用<code>item="xxx"</code>指定</p>
-<p>{<code>list table="cms_content" where="id gt 30 and id elt 40"</code>}</p>
+<p>{<code>list table="cms_content" where="channel_id in(6,7,8)"</code>}</p>
 {list table="cms_content" where="channel_id in(6,7,8)"}
 <div style="background-color: rgba(143, 141, 45, 0.678);">
     栏目id：{$item.channel_id}|文章id：{$item.id}<a target="_blank" href="{$item.url}">{$item.title}</a>
@@ -158,4 +158,8 @@
 <p>内容详情：数据会自动注入，不需要再使用{<code>content@get</code>}标签重复获取</p>
 
 <h4>结尾</h4>
+<p>
+    thinkphp：<a href="https://doc.thinkphp.cn/v5_1/neizhibiaoqian.html" target="_blank">模板标签使用文档</a>
+</p>
+
 <p>演示页面不需要请删除此文件，重新生成路由</p>

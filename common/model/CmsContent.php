@@ -87,6 +87,7 @@ class CmsContent extends Model
 
         cache('cms_content_' . $data['id'], null);
         cache('cms_content_click_' . $data['id'], null);
+        cache('cms_content_detail_' . $data['id'], null);
 
         $detail = CmsContentDetail::where('main_id', $data['id'])->find();
         if (!$detail) {
@@ -102,7 +103,9 @@ class CmsContent extends Model
                     'content' => '@' . $data['reference_id']
                 ]);
             } else {
-                if (property_exists($data, 'content')) {
+                $arrayData = $data->toArray();
+
+                if (isset($arrayData['content'])) {
                     $detail->save([
                         'main_id' => $data['id'],
                         'content' => $data->getData('content')
@@ -130,6 +133,7 @@ class CmsContent extends Model
         CmsContentDetail::where('main_id', $data['id'])->delete();
 
         cache('cms_content_' . $data['id'], null);
+        cache('cms_content_detail_' . $data['id'], null);
 
         ExtLoader::trigger('cms_content_on_after_delete', $data);
     }

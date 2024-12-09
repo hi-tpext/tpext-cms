@@ -120,8 +120,7 @@ class RouteBuilder
      */
     protected function getSinglePages($template)
     {
-        $singlePages = CmsContentPage::where('template_id', $template['id'])->with(['template_html'])
-            ->where('html_type', 'single')->select();
+        $singlePages = CmsTemplateHtml::where('template_id', $template['id'])->where('type', 'single')->select();
 
         if (empty($singlePages)) {
             return [];
@@ -129,11 +128,7 @@ class RouteBuilder
 
         $pages = [];
         foreach ($singlePages as $page) {
-            $html = $page['template_html'];
-            if (empty($html)) {
-                continue;
-            }
-            $path = preg_replace('/theme\/[\w\-]+?\/([\w\-]+?).html$/i', '$1', $html['path']);
+            $path = preg_replace('/theme\/[\w\-]+?\/([\w\-]+?).html$/i', '$1', $page['path']);
             $pages[] = [
                 'id' => $page['to_id'],
                 'path' => $path,

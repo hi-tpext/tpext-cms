@@ -43,17 +43,19 @@
     {channel@list id="gt 1" num="20"}
     <div class="index-item">
         <div class="inner">
-            <div class="title">
+            <div class="channel-title">
                 <img src="{$channel.logo}" class="logo" alt="{$channel.name}" />
                 <a href="{$channel.url}">{$channel.name}</a>
             </div>
             {content@list channel_id="$channel.id"}
             <div class="item-info">
-                <a target="_blank" href="{$content.url}">{$content.title}</a>
-                {if $content.is_recommend==1}
-                <b style="color: red;">[荐]</b>
-                {/if}
-                <p>{$content.publish_date}</p>
+                <span class="title">
+                    <a target="_blank" href="{$content.url}">{$content.title}</a>
+                    {if $content.is_recommend==1}
+                    <b style="color: red;">[荐]</b>
+                    {/if}
+                </span>
+                <span class="date">{$content.publish_date}</span>
             </div>
             {/content@list}
         </div>

@@ -131,6 +131,7 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_content_page` (
 CREATE TABLE IF NOT EXISTS `__PREFIX__cms_template_html` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '页面ID',
   `template_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '模板ID',
+	`to_id` INT(10) UNSIGNED NOT NULL DEFAULT '0' COMMENT '内容ID',
   `name` varchar(55) NOT NULL DEFAULT '' COMMENT '页面名称',
   `path` varchar(255) NOT NULL DEFAULT '' COMMENT '页面路径',
   `key` varchar(55) NOT NULL DEFAULT '' COMMENT 'key',
@@ -153,4 +154,30 @@ INSERT INTO `__PREFIX__cms_template` (`id`, `name`, `platform`, `view_path`, `pr
 (2, 'mobile', 'mobile', 'mobile', '/m/', '手机端默认模板', 10, 1, '2024-12-06 14:34:34', '2024-12-06 14:34:34');
 
 INSERT INTO `__PREFIX__cms_channel` (`id`, `name`, `full_name`, `parent_id`, `logo`, `type`, `link`, `deep`, `path`, `order_by`, `channel_path`, `content_path`, `description`, `keywords`, `extend_ids`, `is_show`, `is_navi`, `sort`, `pagesize`, `create_time`, `update_time`, `delete_time`) VALUES
-(1, '关于', '关于', 0, '', 3, '', 1, ',0,', '', 'c[id]', 'a[id]', '', '', '', 1, 1, 999, 12, '2024-12-06 14:34:34', '2024-12-06 15:21:43', NULL);
+(1, '关于', '关于', 0, '', 3, '', 1, ',0,', '', 'c[id]', 'a[id]', '', '', '', 1, 0, 999, 12, '2024-12-06 14:34:34', '2024-12-06 15:21:43', NULL);
+
+INSERT INTO `tp_cms_content` (`id`, `title`, `channel_id`, `author`, `source`, `is_recommend`, `is_hot`, `is_top`, `tags`, `keywords`, `link`, `logo`, `attachment`, `description`, `mention_ids`, `publish_time`, `sort`, `is_show`, `click`, `admin_id`, `reference_id`, `create_time`, `update_time`, `delete_time`) VALUES
+(2, '联系我们', 1, '管理员', '默认分组', 0, 0, 0, '', '', '', '', '', '联系我们', '', '2024-12-09 22:10:17', 10, 1, 40, 0, 0, '2024-12-09 22:12:08', '2024-12-10 00:29:12', NULL),
+(1, '关于我们', 1, '管理员', '默认分组', 0, 0, 0, '', '', '', '', '', '我们是共产主义接班人。', '', '2024-12-09 22:09:11', 5, 1, 20, 0, 0, '2024-12-09 22:10:01', '2024-12-10 00:28:41', NULL);
+
+
+INSERT INTO `__PREFIX__cms_position` (`id`, `name`, `logo`, `type`, `is_show`, `sort`, `start_time`, `end_time`, `create_time`, `update_time`) VALUES
+(1, '首页焦点图', '', 1, 1, 5, '2024-12-06 00:00:00', '2025-12-06 00:00:00', '2024-12-06 14:50:27', '2024-12-06 14:50:27'),
+(2, '底部友情链接', '', 1, 1, 10, '2024-12-06 00:00:00', '2025-12-06 00:00:00', '2024-12-06 14:50:45', '2024-12-06 14:50:45');
+
+INSERT INTO `__PREFIX__cms_banner` (`id`, `title`, `position_id`, `description`, `image`, `link`, `sort`, `is_show`, `create_time`, `update_time`) VALUES
+(1, '图片1', 1, '', '/theme/default/images/1.jpg', '#', 5, 1, '2024-12-08 15:21:05', '2024-12-08 15:39:59'),
+(2, '图片2', 1, '', '/theme/default/images/2.jpg', '#', 10, 1, '2024-12-08 15:21:14', '2024-12-08 15:39:53'),
+(3, '图片3', 1, '', '/theme/default/images/3.jpg', '#', 15, 1, '2024-12-08 15:38:38', '2024-12-08 15:39:49'),
+(4, '百度', 2, '', '', 'https://www.baidu.com', 20, 1, '2024-12-09 21:41:07', '2024-12-09 21:41:46'),
+(5, '新浪', 2, '', '', 'https://www.sina.com.cn', 25, 1, '2024-12-09 21:41:27', '2024-12-09 21:41:43'),
+(6, '腾讯', 2, '', '', 'https://www.qq.com', 30, 1, '2024-12-09 21:42:07', '2024-12-09 21:42:07'),
+(7, '网易', 2, '', '', 'https://www.163.com', 35, 1, '2024-12-09 21:42:28', '2024-12-09 21:42:28'),
+(8, '淘宝', 2, '', '', 'https://www.taobao.com', 40, 1, '2024-12-09 21:42:46', '2024-12-09 21:42:50'),
+(9, '京东', 2, '', '', 'https://www.jd.com', 45, 1, '2024-12-09 21:43:20', '2024-12-09 21:43:20'),
+(10, 'bilibili', 2, '', '', 'https://www.bilibili.com', 50, 1, '2024-12-09 21:43:52', '2024-12-09 21:54:07'),
+(11, '12306', 2, '', '', 'https://www.12306.cn', 55, 1, '2024-12-09 21:52:34', '2024-12-09 21:52:34'),
+(12, '豆瓣网', 2, '', '', 'https://www.douban.com', 60, 1, '2024-12-09 21:52:57', '2024-12-09 21:54:11'),
+(13, '人民网', 2, '', '', 'http://www.people.com.cn', 65, 1, '2024-12-09 21:54:00', '2024-12-09 21:54:00'),
+(14, '新华网', 2, '', '', 'http://www.xinhuanet.com', 70, 1, '2024-12-09 21:54:28', '2024-12-09 21:54:28'),
+(15, '喜马拉雅FM', 2, '', '', 'https://www.ximalaya.com', 75, 1, '2024-12-09 21:55:23', '2024-12-09 21:55:23');

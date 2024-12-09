@@ -175,8 +175,8 @@ class Render
             Processer::setPath($template['prefix']);
             $tplFile = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
             $out = '';
-            if ($content['is_show'] != 1 || $content['delete_time']) {
-                return ['code' => 0, 'msg' => '内容不存在'];
+            if ($content['__not_found__'] || $content['is_show'] != 1 || $content['delete_time']) {
+                return ['code' => 0, 'msg' => '内容不存在6' . json_encode($content)];
             } else {
                 if ($is_static == 1) {
                     $content['click'] = '<span id="__content_click__">-<span>';
@@ -330,6 +330,13 @@ EOT;
      */
     protected function getHtml($template, $type, $toId)
     {
+        if ($type == 'single') {
+            $tplHtml = $this->htmlModel->where(['type' => $type, 'template_id' => $template['id'], 'to_id' => $toId])
+                ->cache('cms_html_' . $toId, $this->cacheTime, 'cms_html')
+                ->find();
+            return $tplHtml;
+        }
+
         $pageInfo = $this->pageModel->where(['html_type' => $type, 'template_id' => $template['id'], 'to_id' => $toId])
             ->cache('cms_page_' . $template['id'] . '_' . $type . '_' . $toId, $this->cacheTime, 'cms_page')
             ->find(); //获取绑定的模板

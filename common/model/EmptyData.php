@@ -27,12 +27,14 @@ class EmptyData extends Model
             return true;
         }
         if ($name == 'title' || $name == 'name' || $name == 'content' || $name == 'description') {
-            return '无数据';
+            return '<!--无数据-->';
         }
         if ($name == 'url' || $name == 'link') {
             return '#';
         }
-
+        if ($name = 'channel') {
+            return $this;
+        }
         if ($name == 'id' || $name = 'parent_id') {
             return 0;
         }
@@ -63,10 +65,16 @@ class EmptyData extends Model
             return true;
         }
         if ($name == 'title' || $name == 'name' || $name == 'content' || $name == 'description') {
-            return '无数据';
+            return '<!--无数据-->';
         }
         if ($name == 'url' || $name == 'link') {
             return '#';
+        }
+        if ($name = 'channel') {
+            return $this;
+        }
+        if ($name == 'id' || $name = 'parent_id') {
+            return 0;
         }
 
         return '__not_found__';

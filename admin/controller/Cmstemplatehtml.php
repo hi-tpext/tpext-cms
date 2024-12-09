@@ -186,6 +186,10 @@ class Cmstemplatehtml extends Controller
         }
     }
 
+    /**
+     * @title 绑定模板页面
+     * @return mixed
+     */
     public function apply()
     {
         $html_id = input('html_id/d');
@@ -199,14 +203,7 @@ class Cmstemplatehtml extends Controller
             $this->error('模板类型不存在！');
         }
 
-        $pageList = CmsContentPage::where('html_id', $html_id)->select();
-        $relation_ids = [];
-
         if (request()->isGet()) {
-            foreach ($pageList as $prow) {
-                $relation_ids[] = $prow['to_id'];
-            }
-
             $builder = $this->builder('模板管理', '页面分配');
             $form = $builder->form();
             $form->show('path', '模板基础路径');
@@ -221,12 +218,12 @@ class Cmstemplatehtml extends Controller
                 $form->show('tips', ' ')->value('栏目/详情默认模板不需要分配');
                 $form->readonly();
             } else {
-                if ($page['type'] == 'channel') {
-                    $form->tree('relation_ids', '选择栏目')->optionsData(CmsChannel::where('is_show', 1)->field('id,name,parent_id')->select())->value($relation_ids)->help('哪些列表页使用该模板，可选择多个栏目')->required();
-                } else if ($page['type'] == 'content') {
-                    $form->tree('relation_ids', '选择栏目')->optionsData(CmsChannel::where('is_show', 1)->field('id,name,parent_id')->select())->value($relation_ids)->help('哪些内容页使用该模板，可选择多个栏目')->required();
+                if ($page['type'] == 'channel' || $page['type'] == 'content') {
+                    $relation_ids = CmsContentPage::where('html_id', $html_id)->column('to_id');
+                    $form->tree('relation_ids', '选择栏目')->optionsData(CmsChannel::where('is_show', 1)->field('id,name,parent_id')->select())->value($relation_ids)
+                        ->help('哪些' . ($page['type'] == 'content' ? '内容' : '栏目') . '页使用该模板，可选择多个栏目')->required();
                 } else if ($page['type'] == 'single') {
-                    $form->select('relation_id', '选择内容详情')->value($relation_ids)->help('选择一篇文章')->dataUrl(url('/admin/cmscontent/selectpage'), '{id}#{title}[所属栏目：{channel.full_name}]')->required();
+                    $form->select('to_id', '选择内容详情')->help('选择一篇文章')->dataUrl(url('/admin/cmscontent/selectpage'), '{id}#{title} — [所属栏目：{channel.full_name}]')->required();
                 } else {
                     $form->show('tips', ' ')->value('未知页面类型');
                 }
@@ -237,10 +234,13 @@ class Cmstemplatehtml extends Controller
         }
 
         if ($page['type'] == 'single') {
-            $relation_ids = [input('post.relation_id')];
-        } else {
-            $relation_ids = input('post.relation_ids/a');
+            $to_id = input('post.to_id/d');
+            $page->save(['to_id' => $to_id]);
+            trace('save');
+            return $this->builder()->layer()->closeRefresh(1, '保存成功');
         }
+
+        $relation_ids = input('post.relation_ids/a');
 
         if (empty($relation_ids)) {
             $this->error('请选择页面');
@@ -249,6 +249,8 @@ class Cmstemplatehtml extends Controller
         $activeIds = [];
         $active = null;
         $allIds = [];
+
+        $pageList = CmsContentPage::where('html_id', $html_id)->select();
 
         foreach ($pageList as $prow) {
             $allIds[] = $prow['id'];

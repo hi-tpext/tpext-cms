@@ -1,5 +1,11 @@
 <div class="footer">
     <div class="main-container">
+        <ul class="friend-links">
+            <li><a>友情链接：</a></li>
+            {banner@list position_id="2" num="20"}
+            <li><a href="{$banner.url}" target="_blank">{$banner.title}</a></li>
+            {/banner@list}
+        </ul>
         <div class="copyright">
             {$__wconf__.copyright|raw}
         </div>

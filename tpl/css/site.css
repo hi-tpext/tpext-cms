@@ -58,7 +58,10 @@ pre {
 }
 
 ul,
-ol {
+ol,
+dl,
+dd,
+dt {
   padding: 0;
   margin: 0;
 }
@@ -81,6 +84,12 @@ p {
   margin: 0;
 }
 
+.body {
+  display: block;
+  clear: both;
+  min-height: 700px;
+}
+
 .main-container {
   width: 1200px;
   margin: 0 auto;
@@ -89,6 +98,10 @@ p {
 .main-content {
   min-height: 700px;
   background: #f1f1f1;
+}
+
+.main-content.single {
+  min-height: 400px;
 }
 
 .main-content .title {
@@ -179,6 +192,7 @@ p {
   border: 1px solid #ccc;
   border-radius: 3px;
   font-size: 14px;
+  outline: none;
 }
 
 .search-box button {
@@ -200,23 +214,35 @@ p {
 }
 
 .list .list-item {
-  margin-bottom: 10px;
+  padding: 10px;
+  margin-bottom: 3px;
   border-bottom: 1px dashed #ccc;
 }
 
-.list-item .title {
+.list-item .left {
   font-weight: bold;
   font-size: 16px;
+}
+
+.list-item .date {
+  float: right;
+  color: #666;
+}
+
+.list-item .info {
+  margin-top: 5px;
+  color: #333;
 }
 
 .breadcrumb {
   padding: 10px;
   font-weight: bold;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .pagination {
   text-align: center;
+  padding: 10px;
 }
 
 .pagination li {
@@ -253,30 +279,54 @@ p {
   margin: 5px 0;
 }
 
-.index-item .title {
+.index-item .channel-title {
   font-weight: bold;
   font-size: 18px;
   line-height: 40px;
   margin: 5px;
 }
 
-.index-item .title .logo {
+.index-item .channel-title .logo {
   width: 150px;
   height: 80px;
 }
 
 .index-item .item-info {
-  padding: 0 10px;
+  padding: 6px;
   border-top: 1px dashed #ccc;
-  margin: 5px;
+  margin-left: 5px;
+}
+
+.index-item .title {
+  font-weight: 600;
+}
+
+.index-item .date {
+  float: right;
+  color: #666;
 }
 
 .footer {
   width: 100%;
-  padding: 20px 0;
+  padding: 10px 0;
   margin: 0;
   background: #8ac4dfc4;
   clear: both;
+}
+
+.friend-links {
+  width: 100%;
+  text-align: center;
+}
+
+.friend-links li {
+  display: inline-block;
+}
+
+.friend-links a {
+  font-size: 16px;
+  padding: 5px;
+  color: #4d5259;
 }
 
 .copyright {

@@ -12,6 +12,7 @@
 namespace tpext\cms\common\model;
 
 use think\Model;
+use think\facade\Cache;
 use tpext\common\ExtLoader;
 use think\model\concern\SoftDelete;
 use tpext\builder\traits\TreeModel;
@@ -61,6 +62,8 @@ class CmsChannel extends Model
             cache('cms_channel_children_ids_' . $data['parent_id'], null);
         }
 
+        Cache::clear('cms_channel');
+
         ExtLoader::trigger('cms_channel_on_after_insert', $data);
     }
 
@@ -74,6 +77,8 @@ class CmsChannel extends Model
         if (!empty($data['parent_id'])) {
             cache('cms_channel_children_ids_' . $data['parent_id'], null);
         }
+
+        Cache::clear('cms_channel');
 
         ExtLoader::trigger('cms_channel_on_after_update', $data);
 
@@ -114,6 +119,8 @@ class CmsChannel extends Model
 
         cache('cms_channel_' . $data['id'], null);
         cache('cms_channel_children_ids_' . $data['parent_id'], null);
+
+        Cache::clear('cms_channel');
 
         ExtLoader::trigger('cms_channel_on_after_delete', $data);
     }

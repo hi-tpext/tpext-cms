@@ -196,8 +196,7 @@ class Processer
                     $item['url'] = static::resolveWebPath($item['link']) ?: self::$path . self::resolveContentPath($item, $channel) . '.html';
                     $item['channel_url'] = $channel['link'] ?: ($channel['channel_path'] == '#' ? '#' : self::$path . self::resolveChannelPath($channel) . '.html');
                 } else {
-                    $empty = new EmptyData;
-                    return $empty;
+                    $channel = new EmptyData;
                 }
             }
 
@@ -207,7 +206,7 @@ class Processer
             if (!empty($item['reference_id'])) {
                 $detail = $dbNameSpace::name('cms_content_detail')
                     ->where('main_id', $item['reference_id'])
-                    ->cache(static::$isAdmin ? false : 'cms_content_detail_' . $item['id'], 3600, $table)
+                    ->cache(static::$isAdmin ? false : 'cms_content_detail_' . $item['reference_id'], 3600, $table)
                     ->find();
             } else {
                 $detail = $dbNameSpace::name('cms_content_detail')
