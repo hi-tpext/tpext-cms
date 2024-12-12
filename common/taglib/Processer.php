@@ -182,7 +182,7 @@ class Processer
             }
             $item['children_ids'] = $childrenIds;
         } else if ($table == 'cms_content') {
-            
+
             if (empty($item['channel_id'])) {
                 $channel = new EmptyData;
             } else {
@@ -203,6 +203,8 @@ class Processer
             $item['channel'] = $channel;
             $item['content_id'] = $item['id'];
             $item['publish_date'] = date('Y-m-d', strtotime($item['publish_time'] ?? '2024-01-01'));
+
+            $detail = null;
             if (!empty($item['reference_id'])) {
                 $detail = $dbNameSpace::name('cms_content_detail')
                     ->where('main_id', $item['reference_id'])
@@ -215,6 +217,10 @@ class Processer
                     ->find();
             }
             $item['content'] = $detail ? $detail['content'] : '';
+            $item['attachments'] = $detail ? $detail['attachments'] : '';
+            if ($item['attachments']) {
+                $item['attachments'] = array_filter(explode(',', $item['attachments']));
+            }
         } else if ($table == 'cms_banner') {
             $item['url'] = static::resolveWebPath($item['link']);
         } else if ($table == 'cms_tag') {

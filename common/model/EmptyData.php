@@ -16,7 +16,7 @@ use think\Model;
 class EmptyData extends Model
 {
     protected $name = 'empty_data';
-
+    
     /**
      * @param string $name 名称
      * @return mixed
@@ -27,7 +27,7 @@ class EmptyData extends Model
             return true;
         }
         if ($name == 'title' || $name == 'name' || $name == 'content' || $name == 'description') {
-            return '<!--无数据-->';
+            return '无';
         }
         if ($name == 'url' || $name == 'link') {
             return '#';
@@ -65,7 +65,7 @@ class EmptyData extends Model
             return true;
         }
         if ($name == 'title' || $name == 'name' || $name == 'content' || $name == 'description') {
-            return '<!--无数据-->';
+            return '无';
         }
         if ($name == 'url' || $name == 'link') {
             return '#';

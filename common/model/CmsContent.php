@@ -61,6 +61,9 @@ class CmsContent extends Model
             $content = str_replace(['\u00A0', '\u0020', '\u2800', '\u3000', '　', '&nbsp;', '&gt;', '&lt;', '&eq;', '&egt;', '&elt;'], '', $content);
             $data['description'] = static::getDesc($content);
         }
+
+        ExtLoader::trigger('cms_content_on_before_write', $data);
+
     }
 
     public static function onAfterInsert($data)
@@ -104,11 +107,11 @@ class CmsContent extends Model
                 ]);
             } else {
                 $arrayData = $data->toArray();
-
                 if (isset($arrayData['content'])) {
                     $detail->save([
                         'main_id' => $data['id'],
-                        'content' => $data->getData('content')
+                        'content' => $data->getData('content'),
+                        'attachments' => $data->getData('attachments'),
                     ]);
                 }
 
@@ -119,8 +122,7 @@ class CmsContent extends Model
                         'description' => $data['description'],
                         'author' => $data['author'],
                         'source' => $data['source'],
-                        'logo' => $data['logo'],
-                        'attachment' => $data['attachment'],
+                        'logo' => $data['logo']
                     ]);
             }
         }
@@ -188,6 +190,16 @@ class CmsContent extends Model
         }
 
         return isset($this->detail) ? $this->detail['content'] : '';
+    }
+
+    public function getAttachmentsAttr($value, $data)
+    {
+        if (!empty($data['reference_id'])) {
+            $detail = CmsContentDetail::where('main_id', $data['reference_id'])->find();
+            return $detail ? $detail['attachments'] : '';
+        }
+
+        return isset($this->detail) ? $this->detail['attachments'] : '';
     }
 
     public function getPublishDateAttr($value, $data)

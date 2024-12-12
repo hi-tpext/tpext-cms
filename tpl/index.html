@@ -19,14 +19,13 @@
         <div class="hd">
             <span class="arrow"><a class="next"></a><a class="prev"></a></span>
             <ul>
-                {foreach name="newsChannel" item="row"}<!--循环栏目-->
+                {foreach name="$newsChannel" item="row"}<!--循环栏目-->
                 <li>{$row.name}</li>
                 {/foreach}
             </ul>
         </div>
         <div class="bd">
-            {foreach name="newsChannel" item="row"}
-            <!--循环栏目-->
+            {foreach name="$newsChannel" item="row"} <!--循环栏目-->
             <ul>
                 {content@list channel_id="$row.id" num="7"}<!--获取栏目下文章-->
                 <li>
@@ -50,7 +49,7 @@
             {content@list channel_id="$channel.id"}
             <div class="item-info">
                 <span class="title">
-                    <a target="_blank" href="{$content.url}">{$content.title}</a>
+                    <a target="_blank" href="{$content.url}">{:mb_substr($content.title,0,36)}</a>
                     {if $content.is_recommend==1}
                     <b style="color: red;">[荐]</b>
                     {/if}

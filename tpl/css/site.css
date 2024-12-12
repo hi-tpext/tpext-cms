@@ -146,6 +146,36 @@ p {
   color: #a0661a;
 }
 
+.content-mention {
+  margin-top: 50px;
+  padding: 10px;
+  border: 1px dashed #adc7d3;
+}
+
+.content-mention a {
+  margin: 5px;
+  font-size: 14px;
+  color: #1a81a0;
+}
+
+.content-attachments {
+  margin-top: 50px;
+  padding: 10px;
+  border: 1px dashed #adc7d3;
+}
+
+.content-attachments a {
+  margin: 5px;
+  font-size: 14px;
+  color: #1a81a0;
+}
+
+.content-attachments img {
+  height: 200px;
+  width: 200px;
+  margin: 5px;
+}
+
 .next-prev {
   padding: 10px;
 }

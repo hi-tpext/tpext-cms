@@ -68,6 +68,7 @@
 <b>这里不输出分页了</b>
 
 <p>列表赋值，可以使用<code>assign="mylist"</code>，将列表内容赋值给变量mylist，可以在其他地方输出</p>
+<p>{<code>content@list where="title like '%经济%'" num="3" assign="mylist"</code>}</p>
 {content@list where="title like '%经济%'" num="3" assign="mylist"}
 <!--正常情况下，列表内容包含在此处-->
 {/content@list}

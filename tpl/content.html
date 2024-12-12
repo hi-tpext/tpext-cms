@@ -15,13 +15,36 @@
     </div>
     <div class="content">{$content.content|raw}</div>
 
+    <!--如果有附件-->
+    {if $content.attachments}
+    <div class="content-attachments">
+        <span>附件：</span>
+        {foreach name="$content.attachments" item="attachment"}
+        {if preg_match('/\.(jpg|jpeg|png|gif|bmp)$/i', $attachment)}
+        <img src="{$attachment}" alt="{$attachment}">
+        {else}
+        <a href="{$attachment}" target="_blank">{$attachment}</a>
+        {/if}
+        {/foreach}
+    </div>
+    {/if}
+
     <!--如果有合集-->
     {if $content.tags}
-    <div class="tags">
+    <div class="content-tags">
         <span>所属合集：</span>
         {tag@list id="in($content.tags)"}
         <a href="{$tag.url}">{$tag.name}</a>
         {/tag@list}
+    </div>
+    {/if}
+    <!--如果有关联文章-->
+    {if $content.mention_ids}
+    <div class="content-mention">
+        <span>关联内容：</span>
+        {content@list id="in($content.mention_ids)" item="mention"}
+        <a href="{$mention.url}" target="_blank">{$mention.title}</a>
+        {/content@list}
     </div>
     {/if}
 

@@ -14,6 +14,7 @@ namespace tpext\cms\common;
 use tpext\think\App;
 use tpext\common\Tool;
 use think\facade\Cache;
+use tpext\common\ExtLoader;
 use tpext\cms\common\taglib\Table;
 use tpext\cms\common\taglib\Processer;
 use tpext\cms\common\model\CmsTemplate;
@@ -61,6 +62,7 @@ class Render
             $tplFile = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
             Processer::setPath($template['prefix']);
             $vars = [
+                'page_title' => '首页' . '_',
                 '__site_home__' => $template['prefix'],
                 '__page_type__' => 'index',
                 '__set_order_by__' => 'is_recommend desc,',
@@ -120,6 +122,9 @@ class Render
                     'channel_id' => $channel['id'],
                     'channel_ids' => implode(',', array_unique($channel_ids)),
                     'channel' => $channel,
+                    'page_title' => $channel['name'] . '_',
+                    'page_description' => $channel['description'] ?: $channel['name'],
+                    'page_keywords' => $channel['keywords'] ?: $channel['name'],
                     '__site_home__' => $template['prefix'],
                     '__page_type__' => 'channel',
                     '__set_pagesize__' => $channel['pagesize'],
@@ -186,8 +191,12 @@ class Render
                 $vars = [
                     'id' => $content['id'],
                     'channel_id' => $content['channel_id'],
+                    'content_id' => $content['id'],
                     'content' => $content,
                     'channel' => $content['channel'],
+                    'page_title' => $content['title'] . '_' . $content['channel']['name'] . '_',
+                    'page_description' => $content['description'] ?: $content['title'],
+                    'page_keywords' => $content['keywords'] ?: $content['title'],
                     '__site_home__' => $template['prefix'],
                     '__page_type__' => 'content',
                     '__wconf__' => Module::getInstance()->config(),
@@ -248,6 +257,8 @@ class Render
                 ->update(['click' => $click]);
         }
 
+        ExtLoader::trigger('cms_content_click', $id);
+
         return $click;
     }
 
@@ -304,7 +315,15 @@ EOT;
                 '__wconf__' => Module::getInstance()->config(),
                 '__set_page_path__' => $page_path,
             ];
+            
             $param = request()->param();
+            array_walk($param, function (&$value, $key) {
+                if (is_array($value)) {
+                    $value = implode(',', $value);
+                }
+                $value = strip_tags($value);
+            });
+
             $vars = array_merge($vars, $param);
             $config = [
                 'cache_prefix' => $tplHtml['path'],

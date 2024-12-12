@@ -78,8 +78,14 @@ class Module extends baseModule
                     'icon' => 'mdi mdi-tag-outline'
                 ],
                 [
-                    'title' => '设置',
+                    'title' => '字段管理',
                     'sort' => 7,
+                    'url' => '/admin/cmscontentfields/index',
+                    'icon' => 'mdi mdi-playlist-plus'
+                ],
+                [
+                    'title' => '设置',
+                    'sort' => 8,
                     'url' => '/admin/config/edit/key/tpext-cms-common-Module',
                     'icon' => 'mdi mdi-settings'
                 ]
@@ -88,7 +94,18 @@ class Module extends baseModule
     ];
 
     protected $modules = [
-        'admin' => ['cmschannel', 'cmscontent', 'cmsposition', 'cmsbanner', 'cmstag', 'cmstemplate', 'cmstemplatehtml', 'cmstemplatestatic', 'cmstemplatemake'],
+        'admin' => [
+            'cmschannel',
+            'cmscontent',
+            'cmsposition',
+            'cmsbanner',
+            'cmstag',
+            'cmstemplate',
+            'cmstemplatehtml',
+            'cmstemplatestatic',
+            'cmstemplatemake',
+            'cmscontentfields'
+        ],
     ];
 
     public function install()

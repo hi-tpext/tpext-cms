@@ -1,6 +1,12 @@
 <div class="footer">
     <div class="main-container">
         <ul class="friend-links">
+            <li><a>合集：</a></li>
+            {tag@list num="20"}
+            <li><a href="{$tag.url}" target="_blank">{$tag.name}</a></li>
+            {/tag@list}
+        </ul>
+        <ul class="friend-links">
             <li><a>友情链接：</a></li>
             {banner@list position_id="2" num="20"}
             <li><a href="{$banner.url}" target="_blank">{$banner.title}</a></li>

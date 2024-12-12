@@ -57,7 +57,6 @@ class Cmscontent extends Controller
         $this->treeModel = $this->channelModel; //分类模型
         $this->treeTextField = 'name'; //分类模型中的分类名称字段
         $this->treeKey = 'channel_id'; //关联的键　localKey
-        $this->treeType = 'jstree';
     }
 
     protected function filterWhere()
@@ -157,7 +156,7 @@ class Cmscontent extends Controller
             ->btnLink('copy', url('copy', ['id' => '__data.pk__']), '', 'btn-success', 'mdi-content-copy', 'data-layer-size="1000px,auto" title="复制"')
             ->btnDelete();
 
-        $template = CmsTemplate::find();
+        $template = CmsTemplate::order('sort asc,id asc')->find();
         Processer::setPath($template['prefix']);
 
         foreach ($data as &$d) {
@@ -292,6 +291,8 @@ class Cmscontent extends Controller
         $form->hidden('id');
         $form->hidden('reference_id');
 
+        $form->tab('基本信息');
+
         $form->left(7)->with(
             function () use ($form, $config, $data, $isReference) {
                 $form->text('title', '标题')->required()->maxlength(125);
@@ -326,16 +327,18 @@ class Cmscontent extends Controller
             $form->checkbox('attr', '属性')->options(['is_recommend' => '推荐', 'is_top' => '置顶', 'is_hot' => '热门'])
                 ->blockStyle()
                 ->help('推荐：优先在首页显示；置顶：栏目页优先显示；热门：排序无影响，可以在样式上突出显示。');
-            $form->text('link', '跳转链接')->help('设置后覆盖默认的页面地址')->readonly($isReference);
-            $form->multipleSelect('mention_ids', '关联内容')->dataUrl(url('/admin/cmscontent/selectPage'), '[{id}]{title}({channel.name})');
-            $form->file('attachment', '附件')->smallSize()->readonly($isReference);
-
             $form->datetime('publish_time', '发布时间', 4)->required()->default(date('Y-m-d H:i:s'));
+
             if ($isEdit) {
                 $form->show('create_time', '添加时间', 4);
                 $form->show('update_time', '修改时间', 4);
             }
         });
+
+        $form->tab('扩展信息');
+        $form->text('link', '跳转链接')->help('设置后覆盖默认的页面地址')->readonly($isReference);
+        $form->multipleSelect('mention_ids', '关联内容')->dataUrl(url('/admin/cmscontent/selectPage'), '[{id}]{title}({channel.name})');
+        $form->files('attachments', '附件')->limit(20)->readonly($isReference);
     }
 
     protected function _autopost()
@@ -382,7 +385,7 @@ class Cmscontent extends Controller
             'description',
             'logo',
             'link',
-            'attachment',
+            'attachments',
             'author',
             'source',
             'publish_time',
@@ -398,7 +401,6 @@ class Cmscontent extends Controller
         $result = $this->validate($data, [
             'title|标题' => 'require',
             'channel_id|栏目' => 'require',
-            'content|内容' => 'require',
         ]);
 
         if (true !== $result) {
