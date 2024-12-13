@@ -54,16 +54,16 @@ class TemplaBuilder
             $contentCount = 0;
             $contentTotal = 0;
             if (empty($channelIds)) {
-                $channelList = CmsChannel::withTrashed()->where('id', '>', $fromChannelId)->limit($channelSize)->order('id asc')->select();
-                $channelCount = CmsChannel::withTrashed()->count();
+                $channelList = CmsChannel::where('id', '>', $fromChannelId)->limit($channelSize)->order('id asc')->select();
+                $channelCount = CmsChannel::count();
                 if (in_array('content', $types)) {
-                    $contentTotal = CmsContent::withTrashed()->count();
+                    $contentTotal = CmsContent::count();
                 }
             } else {
-                $channelList = CmsChannel::withTrashed()->where('id', 'in', $channelIds)->where('id', '>', $fromChannelId)->limit($channelSize)->order('id asc')->select();
-                $channelCount = CmsChannel::withTrashed()->where('id', 'in', $channelIds)->count();
+                $channelList = CmsChannel::where('id', 'in', $channelIds)->where('id', '>', $fromChannelId)->limit($channelSize)->order('id asc')->select();
+                $channelCount = CmsChannel::where('id', 'in', $channelIds)->count();
                 if (in_array('content', $types)) {
-                    $contentTotal = CmsContent::withTrashed()->where('channel_id', 'in', $channelIds)->count();
+                    $contentTotal = CmsContent::where('channel_id', 'in', $channelIds)->count();
                 }
             }
 
@@ -73,14 +73,14 @@ class TemplaBuilder
 
             foreach ($channelList as $channel) {
                 if (empty($channelIds)) {
-                    $msgArr[] = '[栏目进度]' . $channel['name'] . '(' . CmsChannel::withTrashed()->where('id', '<=', $channel['id'])->count() . '/' . $channelCount . ')，已用时：' . $this->formatTime(time() - $startTime);
+                    $msgArr[] = '[栏目进度]' . $channel['name'] . '(' . CmsChannel::where('id', '<=', $channel['id'])->count() . '/' . $channelCount . ')，已用时：' . $this->formatTime(time() - $startTime);
                 } else {
-                    $msgArr[] = '[栏目进度]' . $channel['name'] . '(' . CmsChannel::withTrashed()->where('id', 'in', $channelIds)->where('id', '<=', $channel['id'])->count() . '/' . $channelCount . ')，已用时：' . $this->formatTime(time() - $startTime);
+                    $msgArr[] = '[栏目进度]' . $channel['name'] . '(' . CmsChannel::where('id', 'in', $channelIds)->where('id', '<=', $channel['id'])->count() . '/' . $channelCount . ')，已用时：' . $this->formatTime(time() - $startTime);
                 }
-                $contentCount = CmsContent::withTrashed()->where('channel_id', $channel['id'])->count();
+                $contentCount = CmsContent::where('channel_id', $channel['id'])->count();
                 //生成内容
                 if (in_array('content', $types)) {
-                    $contentList = CmsContent::withTrashed()->where('channel_id', $channel['id'])->where('id', '>', $fromContentId)->limit($contentSize)->order('id asc')->select();
+                    $contentList = CmsContent::where('channel_id', $channel['id'])->where('id', '>', $fromContentId)->limit($contentSize)->order('id asc')->select();
 
                     foreach ($contentList as $content) {
                         $resB = $this->makeContent($template, $channel, $content);
@@ -88,7 +88,7 @@ class TemplaBuilder
                             continue;
                         }
                         $contentDone += 1;
-                        $msgArr[] = '[内容详情进度](当前栏目：' . CmsContent::withTrashed()->where('channel_id', $channel['id'])->where('id', '<=', $content['id'])->count() . '/' . $contentCount . ') | (全部：' . $contentDone . '/' . $contentTotal . ')';
+                        $msgArr[] = '[内容详情进度](当前栏目：' . CmsContent::where('channel_id', $channel['id'])->where('id', '<=', $content['id'])->count() . '/' . $contentCount . ') | (全部：' . $contentDone . '/' . $contentTotal . ')';
 
                         $fromContentId = $content['id'];
                         $msgArr[] = $resB['msg'];
@@ -142,12 +142,12 @@ class TemplaBuilder
 
             if (in_array('channel', $types) && empty($channelIds)) {
                 $htmlPath = Processer::getOutPath() . 'channel/';
-                $count = $this->delfiles($htmlPath, $startTime - 60, 100);
+                $count = $this->delfiles($htmlPath, $startTime - 60, 1000);
                 $msgArr[] = '清理过期html文件' . $template['prefix'] . 'channel/*.html (' . $count . ')个';
             }
             if (in_array('content', $types) && empty($channelIds)) {
                 $htmlPath = Processer::getOutPath() . 'content/';
-                $count = $this->delfiles($htmlPath, $startTime - 60 * 4, 100);
+                $count = $this->delfiles($htmlPath, $startTime - 60 * 4, 1000);
                 $msgArr[] = '清理过期html文件' . $template['prefix'] . 'content/*.html (' . $count . ')个';
             }
 
@@ -214,16 +214,13 @@ class TemplaBuilder
         $contentPath = Processer::resolveContentPath($content, $channel) . '.html';
         $this->fileWrite($outPath . $contentPath, $output);
 
-        $singlePage = CmsContentPage::where(['html_type' => 'single', 'template_id' => $template['id'], 'to_id' => $content['id']])
-            ->find(); //获取绑定的单页模板
+        $singleHtml = CmsTemplateHtml::where(['type' => 'single', 'template_id' => $template['id'], 'to_id' => $content['id']])
+            ->find();
 
-        if ($singlePage) {
-            $tplHtml = CmsTemplateHtml::where('id', $singlePage['html_id'])->find();
-            if ($tplHtml) {
-                $singleOutPath = '.' . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $template['prefix']);
-                $singleName = preg_replace('/theme\/[\w\-]+?\/([\w\-]+?.html)$/i', '$1', $tplHtml['path']);
-                $this->fileWrite($singleOutPath . $singleName, $output);
-            }
+        if ($singleHtml) {
+            $singleOutPath = '.' . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $template['prefix']);
+            $singleName = preg_replace('/theme\/[\w\-]+?\/([\w\-]+?.html)$/i', '$1', $singleHtml['path']);
+            $this->fileWrite($singleOutPath . $singleName, $output);
         }
 
         return ['code' => 1, 'msg' => '[' . $content['title'] . ']内容生成成功，路径：' . $contentPath];

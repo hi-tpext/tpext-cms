@@ -78,9 +78,15 @@ class Module extends baseModule
                     'icon' => 'mdi mdi-tag-outline'
                 ],
                 [
+                    'title' => '模型管理',
+                    'sort' => 7,
+                    'url' => '/admin/cmscontentmodel/index',
+                    'icon' => 'mdi mdi-buffer'
+                ],
+                [
                     'title' => '字段管理',
                     'sort' => 7,
-                    'url' => '/admin/cmscontentfields/index',
+                    'url' => '/admin/cmscontentfield/index',
                     'icon' => 'mdi mdi-playlist-plus'
                 ],
                 [
@@ -104,7 +110,8 @@ class Module extends baseModule
             'cmstemplatehtml',
             'cmstemplatestatic',
             'cmstemplatemake',
-            'cmscontentfields'
+            'cmscontentmodel',
+            'cmscontentfield',
         ],
     ];
 

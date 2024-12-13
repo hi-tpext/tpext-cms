@@ -14,7 +14,6 @@ namespace tpext\cms\common;
 use tpext\cms\common\model\CmsTemplate;
 use tpext\cms\common\model\CmsTemplateHtml;
 use tpext\cms\common\model\CmsChannel;
-use tpext\cms\common\model\CmsContentPage;
 use tpext\think\App;
 
 class RouteBuilder

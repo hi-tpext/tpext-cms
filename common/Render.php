@@ -212,7 +212,8 @@ class Render
                 $out = $this->replaceStaticPath($template, $out);
 
                 if ($is_static == 1) {
-                    $out = str_replace('</body>', '    <script type="text/javascript">' . $this->clickScript($content['id']) . '</script>', $out);
+                    $url = $template['prefix'] . 'content/__click__' . $content['id'];
+                    $out = str_replace('</body>', '    <script type="text/javascript">' . $this->clickScript($url) . '</script>', $out);
                 }
             }
             return ['code' => 1, 'msg' => 'ok', 'data' => $out];
@@ -262,20 +263,20 @@ class Render
         return $click;
     }
 
-    protected function clickScript($id)
+    protected function clickScript($url)
     {
         $script = <<<EOT
     var __content_click__ = document.getElementById("__content_click__");
-    if(__content_click__) {
-        var xhr = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("");
-        xhr.open("GET", "__click__{$id}", true);
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState == 4 && xhr.status == 200) {
+    var xhr = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("");
+    xhr.open("GET", "{$url}", true);
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            if(__content_click__) {
                 __content_click__.replaceWith(xhr.responseText);
             }
-        };
-        xhr.send();
-    }
+        }
+    };
+    xhr.send();
 EOT;
 
         return $script;
@@ -315,7 +316,7 @@ EOT;
                 '__wconf__' => Module::getInstance()->config(),
                 '__set_page_path__' => $page_path,
             ];
-            
+
             $param = request()->param();
             array_walk($param, function (&$value, $key) {
                 if (is_array($value)) {

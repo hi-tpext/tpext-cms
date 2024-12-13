@@ -62,6 +62,10 @@ class CmsContent extends Model
             $data['description'] = static::getDesc($content);
         }
 
+        if (empty($data['publish_time'])) {
+            $data['publish_time'] = date('Y-m-d H:i:s');
+        }
+
         ExtLoader::trigger('cms_content_on_before_write', $data);
 
     }
@@ -117,12 +121,12 @@ class CmsContent extends Model
 
                 self::where('reference_id', $data['id'])
                     ->update([
-                        'keywords' => $data['keywords'],
-                        'link' => $data['link'],
-                        'description' => $data['description'],
-                        'author' => $data['author'],
-                        'source' => $data['source'],
-                        'logo' => $data['logo']
+                        'keywords' => $data['keywords'] ?? '',
+                        'link' => $data['link'] ?? '',
+                        'description' => $data['description'] ?? '',
+                        'author' => $data['author'] ?? '',
+                        'source' => $data['source'] ?? '',
+                        'logo' => $data['logo'] ?? ''
                     ]);
             }
         }
@@ -180,6 +184,11 @@ class CmsContent extends Model
     public function detail()
     {
         return $this->hasOne(CmsContentDetail::class, 'main_id', 'id');
+    }
+
+    public function model()
+    {
+        return $this->belongsTo(CmsContentModel::class, 'model_id', 'id');
     }
 
     public function getContentAttr($value, $data)

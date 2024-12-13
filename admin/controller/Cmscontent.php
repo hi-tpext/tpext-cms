@@ -7,8 +7,8 @@ use tpext\cms\common\Module;
 use tpext\builder\traits\actions;
 use tpext\cms\common\model\CmsChannel;
 use tpext\cms\common\taglib\Processer;
-use tpext\cms\common\model\CmsTemplate;
 use tpext\cms\common\model\CmsContent as ContentModel;
+use tpext\cms\common\model;
 
 /**
  * Undocumented class
@@ -51,7 +51,7 @@ class Cmscontent extends Controller
         $this->selectTextField = '{title}({channel.name})';
         $this->selectWith = ['channel'];
 
-        $this->indexWith = ['channel'];
+        $this->indexWith = ['channel', 'model'];
 
         //左侧树
         $this->treeModel = $this->channelModel; //分类模型
@@ -125,10 +125,20 @@ class Cmscontent extends Controller
     {
         $table = $this->table;
 
+        $models = model\CmsContentModel::order('sort asc,id asc')->select();
+        $colors = ['primary', 'dark', 'info', 'success', 'warning', 'danger', 'default', 'pink'];
+
         $table->show('id', 'ID');
         $table->image('logo', '封面图')->thumbSize(60, 60);
         $table->raw('title', '标题')->to('<a href="{preview_url}" target="_blank">{val}</a>');
         $table->show('channel_id', '栏目')->to('{channel.full_name}');
+        if (count($models) > 1) {
+            $classGroup = [];
+            foreach ($models as $i => $model) {
+                $classGroup[] = [$model['id'], $colors[$i % 7], 'model_id'];
+            }
+            $table->show('model_id', '模型', 1)->to('{model.name}')->mapClassGroup($classGroup);
+        }
         $table->show('author', '作者')->cut(10)->default('暂无');
         $table->show('source', '来源')->cut(10)->default('暂无');
         $table->show('tag_names', '合集')->cut(20);
@@ -141,13 +151,26 @@ class Cmscontent extends Controller
             $table->show('update_time', '修改时间'),
         )->getWrapper()->addStyle('width:140px');
 
-        $table->sortable('id,channel_id,author,source,is_show,publish_time,sort,click,create_time,update_time');
-
         $table->getToolbar()
-            ->btnAdd('', '添加', 'btn-primary', 'mdi-plus', 'data-layer-size="98%,98%"')
+            ->html('批量操作：')
             ->btnEnableAndDisable('显示', '隐藏')
             ->btnDelete()
-            ->btnRefresh();
+            ->html('&nbsp;&nbsp;发布：');
+
+        foreach ($models as $i => $model) {
+            $table->getToolbar()->btnAdd(
+                url('add', ['model_id' => $model['id']]),
+                $model['name'],
+                'btn-' . $colors[$i % 7],
+                'mdi-plus',
+                'data-layer-size="98%,98%" title="添加新的' . $model['name'] . '"'
+            );
+        }
+
+        $table->getToolbar()
+            ->html('&nbsp;&nbsp;')
+            ->btnRefresh()
+            ->btnToggleSearch();
 
         $table->getActionbar()
             ->btnEdit('', '', 'btn-primary', 'mdi-lead-pencil', 'data-layer-size="98%,98%" title="编辑"')
@@ -156,7 +179,8 @@ class Cmscontent extends Controller
             ->btnLink('copy', url('copy', ['id' => '__data.pk__']), '', 'btn-success', 'mdi-content-copy', 'data-layer-size="1000px,auto" title="复制"')
             ->btnDelete();
 
-        $template = CmsTemplate::order('sort asc,id asc')->find();
+        $template = model\CmsTemplate::order('sort asc,id asc')->find();
+
         Processer::setPath($template['prefix']);
 
         foreach ($data as &$d) {
@@ -167,11 +191,13 @@ class Cmscontent extends Controller
         }
 
         $this->builder()->addStyleSheet('
-        .table > tbody > tr > td .row-title,.table > tbody > tr > td .row-tag_names
+        .table > tbody > tr > td .row-title,.table > tbody > tr > td .row-channel_id,.table > tbody > tr > td .row-tag_names
         {
             white-space:normal;
         }
         ');
+
+        $table->sortable('id,channel_id,author,source,is_show,publish_time,sort,click,create_time,update_time');
     }
 
     /**
@@ -287,58 +313,159 @@ class Cmscontent extends Controller
         $isReference = $isEdit && $data['reference_id'] > 0;
         $config = Module::getInstance()->getConfig();
 
+        $model_id = $isEdit ? $data['model_id'] : input('model_id/d', 1);
+
+        $fieldsInfo = $this->getFieldsInfo($model_id);
+
         $form->defaultDisplayerSize(12, 12);
         $form->hidden('id');
         $form->hidden('reference_id');
+        $form->hidden('model_id')->default($model_id);
 
-        $form->tab('基本信息');
+        if (count($fieldsInfo['extend_fields']) > 0) {
+            $form->tab('基本信息');
+        }
 
-        $form->left(7)->with(
-            function () use ($form, $config, $data, $isReference) {
+        $form->left(count($fieldsInfo['main_right_fields']) > 0 ? 7 : 12)->with(
+            function () use ($form, $config, $data, $isReference, $fieldsInfo) {
                 $form->text('title', '标题')->required()->maxlength(125);
                 $form->selectTree('channel_id', '栏目', 6)->multiple(false)->optionsData($this->channelModel->order('sort')->select(), 'name', 'id', 'parent_id', '')->required();
-                $form->multipleSelect('tags', '合集', 6)->dataUrl(url('/admin/cmstag/selectPage'))->help('可到【合集管理】菜单添加合集');
-                $form->text('keywords', '关键字')->readonly($isReference)->maxlength(255)->help('多个关键字请用英文逗号隔开');
-                $form->textarea('description', '摘要')->readonly($isReference)->maxlength(255)->help('留空则自动从内容中提取');
 
-                $editor = 'editor';
-                if (!empty($config['editor'])) {
-                    $editor = $config['editor'];
+                $fields = $fieldsInfo['fields'];
+                if (in_array('tags', $fieldsInfo['field_names'])) {
+                    $form->multipleSelect('tags', '合集', 6)->dataUrl(url('/admin/cmstag/selectPage'));
                 }
-                if ($isReference) {
-                    $form->raw('content_html', '引用内容')->to('<div>复制于<label class="label label-default">@{reference_id}</label>，内容只读，去<a title="点击去编辑" href="' . url('edit', ['id' => $data['reference_id']]) . '">[编辑]</a></div>' . $data['content']);
-                    $form->hidden('content')->value('@' . $data['reference_id']);
-                } else {
-                    $form->$editor('content', '内容');
+                if (in_array('keywords', $fieldsInfo['field_names'])) {
+                    $form->text('keywords', '关键字')->readonly($isReference)->maxlength(255)->help('多个关键字请用英文逗号隔开');
+                }
+                if (in_array('keywords', $fieldsInfo['field_names'])) {
+                    $form->textarea('description', '摘要')->readonly($isReference)->maxlength(255)->help('留空则自动从内容中提取');
+                }
+                if (in_array('attachments', $fieldsInfo['field_names']) && in_array('attachments', $fieldsInfo['main_left_fields'])) {
+                    $form->files('attachments', $fields['attachments']['comment'] ?? '附件')->help($fields['attachments']['help'] ?? '')->limit(20)->readonly($isReference);
+                }
+                if (in_array('content', $fieldsInfo['field_names'])) {
+                    $editor = 'editor';
+                    if ($fields['content']['displayer_type'] == 'editor') {
+                        if (!empty($config['editor'])) {
+                            $editor = $config['editor'];
+                        }
+                    } else {
+                        $editor = $fields['content']['displayer_type'];
+                    }
+                    if ($isReference) {
+                        $form->raw('content_html', '引用内容')->to('<div>复制于<label class="label label-default">@{reference_id}</label>，内容只读，去<a title="点击去编辑" href="' . url('edit', ['id' => $data['reference_id']]) . '">[编辑]</a></div>' . $data['content']);
+                        $form->hidden('content')->value('@' . $data['reference_id']);
+                    } else {
+                        $e = $form->$editor('content', $fields['content']['comment'] ?? '内容')->help($fields['content']['help'] ?? '');
+                        if ($editor == 'textarea') {
+                            $e->rows(10);
+                        }
+                    }
                 }
             }
         );
 
-        $form->right(5)->with(function () use ($form, $isEdit, $isReference) {
+        $form->right(count($fieldsInfo['main_right_fields']) > 0 ? 5 : 12)->with(function () use ($form, $isEdit, $isReference, $fieldsInfo) {
             $admin = !$isEdit ? (session('admin_user') ?: []) : null;
-            $form->image('logo', '封面图')->mediumSize()->readonly($isReference);
-            $form->text('author', '作者', 6)->readonly($isReference)->maxlength(32)->default($admin ? $admin['name'] : '');
-            $form->text('source', '来源', 6)->readonly($isReference)->maxlength(32)->default($admin && $admin['group'] ? $admin['group']['name'] : '');
 
-            $form->radio('is_show', '显示', 4)->options([1 => '是', 0 => '否'])->default(9)->blockStyle();
-            $form->number('click', '点击量', 4)->default(0);
-            $form->number('sort', '排序', 4)->default(0);
+            $fields = $fieldsInfo['fields'];
 
-            $form->checkbox('attr', '属性')->options(['is_recommend' => '推荐', 'is_top' => '置顶', 'is_hot' => '热门'])
-                ->blockStyle()
-                ->help('推荐：优先在首页显示；置顶：栏目页优先显示；热门：排序无影响，可以在样式上突出显示。');
-            $form->datetime('publish_time', '发布时间', 4)->required()->default(date('Y-m-d H:i:s'));
+            if (in_array('logo', $fieldsInfo['field_names'])) {
+                $form->image('logo', $fields['logo']['comment'] ?? '封面图')->help($fields['logo']['help'] ?? '')->mediumSize()->readonly($isReference);
+            }
+            if (in_array('author', $fieldsInfo['field_names'])) {
+                $form->text('author', $fields['author']['comment'] ?? '作者', 6)->help($fields['author']['help'] ?? '')->readonly($isReference)->maxlength(32)->default($admin ? $admin['name'] : '');
+            }
+            if (in_array('source', $fieldsInfo['field_names'])) {
+                $form->text('source', $fields['source']['comment'] ?? '来源', 6)->help($fields['source']['help'] ?? '')->readonly($isReference)->maxlength(32)->default($admin && $admin['group'] ? $admin['group']['name'] : '');
+            }
+            if (in_array('attachments', $fieldsInfo['field_names']) && in_array('attachments', $fieldsInfo['main_right_fields'])) {
+                $form->files('attachments', $fields['attachments']['comment'] ?? '附件')->help($fields['attachments']['help'] ?? '')->limit(20)->readonly($isReference);
+            }
+            if (in_array('is_show', $fieldsInfo['field_names'])) {
+                $form->radio('is_show', $fields['is_show']['comment'] ?? '显示', 4)->help($fields['is_show']['help'] ?? '')->options([1 => '是', 0 => '否'])->default(9)->blockStyle()->getWrapper()->addClass('hidden');
+            }
+            if (in_array('click', $fieldsInfo['field_names'])) {
+                $form->number('click', $fields['click']['comment'] ?? '点击量', 4)->help($fields['click']['help'] ?? '')->default(0);
+            }
+            if (in_array('sort', $fieldsInfo['field_names'])) {
+                $form->number('sort', $fields['sort']['comment'] ?? '排序', 4)->help($fields['sort']['help'] ?? '')->default(0);
+            }
+            if (
+                in_array('is_recommend', $fieldsInfo['field_names'])
+                || in_array('is_top', $fieldsInfo['field_names'])
+                || in_array('is_hot', $fieldsInfo['field_names'])
+            ) {
+                $attr = [];
+                if (in_array('is_recommend', $fieldsInfo['field_names'])) {
+                    $attr['is_recommend'] = $fields['is_recommend']['comment'] ?? '推荐';
+                }
+                if (in_array('is_top', $fieldsInfo['field_names'])) {
+                    $attr['is_top'] = $fields['is_top']['comment'] ?? '置顶';
+                }
+                if (in_array('is_hot', $fieldsInfo['field_names'])) {
+                    $attr['is_hot'] = $fields['is_hot']['comment'] ?? '热门';
+                }
+                $form->checkbox('attr', '属性')->options($attr)
+                    ->blockStyle()
+                    ->help('推荐：优先在首页显示；置顶：栏目页优先显示；热门：排序无影响，可以在样式上突出显示。');
+            }
 
+            if (in_array('sort', $fieldsInfo['field_names'])) {
+                $form->datetime('publish_time', $fields['is_hot']['comment'] ?? '发布时间', 4)->required()->default(date('Y-m-d H:i:s'));
+            }
             if ($isEdit) {
                 $form->show('create_time', '添加时间', 4);
                 $form->show('update_time', '修改时间', 4);
             }
         });
 
-        $form->tab('扩展信息');
-        $form->text('link', '跳转链接')->help('设置后覆盖默认的页面地址')->readonly($isReference);
-        $form->multipleSelect('mention_ids', '关联内容')->dataUrl(url('/admin/cmscontent/selectPage'), '[{id}]{title}({channel.name})');
-        $form->files('attachments', '附件')->limit(20)->readonly($isReference);
+        if (count($fieldsInfo['extend_fields']) > 0) {
+            $form->tab('扩展信息');
+            if (in_array('link', $fieldsInfo['field_names'])) {
+                $form->text('link', $fields['sort']['comment'] ?? '跳转链接')->help($fields['sort']['help'] ?? '设置后覆盖默认的页面地址')->readonly($isReference);
+            }
+            if (in_array('mention_ids', $fieldsInfo['field_names'])) {
+                $form->multipleSelect('mention_ids', $fields['sort']['comment'] ?? '关联内容')->help($fields['mention_ids']['help'] ?? '')->dataUrl(url('/admin/cmscontent/selectPage'), '[{id}]{title}({channel.name})');
+            }
+            if (
+                in_array('attachments', $fieldsInfo['field_names'])
+                && !in_array('attachments', $fieldsInfo['main_left_fields'])
+                && !in_array('attachments', $fieldsInfo['main_right_fields'])
+            ) {
+                $form->files('attachments', $fieldsInfo['fields']['attachments']['comment'] ?? '附件')->help($fieldsInfo['fields']['attachments']['help'] ?? '')->limit(20)->readonly($isReference);
+            }
+        }
+    }
+
+    /**
+     * 获取模型字段信息
+     * @param int $model_id
+     * @return array
+     */
+    protected function getFieldsInfo($model_id)
+    {
+        $modelFields = model\CmsContentModelField::where('model_id', $model_id)->cache('cms_content_model_fields_' . $model_id)->select()->toArray();
+        $modelFieldNames = array_column($modelFields, 'name');
+        $modelMainLeftFieldNames = model\CmsContentModelField::where(['model_id' => $model_id, 'position' => 'main_left'])->cache('cms_content_model_fields_main_left_' . $model_id)->column('name');
+        $modelMainRightFieldNames = model\CmsContentModelField::where(['model_id' => $model_id, 'position' => 'main_right'])->cache('cms_content_model_fields_main_right_' . $model_id)->column('name');
+        $modelExtendFieldNames = model\CmsContentModelField::where(['model_id' => $model_id, 'position' => 'extend'])->cache('cms_content_model_fields_extend_' . $model_id)->column('name');
+
+        $allFields = [];
+        array_walk($modelFields, function ($item, $key) use (&$allFields) {
+            $allFields[$item['name']] = $item;
+        });
+
+        $info = [
+            'fields' => $allFields,
+            'field_names' => $modelFieldNames,
+            'main_left_fields' => $modelMainLeftFieldNames,
+            'main_right_fields' => $modelMainRightFieldNames,
+            'extend_fields' => $modelExtendFieldNames,
+        ];
+
+        return $info;
     }
 
     protected function _autopost()
@@ -380,6 +507,7 @@ class Cmscontent extends Controller
             'id',
             'title',
             'channel_id',
+            'model_id',
             'tags',
             'keywords',
             'description',

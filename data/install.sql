@@ -27,14 +27,15 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_channel`  (
 
 CREATE TABLE IF NOT EXISTS `__PREFIX__cms_content`  (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '内容ID',
-  `title` varchar(125) NOT NULL DEFAULT '' COMMENT '标题',
+  `title` varchar(125) NOT NULL DEFAULT '' COMMENT '栏目',
   `channel_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '所属分类',
+	`model_id` INT(10) UNSIGNED NOT NULL DEFAULT '1' COMMENT '模型id',
   `author` varchar(32) NOT NULL DEFAULT '' COMMENT '作者',
   `source` varchar(32) NOT NULL DEFAULT '' COMMENT '来源',
   `is_recommend` tinyint(1) unsigned NOT NULL DEFAULT 0 COMMENT '推荐',
   `is_hot` tinyint(1) unsigned NOT NULL DEFAULT 0 COMMENT '热门',
   `is_top` tinyint(1) unsigned NOT NULL DEFAULT 0 COMMENT '置顶',
-  `tags` varchar(255) NOT NULL DEFAULT '' COMMENT '文章标签',
+  `tags` varchar(255) NOT NULL DEFAULT '' COMMENT '合集',
   `description` varchar(255) NOT NULL DEFAULT '' COMMENT '摘要',
   `keywords` varchar(255) NOT NULL DEFAULT '' COMMENT '关键字',
   `link` varchar(255) NOT NULL DEFAULT '' COMMENT '跳转链接',
@@ -149,6 +150,46 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_template_html` (
   KEY `template_id` (`template_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='模板页面';
 
+CREATE TABLE IF NOT EXISTS `__PREFIX__cms_content_model` (
+	`id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+	`name` VARCHAR(55) NOT NULL DEFAULT '' COMMENT '名称',
+  `sort` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '排序',
+	`fields` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '字段',
+	`create_time` DATETIME NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '添加时间',
+	`update_time` DATETIME NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '更新时间',
+	PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='内容模型';
+
+CREATE TABLE IF NOT EXISTS `__PREFIX__cms_content_field` (
+	`id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+	`name` VARCHAR(55) NOT NULL DEFAULT '' COMMENT '字段名称',
+	`displayer_type` VARCHAR(55) NOT NULL DEFAULT '' COMMENT '显示类型',
+	`options` TEXT DEFAULT NULL COMMENT '选项',
+  `length` INT(10) UNSIGNED NULL DEFAULT '0' COMMENT '长度',
+	`numerc_scale` INT(10) UNSIGNED NULL DEFAULT '0' COMMENT '小数点',
+	`data_type` VARCHAR(55) NULL DEFAULT '' COMMENT '数据类型',
+	`default` VARCHAR(55) NULL DEFAULT '' COMMENT '默认值',
+	`position` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '位置',
+	`create_time` DATETIME NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '添加时间',
+	`update_time` DATETIME NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '更新时间',
+	PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='内容字段';
+
+CREATE TABLE IF NOT EXISTS `tp_cms_content_model_field` (
+	`id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+	`model_id` INT(10) UNSIGNED NOT NULL DEFAULT '0' COMMENT '模型id',
+	`name` VARCHAR(55) NOT NULL DEFAULT '' COMMENT '字段名称',
+  `comment` VARCHAR(55) NOT NULL DEFAULT '' COMMENT '字段说明',
+  `help` VARCHAR(55) NOT NULL DEFAULT '' COMMENT '帮助信息',
+	`displayer_type` VARCHAR(55) NOT NULL DEFAULT '' COMMENT '显示类型',
+	`position` VARCHAR(55) NOT NULL DEFAULT '' COMMENT '位置',
+	`rules` VARCHAR(55) NOT NULL DEFAULT '' COMMENT '规则',
+	`create_time` DATETIME NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '添加时间',
+	`update_time` DATETIME NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '更新时间',
+	PRIMARY KEY (`id`),
+  KEY `model_id` (`model_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='内容模型字段';
+
 INSERT INTO `__PREFIX__cms_template` (`id`, `name`, `platform`, `view_path`, `prefix`, `description`, `sort`, `is_open`, `create_time`, `update_time`) VALUES
 (1, 'default', 'pc', 'default', '/', 'pc端默认模板', 5, 1, '2024-12-06 14:34:34', '2024-12-06 14:34:34'),
 (2, 'mobile', 'mobile', 'mobile', '/m/', '手机端默认模板', 10, 1, '2024-12-06 14:34:34', '2024-12-06 14:34:34');
@@ -156,9 +197,9 @@ INSERT INTO `__PREFIX__cms_template` (`id`, `name`, `platform`, `view_path`, `pr
 INSERT INTO `__PREFIX__cms_channel` (`id`, `name`, `full_name`, `parent_id`, `logo`, `type`, `link`, `deep`, `path`, `order_by`, `channel_path`, `content_path`, `description`, `keywords`, `extend_ids`, `is_show`, `is_navi`, `sort`, `pagesize`, `create_time`, `update_time`, `delete_time`) VALUES
 (1, '关于', '关于', 0, '', 3, '', 1, ',0,', '', 'c[id]', 'a[id]', '', '', '', 1, 0, 999, 12, '2024-12-06 14:34:34', '2024-12-06 15:21:43', NULL);
 
-INSERT INTO `tp_cms_content` (`id`, `title`, `channel_id`, `author`, `source`, `is_recommend`, `is_hot`, `is_top`, `tags`, `keywords`, `link`, `logo`, `attachment`, `description`, `mention_ids`, `publish_time`, `sort`, `is_show`, `click`, `admin_id`, `reference_id`, `create_time`, `update_time`, `delete_time`) VALUES
-(2, '联系我们', 1, '管理员', '默认分组', 0, 0, 0, '', '', '', '', '', '联系我们', '', '2024-12-09 22:10:17', 10, 1, 40, 0, 0, '2024-12-09 22:12:08', '2024-12-10 00:29:12', NULL),
-(1, '关于我们', 1, '管理员', '默认分组', 0, 0, 0, '', '', '', '', '', '我们是共产主义接班人。', '', '2024-12-09 22:09:11', 5, 1, 20, 0, 0, '2024-12-09 22:10:01', '2024-12-10 00:28:41', NULL);
+INSERT INTO `tp_cms_content` (`id`, `title`, `channel_id`, `author`, `source`, `is_recommend`, `is_hot`, `is_top`, `tags`, `keywords`, `link`, `logo`, `description`, `mention_ids`, `publish_time`, `sort`, `is_show`, `click`, `admin_id`, `reference_id`, `create_time`, `update_time`, `delete_time`) VALUES
+(2, '联系我们', 1, '管理员', '默认分组', 0, 0, 0, '', '', '', '', '联系我们', '', '2024-12-09 22:10:17', 10, 1, 40, 0, 0, '2024-12-09 22:12:08', '2024-12-10 00:29:12', NULL),
+(1, '关于我们', 1, '管理员', '默认分组', 0, 0, 0, '', '', '', '', '我们是共产主义接班人。', '', '2024-12-09 22:09:11', 5, 1, 20, 0, 0, '2024-12-09 22:10:01', '2024-12-10 00:28:41', NULL);
 
 
 INSERT INTO `__PREFIX__cms_position` (`id`, `name`, `logo`, `type`, `is_show`, `sort`, `start_time`, `end_time`, `create_time`, `update_time`) VALUES
