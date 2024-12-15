@@ -53,7 +53,9 @@ class CmsContent extends Model
 
     public static function onBeforeWrite($data)
     {
-        if (empty($data['description']) && empty($data['reference_id'])) {
+        $arrayData = $data->toArray();
+
+        if (empty($data['description']) && empty($data['reference_id']) && isset($arrayData['content'])) {
             $content = $data->getData('content');
             $content = preg_replace('/<script[^>]*?>.*?<\/script>/is', '', $content);
             $content = strip_tags($content);
@@ -111,16 +113,25 @@ class CmsContent extends Model
                 ]);
             } else {
                 $arrayData = $data->toArray();
+                $detailData = [
+                    'content' => '',
+                    'attachments' => ''
+                ];
                 if (isset($arrayData['content'])) {
-                    $detail->save([
-                        'main_id' => $data['id'],
-                        'content' => $data->getData('content'),
-                        'attachments' => $data->getData('attachments'),
-                    ]);
+                    $detailData['content'] = $data->getData('content');
+                }
+                if (isset($arrayData['attachments'])) {
+                    $detailData['attachments'] = $data->getData('attachments');
+                }
+
+                if (!empty($detailData)) {
+                    $detailData['main_id'] = $data['id'];
+                    $detail->save($detailData);
                 }
 
                 self::where('reference_id', $data['id'])
                     ->update([
+                        'title' => $data['title'] ?? '',
                         'keywords' => $data['keywords'] ?? '',
                         'link' => $data['link'] ?? '',
                         'description' => $data['description'] ?? '',

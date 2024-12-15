@@ -211,4 +211,9 @@ class CmsChannel extends Model
 
         return is_array($value) ? implode(',', $value) : trim($value, ',');
     }
+
+    public function setModelIdsAttr($value)
+    {
+        return is_array($value) ? implode(',', $value) : trim($value, ',');
+    }
 }

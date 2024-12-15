@@ -218,8 +218,9 @@ class Processer
             }
             $item['content'] = $detail ? $detail['content'] : '';
             $item['attachments'] = $detail ? $detail['attachments'] : '';
+            $item['attachmentsArray'] = [];
             if ($item['attachments']) {
-                $item['attachments'] = array_filter(explode(',', $item['attachments']));
+                $item['attachmentsArray'] = array_filter(explode(',', $item['attachments']));
             }
         } else if ($table == 'cms_banner') {
             $item['url'] = static::resolveWebPath($item['link']);

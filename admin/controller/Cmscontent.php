@@ -3,12 +3,13 @@
 namespace tpext\cms\admin\controller;
 
 use think\Controller;
+use tpext\cms\common\model;
 use tpext\cms\common\Module;
 use tpext\builder\traits\actions;
 use tpext\cms\common\model\CmsChannel;
 use tpext\cms\common\taglib\Processer;
+use tpext\cms\common\model\CmsContentModel;
 use tpext\cms\common\model\CmsContent as ContentModel;
-use tpext\cms\common\model;
 
 /**
  * Undocumented class
@@ -333,16 +334,51 @@ class Cmscontent extends Controller
 
                 $fields = $fieldsInfo['fields'];
                 if (in_array('tags', $fieldsInfo['field_names'])) {
-                    $form->multipleSelect('tags', '合集', 6)->dataUrl(url('/admin/cmstag/selectPage'));
+                    $form->multipleSelect('tags', $fields['tags']['comment'] ?: '合集', 6)
+                        ->dataUrl(url('/admin/cmstag/selectPage'))
+                        ->help($fields['tags']['help'])
+                        ->required(strstr($fields['tags']['rules'], 'required'));
                 }
                 if (in_array('keywords', $fieldsInfo['field_names'])) {
-                    $form->text('keywords', '关键字')->readonly($isReference)->maxlength(255)->help('多个关键字请用英文逗号隔开');
+                    $form->text('keywords', $fields['keywords']['comment'] ?: '关键字')
+                        ->readonly($isReference)
+                        ->maxlength(255)
+                        ->help($fields['keywords']['help'] ?: '多个关键字请用英文逗号隔开')
+                        ->required(strstr($fields['keywords']['rules'], 'required'));
                 }
-                if (in_array('keywords', $fieldsInfo['field_names'])) {
-                    $form->textarea('description', '摘要')->readonly($isReference)->maxlength(255)->help('留空则自动从内容中提取');
+                if (in_array('description', $fieldsInfo['field_names'])) {
+                    $form->textarea('description', $fields['description']['comment'] ?: '摘要')
+                        ->readonly($isReference)
+                        ->maxlength(255)
+                        ->help($fields['description']['help'] ?: '留空则自动从内容中提取')
+                        ->required(strstr($fields['description']['rules'], 'required'));
                 }
+
+                foreach ($fields as $field) {
+                    if ($field['is_custom'] == 1 && $field['position'] == 'main_left') {
+                        $displayer = $field['displayer_type'];
+                        $form->$displayer($field['name'], $field['comment'])
+                            ->readonly($isReference)
+                            ->help($field['help'])
+                            ->required(strstr($field['rules'], 'required'));
+                    }
+                }
+
+                unset($field);
+
                 if (in_array('attachments', $fieldsInfo['field_names']) && in_array('attachments', $fieldsInfo['main_left_fields'])) {
-                    $form->files('attachments', $fields['attachments']['comment'] ?? '附件')->help($fields['attachments']['help'] ?? '')->limit(20)->readonly($isReference);
+                    $displayer = $fields['attachments']['displayer_type'];
+                    $f = $form->$displayer('attachments', $fields['attachments']['comment'] ?: '附件')
+                        ->readonly($isReference)
+                        ->help($fields['attachments']['help'])
+                        ->required(strstr($fields['attachments']['rules'], 'required'));
+
+                    if (in_array($displayer, ['files', 'images'])) {
+                        $f->limit(20);
+                    }
+                    if (in_array($displayer, ['image', 'images'])) {
+                        $f->bigSize();
+                    }
                 }
                 if (in_array('content', $fieldsInfo['field_names'])) {
                     $editor = 'editor';
@@ -357,7 +393,7 @@ class Cmscontent extends Controller
                         $form->raw('content_html', '引用内容')->to('<div>复制于<label class="label label-default">@{reference_id}</label>，内容只读，去<a title="点击去编辑" href="' . url('edit', ['id' => $data['reference_id']]) . '">[编辑]</a></div>' . $data['content']);
                         $form->hidden('content')->value('@' . $data['reference_id']);
                     } else {
-                        $e = $form->$editor('content', $fields['content']['comment'] ?? '内容')->help($fields['content']['help'] ?? '');
+                        $e = $form->$editor('content', $fields['content']['comment'] ?: '内容')->help($fields['content']['help']);
                         if ($editor == 'textarea') {
                             $e->rows(10);
                         }
@@ -372,25 +408,72 @@ class Cmscontent extends Controller
             $fields = $fieldsInfo['fields'];
 
             if (in_array('logo', $fieldsInfo['field_names'])) {
-                $form->image('logo', $fields['logo']['comment'] ?? '封面图')->help($fields['logo']['help'] ?? '')->mediumSize()->readonly($isReference);
+                $form->image('logo', $fields['logo']['comment'] ?: '封面图')
+                    ->mediumSize()
+                    ->readonly($isReference)
+                    ->help($fields['logo']['help'])
+                    ->required(strstr($fields['logo']['rules'], 'required'));
             }
             if (in_array('author', $fieldsInfo['field_names'])) {
-                $form->text('author', $fields['author']['comment'] ?? '作者', 6)->help($fields['author']['help'] ?? '')->readonly($isReference)->maxlength(32)->default($admin ? $admin['name'] : '');
+                $form->text('author', $fields['author']['comment'] ?: '作者', 6)
+                    ->readonly($isReference)
+                    ->help($fields['author']['help'])
+                    ->maxlength(32)
+                    ->default($admin ? $admin['name'] : '')
+                    ->required(strstr($fields['author']['rules'], 'required'));
             }
             if (in_array('source', $fieldsInfo['field_names'])) {
-                $form->text('source', $fields['source']['comment'] ?? '来源', 6)->help($fields['source']['help'] ?? '')->readonly($isReference)->maxlength(32)->default($admin && $admin['group'] ? $admin['group']['name'] : '');
+                $form->text('source', $fields['source']['comment'] ?: '来源', 6)
+                    ->maxlength(32)
+                    ->readonly($isReference)
+                    ->help($fields['source']['help'])
+                    ->default($admin && $admin['group'] ? $admin['group']['name'] : '')
+                    ->required(strstr($fields['source']['rules'], 'required'));
             }
+            foreach ($fields as $field) {
+                if ($field['is_custom'] == 1 && $field['position'] == 'main_right') {
+                    $displayer = $field['displayer_type'];
+                    $form->$displayer($field['name'], $field['comment'])
+                        ->readonly($isReference)
+                        ->help($field['help'])
+                        ->required(strstr($field['rules'], 'required'));
+                }
+            }
+
+            unset($field);
+
             if (in_array('attachments', $fieldsInfo['field_names']) && in_array('attachments', $fieldsInfo['main_right_fields'])) {
-                $form->files('attachments', $fields['attachments']['comment'] ?? '附件')->help($fields['attachments']['help'] ?? '')->limit(20)->readonly($isReference);
+                $displayer = $fields['attachments']['displayer_type'];
+                $f = $form->$displayer('attachments', $fields['attachments']['comment'] ?: '附件')
+                    ->readonly($isReference)
+                    ->help($fields['attachments']['help'])
+                    ->required(strstr($fields['attachments']['rules'], 'required'));
+
+                if (in_array($displayer, ['files', 'images'])) {
+                    $f->limit(20);
+                }
+                if (in_array($displayer, ['image', 'images'])) {
+                    $f->bigSize();
+                }
             }
             if (in_array('is_show', $fieldsInfo['field_names'])) {
-                $form->radio('is_show', $fields['is_show']['comment'] ?? '显示', 4)->help($fields['is_show']['help'] ?? '')->options([1 => '是', 0 => '否'])->default(9)->blockStyle()->getWrapper()->addClass('hidden');
+                $form->radio('is_show', $fields['is_show']['comment'] ?: '显示', 4)
+                    ->help($fields['is_show']['help'])
+                    ->options([1 => '是', 0 => '否'])
+                    ->default(0)
+                    ->blockStyle();
             }
             if (in_array('click', $fieldsInfo['field_names'])) {
-                $form->number('click', $fields['click']['comment'] ?? '点击量', 4)->help($fields['click']['help'] ?? '')->default(0);
+                $form->number('click', $fields['click']['comment'] ?: '点击量', 4)
+                    ->help($fields['click']['help'])
+                    ->default(0)
+                    ->required(strstr($fields['click']['rules'], 'required'));
             }
             if (in_array('sort', $fieldsInfo['field_names'])) {
-                $form->number('sort', $fields['sort']['comment'] ?? '排序', 4)->help($fields['sort']['help'] ?? '')->default(0);
+                $form->number('sort', $fields['sort']['comment'] ?: '排序', 4)
+                    ->help($fields['sort']['help'])
+                    ->default(0)
+                    ->required(strstr($fields['sort']['rules'], 'required'));
             }
             if (
                 in_array('is_recommend', $fieldsInfo['field_names'])
@@ -399,21 +482,24 @@ class Cmscontent extends Controller
             ) {
                 $attr = [];
                 if (in_array('is_recommend', $fieldsInfo['field_names'])) {
-                    $attr['is_recommend'] = $fields['is_recommend']['comment'] ?? '推荐';
+                    $attr['is_recommend'] = $fields['is_recommend']['comment'] ?: '推荐';
                 }
                 if (in_array('is_top', $fieldsInfo['field_names'])) {
-                    $attr['is_top'] = $fields['is_top']['comment'] ?? '置顶';
+                    $attr['is_top'] = $fields['is_top']['comment'] ?: '置顶';
                 }
                 if (in_array('is_hot', $fieldsInfo['field_names'])) {
-                    $attr['is_hot'] = $fields['is_hot']['comment'] ?? '热门';
+                    $attr['is_hot'] = $fields['is_hot']['comment'] ?: '热门';
                 }
                 $form->checkbox('attr', '属性')->options($attr)
                     ->blockStyle()
                     ->help('推荐：优先在首页显示；置顶：栏目页优先显示；热门：排序无影响，可以在样式上突出显示。');
             }
 
-            if (in_array('sort', $fieldsInfo['field_names'])) {
-                $form->datetime('publish_time', $fields['is_hot']['comment'] ?? '发布时间', 4)->required()->default(date('Y-m-d H:i:s'));
+            if (in_array('publish_time', $fieldsInfo['field_names'])) {
+                $form->datetime('publish_time', $fields['publish_time']['comment'] ?: '发布时间', 4)
+                    ->help($fields['publish_time']['help'])
+                    ->required()
+                    ->default(date('Y-m-d H:i:s'));
             }
             if ($isEdit) {
                 $form->show('create_time', '添加时间', 4);
@@ -423,18 +509,47 @@ class Cmscontent extends Controller
 
         if (count($fieldsInfo['extend_fields']) > 0) {
             $form->tab('扩展信息');
+            $fields = $fieldsInfo['fields'];
+
             if (in_array('link', $fieldsInfo['field_names'])) {
-                $form->text('link', $fields['sort']['comment'] ?? '跳转链接')->help($fields['sort']['help'] ?? '设置后覆盖默认的页面地址')->readonly($isReference);
+                $form->text('link', $fields['sort']['comment'] ?: '跳转链接')
+                    ->help($fields['sort']['help'] ?? '设置后覆盖默认的页面地址')
+                    ->readonly($isReference);
             }
             if (in_array('mention_ids', $fieldsInfo['field_names'])) {
-                $form->multipleSelect('mention_ids', $fields['sort']['comment'] ?? '关联内容')->help($fields['mention_ids']['help'] ?? '')->dataUrl(url('/admin/cmscontent/selectPage'), '[{id}]{title}({channel.name})');
+                $form->multipleSelect('mention_ids', $fields['sort']['comment'] ?: '关联内容')
+                    ->dataUrl(url('/admin/cmscontent/selectPage'), '[{id}]{title}({channel.name})')
+                    ->help($fields['mention_ids']['help'])
+                    ->required(strstr($fields['mention_ids']['rules'], 'required'));
             }
+            foreach ($fields as $field) {
+                if ($field['is_custom'] == 1 && $field['position'] == 'extend') {
+                    $displayer = $field['displayer_type'];
+                    $form->$displayer($field['name'], $field['comment'])
+                        ->readonly($isReference)
+                        ->help($field['help'])
+                        ->required(strstr($field['rules'], 'required'));
+                }
+            }
+
+            unset($field);
             if (
                 in_array('attachments', $fieldsInfo['field_names'])
                 && !in_array('attachments', $fieldsInfo['main_left_fields'])
                 && !in_array('attachments', $fieldsInfo['main_right_fields'])
             ) {
-                $form->files('attachments', $fieldsInfo['fields']['attachments']['comment'] ?? '附件')->help($fieldsInfo['fields']['attachments']['help'] ?? '')->limit(20)->readonly($isReference);
+                $displayer = $fields['attachments']['displayer_type'];
+                $f = $form->$displayer('attachments', $fields['attachments']['comment'] ?: '附件')
+                    ->readonly($isReference)
+                    ->help($fields['attachments']['help'])
+                    ->required(strstr($fields['attachments']['rules'], 'required'));
+
+                if (in_array($displayer, ['files', 'images'])) {
+                    $f->limit(20);
+                }
+                if (in_array($displayer, ['image', 'images'])) {
+                    $f->bigSize();
+                }
             }
         }
     }
@@ -453,6 +568,7 @@ class Cmscontent extends Controller
         $modelExtendFieldNames = model\CmsContentModelField::where(['model_id' => $model_id, 'position' => 'extend'])->cache('cms_content_model_fields_extend_' . $model_id)->column('name');
 
         $allFields = [];
+
         array_walk($modelFields, function ($item, $key) use (&$allFields) {
             $allFields[$item['name']] = $item;
         });
@@ -503,28 +619,18 @@ class Cmscontent extends Controller
      */
     protected function save($id = 0)
     {
-        $data = request()->only([
+        $model_id = input('post.model_id/d', 0);
+
+        $modelFields = model\CmsContentModelField::where('model_id', $model_id)->cache('cms_content_model_fields_' . $model_id)->select()->toArray();
+        $modelFieldNames = array_column($modelFields, 'name');
+
+        $data = request()->only(array_merge([
             'id',
             'title',
             'channel_id',
-            'model_id',
-            'tags',
-            'keywords',
-            'description',
-            'logo',
-            'link',
-            'attachments',
-            'author',
-            'source',
-            'publish_time',
-            'sort',
-            'is_show',
-            'content',
-            'attr',
-            'click',
             'reference_id',
-            'mention_ids',
-        ], 'post');
+            'model_id',
+        ], $modelFieldNames), 'post');
 
         $result = $this->validate($data, [
             'title|标题' => 'require',
@@ -547,9 +653,16 @@ class Cmscontent extends Controller
         }
 
         if ($data['channel_id']) {
-            $parent = $this->channelModel->find($data['channel_id']);
-            if ($parent && $parent['type'] == 2) {
-                $this->error($parent['name'] . '是目录，不允许存放内容，请重新选择');
+            $channel = $this->channelModel->find($data['channel_id']);
+            if (!$channel) {
+                $this->error('栏目不存在');
+            }
+            if ($channel['type'] == 2) {
+                $this->error('所选栏目[' . $channel['name'] . ']是目录，不允许存放内容，请重新选择');
+            }
+            if (!in_array($data['model_id'], explode(',', $channel['model_ids']))) {
+                $model = CmsContentModel::find($data['model_id']);
+                $this->error('所选栏目[' . $channel['name'] . ']不支持存放[' . ($model ? $model['name'] : '未知') . ']内容，请重新选择');
             }
         }
 

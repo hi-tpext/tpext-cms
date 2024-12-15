@@ -8,6 +8,7 @@ use tpext\builder\traits\actions;
 use tpext\cms\common\taglib\Processer;
 use tpext\cms\common\model\CmsTemplate;
 use tpext\cms\common\model\CmsContentPage;
+use tpext\cms\common\model\CmsContentModel;
 use tpext\cms\common\model\CmsTemplateHtml;
 use tpext\cms\common\model\CmsChannel as ChannelModel;
 
@@ -58,9 +59,10 @@ class Cmschannel extends Controller
         $table->image('logo', '封面图')->thumbSize(50, 50);
         $table->show('link', '链接')->default('暂无');
         $table->text('name', '名称')->autoPost('', true);
-        $table->switchBtn('is_navi', '首页导航')->autoPost();
+        $table->switchBtn('is_navi', '顶部导航')->autoPost();
         $table->switchBtn('is_show', '显示')->autoPost();
         $table->match('type', '类型')->options([1 => '不限', 2 => '目录', 3 => '分类'])->mapClassGroup([[1, 'success'], [2, 'info'], [3, 'warning']])->getWrapper()->addStyle('width:80px');
+        $table->matches('model_ids', '内容模型')->optionsData(CmsContentModel::select(), 'name');
         $table->text('sort', '排序')->autoPost('', true)->getWrapper()->addStyle('width:60px');
         $table->text('pagesize', '分页大小')->autoPost()->getWrapper()->addStyle('width:60px');
         $table->show('order_by', '内容排序方式');
@@ -157,10 +159,11 @@ class Cmschannel extends Controller
         $form->text('name', '名称')->required();
         $form->select('parent_id', '上级')->required()->options($tree)->default(input('parend_id'));
         $form->image('logo', '封面图');
-        $form->radio('type', '类型')->default(1)->options([1 => '不限', 2 => '目录', 3 => '分类'])->required()->help('目录有下级，不能存文章。分类无下级，只能存文章');
-        // $form->select('channel_template_id', '栏目模板')->dataUrl(url('/admin/cmstemplate/selectpage'));
-        // $form->select('content_template_id', '内容模板')->dataUrl(url('/admin/cmstemplate/selectpage'));
-        $form->switchBtn('is_navi', '导航')->default(1);
+        $form->radio('type', '类型')->default(1)->options([1 => '不限', 2 => '目录', 3 => '分类'])
+            ->required()->help('目录有下级，不能存文章。分类无下级，只能存文章')->blockStyle();
+        $form->checkbox('model_ids', '内容模型')->optionsData(CmsContentModel::select(), 'name')
+            ->default(1)->required()->help('可选多个模型，此栏目下只能存属于这些模型的内容')->blockStyle()->checkallBtn();
+        $form->switchBtn('is_navi', '顶部导航')->default(1);
         $form->switchBtn('is_show', '显示')->default(1);
         $form->number('sort', '排序')->default(0)->required();
 
@@ -259,6 +262,7 @@ class Cmschannel extends Controller
             'id',
             'name',
             'parent_id',
+            'model_ids',
             'logo',
             'pagesize',
             'link',

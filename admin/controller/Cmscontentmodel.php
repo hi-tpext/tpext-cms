@@ -242,6 +242,8 @@ class Cmscontentmodel extends Controller
             $this->error(__blang('bilder_save_failed'));
         }
 
+        $modelFieldNames = CmsContentField::column('name');
+
         foreach ($useFields as $name => $field) {
             if ($field['is_use'] == 0) {
                 continue;
@@ -261,6 +263,7 @@ class Cmscontentmodel extends Controller
                 'displayer_type' => $field['displayer_type'] ?? 'auto',
                 'position' => $field['position'] ?? 'auto',
                 'rules' => isset($field['rules']) ? implode(',', $field['rules']) : '',
+                'is_custom' => in_array($name, $modelFieldNames) ? 1 : 0,
             ]);
         }
 

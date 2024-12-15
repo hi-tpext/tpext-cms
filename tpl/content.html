@@ -16,10 +16,10 @@
     <div class="content">{$content.content|raw}</div>
 
     <!--如果有附件-->
-    {if $content.attachments}
+    {if $content.attachmentsArray}
     <div class="content-attachments">
         <span>附件：</span>
-        {foreach name="$content.attachments" item="attachment"}
+        {foreach name="$content.attachmentsArray" item="attachment"}
         {if preg_match('/\.(jpg|jpeg|png|gif|bmp)$/i', $attachment)}
         <img src="{$attachment}" alt="{$attachment}">
         {else}
