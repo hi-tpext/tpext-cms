@@ -269,6 +269,7 @@ class Render
     var __content_click__ = document.getElementById("__content_click__");
     var xhr = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("");
     xhr.open("GET", "{$url}", true);
+    xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
     xhr.onreadystatechange = function () {
         if (xhr.readyState == 4 && xhr.status == 200) {
             if(__content_click__) {

@@ -139,7 +139,7 @@ class CmsTemplate extends Model
             }
         }
         catch (\Throwable $e) {
-            trace('initPath error:'. $e->getMessage(), 'error');
+            trace('initPath error:'. $e->__tostring(), 'error');
         }
     }
 

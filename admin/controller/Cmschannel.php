@@ -94,7 +94,7 @@ class Cmschannel extends Controller
                 ]
             ]);
 
-        $template = CmsTemplate::find();
+        $template = CmsTemplate::where('id', 1)->find();
         Processer::setPath($template['prefix']);
 
         foreach ($data as &$d) {
