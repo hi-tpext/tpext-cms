@@ -80,61 +80,66 @@ class CmsTemplate extends Model
 
     public static function initPath($view_path)
     {
-        $rootPath = Module::getInstance()->getRoot();
-        $newTpl = self::getNewTpl();
+        try {
+            $rootPath = Module::getInstance()->getRoot();
+            $newTpl = self::getNewTpl();
 
-        if (!is_dir($view_path . '/channel')) {
-            if (mkdir($view_path . '/channel', 0775, true)) {
-                $text = self::getTemplatePart('tpl/channel.html');
-                file_put_contents($view_path . '/channel/default.html', str_replace('<!--__content__-->', $text, $newTpl));
+            if (!is_dir($view_path . '/channel')) {
+                if (mkdir($view_path . '/channel', 0775, true)) {
+                    $text = self::getTemplatePart('tpl/channel.html');
+                    file_put_contents($view_path . '/channel/default.html', str_replace('<!--__content__-->', $text, $newTpl));
+                }
+            }
+            if (!is_dir($view_path . '/content')) {
+                if (mkdir($view_path . '/content', 0775, true)) {
+                    $text = self::getTemplatePart('tpl/content.html');
+                    file_put_contents($view_path . '/content/default.html', str_replace('<!--__content__-->', $text, $newTpl));
+                }
+            }
+            if (!is_dir($view_path . '/static')) {
+                Tool::copyDir($rootPath . 'tpl/css', $view_path . '/static/css');
+                Tool::copyDir($rootPath . 'tpl/js', $view_path . '/static/js');
+                Tool::copyDir($rootPath . 'tpl/images', $view_path . '/static/images');
+            }
+            if (!is_dir($view_path . '/common')) {
+                if (mkdir($view_path . '/common', 0775, true)) {
+                    file_put_contents($view_path . '/common/header.html', file_get_contents($rootPath . 'tpl/header.html'));
+                    file_put_contents($view_path . '/common/navi.html', file_get_contents($rootPath . 'tpl/navi.html'));
+                    file_put_contents($view_path . '/common/footer.html', file_get_contents($rootPath . 'tpl/footer.html'));
+                    file_put_contents($view_path . '/common/layout.html', file_get_contents($rootPath . 'tpl/layout.html'));
+                }
+            }
+            if (!is_dir($view_path . '/dynamic')) {
+                if (mkdir($view_path . '/dynamic', 0775, true)) {
+                    $text = self::getTemplatePart('tpl/tag.html');
+                    file_put_contents($view_path . '/dynamic/tag.html', str_replace('<!--__content__-->', $text, $newTpl));
+
+                    $text = self::getTemplatePart('tpl/search.html');
+                    file_put_contents($view_path . '/dynamic/search.html', str_replace('<!--__content__-->', $text, $newTpl));
+
+                    $text = self::getTemplatePart('tpl/demo.html');
+                    file_put_contents($view_path . '/dynamic/demo.html', str_replace('<!--__content__-->', $text, $newTpl));
+                }
+            }
+            if (!is_file($view_path . '/index.html')) {
+                $text = self::getTemplatePart('tpl/index.html');
+                $sliderScript = self::getTemplatePart('tpl/slider.html');
+                $sliderCss = '<link href="./static/css/slider.css" rel="stylesheet" />';
+
+                file_put_contents($view_path . '/index.html', str_replace(['<!--__content__-->', '<!--__script__-->', '<!--__style__-->'], [$text, $sliderScript, $sliderCss], $newTpl));
+
+                if (!is_file($view_path . '/about.html')) {
+                    $text = self::getTemplatePart('tpl/single.html');
+                    file_put_contents($view_path . '/about.html', str_replace('<!--__content__-->', $text, $newTpl));
+                }
+                if (!is_file($view_path . '/contact.html')) {
+                    $text = self::getTemplatePart('tpl/single.html') . PHP_EOL . self::getTemplatePart('tpl/map.html');
+                    file_put_contents($view_path . '/contact.html', str_replace('<!--__content__-->', $text, $newTpl));
+                }
             }
         }
-        if (!is_dir($view_path . '/content')) {
-            if (mkdir($view_path . '/content', 0775, true)) {
-                $text = self::getTemplatePart('tpl/content.html');
-                file_put_contents($view_path . '/content/default.html', str_replace('<!--__content__-->', $text, $newTpl));
-            }
-        }
-        if (!is_dir($view_path . '/static')) {
-            Tool::copyDir($rootPath . 'tpl/css', $view_path . '/static/css');
-            Tool::copyDir($rootPath . 'tpl/js', $view_path . '/static/js');
-            Tool::copyDir($rootPath . 'tpl/images', $view_path . '/static/images');
-        }
-        if (!is_dir($view_path . '/common')) {
-            if (mkdir($view_path . '/common', 0775, true)) {
-                file_put_contents($view_path . '/common/header.html', file_get_contents($rootPath . 'tpl/header.html'));
-                file_put_contents($view_path . '/common/navi.html', file_get_contents($rootPath . 'tpl/navi.html'));
-                file_put_contents($view_path . '/common/footer.html', file_get_contents($rootPath . 'tpl/footer.html'));
-                file_put_contents($view_path . '/common/layout.html', file_get_contents($rootPath . 'tpl/layout.html'));
-            }
-        }
-        if (!is_dir($view_path . '/dynamic')) {
-            if (mkdir($view_path . '/dynamic', 0775, true)) {
-                $text = self::getTemplatePart('tpl/tag.html');
-                file_put_contents($view_path . '/dynamic/tag.html', str_replace('<!--__content__-->', $text, $newTpl));
-
-                $text = self::getTemplatePart('tpl/search.html');
-                file_put_contents($view_path . '/dynamic/search.html', str_replace('<!--__content__-->', $text, $newTpl));
-
-                $text = self::getTemplatePart('tpl/demo.html');
-                file_put_contents($view_path . '/dynamic/demo.html', str_replace('<!--__content__-->', $text, $newTpl));
-            }
-        }
-        if (!is_file($view_path . '/index.html')) {
-            $text = self::getTemplatePart('tpl/index.html');
-            $sliderScript = self::getTemplatePart('tpl/slider.html');
-            $sliderCss = '<link href="./static/css/slider.css" rel="stylesheet" />';
-
-            file_put_contents($view_path . '/index.html', str_replace(['<!--__content__-->', '<!--__script__-->', '<!--__style__-->'], [$text, $sliderScript, $sliderCss], $newTpl));
-
-            if (!is_file($view_path . '/about.html')) {
-                $text = self::getTemplatePart('tpl/single.html');
-                file_put_contents($view_path . '/about.html', str_replace('<!--__content__-->', $text, $newTpl));
-            }
-            if (!is_file($view_path . '/contact.html')) {
-                $text = self::getTemplatePart('tpl/single.html') . PHP_EOL . self::getTemplatePart('tpl/map.html');
-                file_put_contents($view_path . '/contact.html', str_replace('<!--__content__-->', $text, $newTpl));
-            }
+        catch (\Throwable $e) {
+            trace('initPath error:'. $e->getMessage(), 'error');
         }
     }
 

@@ -4,7 +4,6 @@ namespace tpext\cms\admin\controller;
 
 use tpext\think\App;
 use think\Controller;
-use tpext\cms\common\Module;
 use tpext\builder\common\Builder;
 use tpext\builder\traits\actions;
 use tpext\cms\common\model\CmsChannel;
@@ -97,7 +96,7 @@ class Cmstemplatehtml extends Controller
             }
             $view_path = App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'];
             CmsTemplate::initPath($view_path);
-            TemplateHtmlModel::scanPageFiles($template_id, App::getRootPath() . 'theme/' . $template['view_path']);
+            TemplateHtmlModel::scanPageFiles($template_id, $view_path);
         }
     }
 
@@ -367,7 +366,7 @@ class Cmstemplatehtml extends Controller
             $newFilePath = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $path);
 
             if (!is_file($newFilePath)) {
-                $newRes = file_put_contents($newFilePath, str_replace('<!--__content__-->', $text, $newTpl));
+                $newRes = @file_put_contents($newFilePath, str_replace('<!--__content__-->', $text, $newTpl));
                 if (!$newRes) {
                     $this->error('创建新文件失败');
                 }
@@ -395,7 +394,7 @@ class Cmstemplatehtml extends Controller
 
         $file_path = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $page['path']);
 
-        $res = file_put_contents($file_path, $data['content']);
+        $res = @file_put_contents($file_path, $data['content']);
 
         if (!$res) {
             $this->error('保存失败');

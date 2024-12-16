@@ -12,6 +12,7 @@
 namespace tpext\cms\common\model;
 
 use think\Model;
+use tpext\common\ExtLoader;
 
 class CmsContentField extends Model
 {
@@ -53,4 +54,19 @@ class CmsContentField extends Model
         'icon' => '图标选择器',
         'none' => '不需要录入'
     ];
+
+    protected static function init()
+    {
+        if (method_exists(static::class, 'event')) {
+            self::afterDelete(function ($data) {
+                return self::onAfterDelete($data);
+            });
+        }
+    }
+
+    public static function onAfterDelete($data)
+    {
+        CmsContentModelField::where('name', $data['name'])->delete();
+        ExtLoader::trigger('cms_content_field_on_after_delete', $data);
+    }
 }

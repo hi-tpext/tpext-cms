@@ -22,6 +22,7 @@ class Cmscontentmodel extends Controller
     use actions\HasAdd;
     use actions\HasEdit;
     use actions\HasView;
+    use actions\HasDelete;
 
     /**
      * Undocumented variable
@@ -134,6 +135,7 @@ class Cmscontentmodel extends Controller
                     $tFeield['position'] = $mField['position'];
                     $tFeield['comment'] = $mField['comment'];
                     $tFeield['help'] = $mField['help'];
+                    $tFeield['rules'] = $mField['rules'];
                     break;
                 }
             }
@@ -142,12 +144,16 @@ class Cmscontentmodel extends Controller
                 $tFeield['protected'] = 1;
                 $tFeield['displayer_type'] = 'auto';
                 $tFeield['position'] = 'auto';
+                if (in_array($tFeield['name'], ['link', 'mention_ids'])) {
+                    $tFeield['position'] = 'extend';
+                } else if (in_array($tFeield['name'], ['tags', 'keywords', 'description'])) {
+                    $tFeield['position'] = 'main_left';
+                } else {
+                    $tFeield['position'] = 'main_right';
+                }
             }
             if (!isset($tFeield['position']) && in_array($tFeield['name'], ['content', 'attachments'])) {
                 $tFeield['position'] = $tFeield['name'] == 'content' ? 'main_left' : 'extend';
-            }
-            if (in_array($tFeield['name'], ['title', 'channel_id'])) {
-                $tFeield['is_use'] = 1;
             }
             if (!isset($tFeield['displayer_type'])) {
                 foreach ($allFields as $aField) {
@@ -183,10 +189,8 @@ class Cmscontentmodel extends Controller
             $form->text('help', '帮助信息');
             $form->checkbox('rules', '验证规则')->options(['required' => '必填']);
         })->canNotAddOrDelete()->dataWithId($tableFields, 'name')->size(12, 12)
-            ->help('系统字段只可选择使用或不使用，不可修改输入类型和位置。'
-                . '标题和所属栏目必须项，不在上面列出。'
-                . '<br>字段说明和帮助信息可修改，不同模型不同的用途。'
-                . '帮助信息为输入区域下放的提示信息。');
+            ->help('系统字段只可选择使用或不使用，不可修改输入类型和位置。标题和所属栏目必须项，不在上面列出。'
+                . '字段说明和帮助信息可修改，同一字段在不同模型可以有不同的用途。帮助信息为输入区域下放的提示信息。');
 
         if ($isEdit) {
             $form->hidden('id');
@@ -243,6 +247,7 @@ class Cmscontentmodel extends Controller
         }
 
         $modelFieldNames = CmsContentField::column('name');
+        $protectedFields = $this->getProtectedFields();
 
         foreach ($useFields as $name => $field) {
             if ($field['is_use'] == 0) {
@@ -254,6 +259,15 @@ class Cmscontentmodel extends Controller
             }
             if ($name == 'attachments' && $field['position'] == 'auto') {
                 $field['position'] = 'extend';
+            }
+            if (in_array($name, $protectedFields)) {
+                if (in_array($name, ['link', 'mention_ids'])) {
+                    $field['position'] = 'extend';
+                } else if (in_array($name, ['tags', 'keywords', 'description'])) {
+                    $field['position'] = 'main_left';
+                } else {
+                    $field['position'] = 'main_right';
+                }
             }
             $exist->save([
                 'model_id' => $id,

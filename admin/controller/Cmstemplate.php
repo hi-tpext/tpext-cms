@@ -6,8 +6,10 @@ use tpext\think\App;
 use think\Controller;
 use tpext\common\Tool;
 use think\facade\Cache;
+use tpext\cms\common\Module;
 use tpext\builder\traits\actions;
 use tpext\cms\common\RouteBuilder;
+use tpext\cms\common\TemplaBuilder;
 use tpext\cms\common\model\CmsTemplate as TemplateModel;
 
 /**
@@ -134,13 +136,27 @@ class Cmstemplate extends Controller
     public function clearTemp()
     {
         $tags = ['cms_html', 'cms_page', 'cms_template', 'cms_channel', 'cms_content', 'cms_position', 'cms_banner', 'cms_tag'];
-        
+
+        $msgs = ['已清除数据缓存'];
         foreach ($tags as $tag) {
             Cache::clear($tag);
         }
 
         Tool::deleteDir(App::getRuntimePath() . 'temp' . DIRECTORY_SEPARATOR . 'theme');
-        return $this->builder()->layer()->closeRefresh(1, '已清除缓存目录runtime/temp/theme');
+
+        $msgs[] = '已清模板除缓存目录runtime/temp/theme';
+
+        $make_static = Module::getInstance()->config('make_static', 1);
+
+        if ($make_static == 0) {
+            $builder = new TemplaBuilder;
+            $templates = $this->dataModel->select();
+            foreach ($templates as $template) {
+                $builder->clearHtml($template);
+                $msgs[] = '已清除' . $template['prefix'] . '路径下的channel、content、index的html';
+            }
+        }
+        return $this->builder()->layer()->closeRefresh(1, implode('、', $msgs));
     }
 
     /**

@@ -124,6 +124,8 @@ p {
 .main-content .info span {
   padding: 5px 10px;
   line-height: 36px;
+  display: inline-block;
+  min-width: 100px;
 }
 
 .main-content .content {

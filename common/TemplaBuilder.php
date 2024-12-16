@@ -12,12 +12,12 @@
 namespace tpext\cms\common;
 
 use tpext\think\App;
+use tpext\common\Tool;
 use tpext\cms\common\model\CmsChannel;
 use tpext\cms\common\model\CmsContent;
-use tpext\cms\common\model\CmsContentPage;
-use tpext\cms\common\model\CmsTemplateHtml;
 use tpext\cms\common\taglib\Processer;
 use tpext\cms\common\model\CmsTemplate;
+use tpext\cms\common\model\CmsTemplateHtml;
 
 class TemplaBuilder
 {
@@ -242,7 +242,7 @@ class TemplaBuilder
             mkdir($outPath, 0755, true);
         }
 
-        $this->fileWrite($outPath . "index.html", $output);
+        $this->fileWrite($outPath . 'index.html', $output);
         return ['code' => 1, 'msg' => '[首页]生成成功'];
     }
 
@@ -268,12 +268,42 @@ class TemplaBuilder
      * @param array|CmsTemplate $template
      * @return array
      */
-    protected function copyStatic($template)
+    public function copyStatic($template)
     {
         $render = new Render();
         $res = $render->copyStatic($template);
 
         return $res;
+    }
+
+    /**
+     * 清除已生成的html文件
+     * @param array $template
+     * @return void
+     */
+    public function clearHtml($template)
+    {
+        $outPath = App::getPublicPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $template['prefix']);
+        //清除首页
+        if (is_file($outPath . 'index.html')) {
+            @unlink($outPath . 'index.html');
+        }
+        //清除栏目页
+        if (is_dir($outPath . 'channel')) {
+            Tool::deleteDir($outPath . 'channel');
+        }
+        //清除内容页
+        if (is_dir($outPath . 'content')) {
+            Tool::deleteDir($outPath . 'content');
+        }
+        //清除单页
+        $singlePages = CmsTemplateHtml::where('template_id', $template['id'])->where('type', 'single')->select();
+        foreach ($singlePages as $page) {
+            $file = preg_replace('/theme\/[\w\-]+?\/([\w\-]+?.html)$/i', '$1', $page['path']);
+            if (is_file($outPath . $file)) {
+                @unlink($outPath . $file);
+            }
+        }
     }
 
     /**

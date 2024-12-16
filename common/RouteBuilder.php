@@ -50,7 +50,12 @@ class RouteBuilder
         $channelRoutes = $this->makeChannelRoute($channelPathArr);
         $contentRoutes = $this->makeContentRoute($contentPathArr);
 
-        $this->witeToFile(array_merge($indexRoutes, $channelRoutes, $contentRoutes), $focusWrite);
+        try {
+            $this->witeToFile(array_merge($indexRoutes, $channelRoutes, $contentRoutes), $focusWrite);
+        } catch (\Throwable $e) {
+            trace('write route error:' . $e->getMessage(), 'error');
+            return;
+        }
     }
 
     /**

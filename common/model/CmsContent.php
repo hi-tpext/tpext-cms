@@ -77,13 +77,51 @@ class CmsContent extends Model
         if (!isset($data['id'])) {
             return;
         }
-        $id = $data['id'];
+
+        $arrayData = $data->toArray();
+
+        $detailData = [
+            'content' => '',
+            'attachments' => ''
+        ];
+
+        if (isset($arrayData['content'])) {
+            $detailData['content'] = $data->getData('content');
+        }
+        if (isset($arrayData['attachments'])) {
+            $detailData['attachments'] = $data->getData('attachments');
+        }
+
+        if (!empty($detailData)) {
+            $detailData['main_id'] = $data['id'];
+        }
 
         $detail = new CmsContentDetail;
-        $detail->save([
-            'main_id' => $id,
-            'content' => !empty($data['reference_id']) ? '@' . $data['reference_id'] : $data->getData('content'),
-        ]);
+
+        if (isset($data['reference_id']) && $data['reference_id'] > 0) {
+            $detail->save([
+                'main_id' => $data['id'],
+                'content' => '@' . $data['reference_id'],
+                'attachments' => '@' . $data['reference_id']
+            ]);
+        } else {
+            $arrayData = $data->toArray();
+            $detailData = [
+                'content' => '',
+                'attachments' => ''
+            ];
+            if (isset($arrayData['content'])) {
+                $detailData['content'] = $data->getData('content');
+            }
+            if (isset($arrayData['attachments'])) {
+                $detailData['attachments'] = $data->getData('attachments');
+            }
+
+            if ($detailData['content'] || $detailData['attachments']) {
+                $detailData['main_id'] = $data['id'];
+                $detail->save($detailData);
+            }
+        }
 
         ExtLoader::trigger('cms_content_on_after_insert', $data);
     }
@@ -105,41 +143,40 @@ class CmsContent extends Model
             cache('cms_content_detail_' . $detail['id'], null);
         }
 
-        if (isset($data['reference_id'])) {
-            if ($data['reference_id'] > 0) {
-                $detail->save([
-                    'main_id' => $data['id'],
-                    'content' => '@' . $data['reference_id']
-                ]);
-            } else {
-                $arrayData = $data->toArray();
-                $detailData = [
-                    'content' => '',
-                    'attachments' => ''
-                ];
-                if (isset($arrayData['content'])) {
-                    $detailData['content'] = $data->getData('content');
-                }
-                if (isset($arrayData['attachments'])) {
-                    $detailData['attachments'] = $data->getData('attachments');
-                }
-
-                if (!empty($detailData)) {
-                    $detailData['main_id'] = $data['id'];
-                    $detail->save($detailData);
-                }
-
-                self::where('reference_id', $data['id'])
-                    ->update([
-                        'title' => $data['title'] ?? '',
-                        'keywords' => $data['keywords'] ?? '',
-                        'link' => $data['link'] ?? '',
-                        'description' => $data['description'] ?? '',
-                        'author' => $data['author'] ?? '',
-                        'source' => $data['source'] ?? '',
-                        'logo' => $data['logo'] ?? ''
-                    ]);
+        if (isset($data['reference_id']) && $data['reference_id'] > 0) {
+            $detail->save([
+                'main_id' => $data['id'],
+                'content' => '@' . $data['reference_id'],
+                'attachments' => '@' . $data['reference_id']
+            ]);
+        } else {
+            $arrayData = $data->toArray();
+            $detailData = [
+                'content' => '',
+                'attachments' => ''
+            ];
+            if (isset($arrayData['content'])) {
+                $detailData['content'] = $data->getData('content');
             }
+            if (isset($arrayData['attachments'])) {
+                $detailData['attachments'] = $data->getData('attachments');
+            }
+
+            if ($detailData['content'] || $detailData['attachments']) {
+                $detailData['main_id'] = $data['id'];
+                $detail->save($detailData);
+            }
+
+            self::where('reference_id', $data['id'])
+                ->update([
+                    'title' => $data['title'] ?? '',
+                    'keywords' => $data['keywords'] ?? '',
+                    'link' => $data['link'] ?? '',
+                    'description' => $data['description'] ?? '',
+                    'author' => $data['author'] ?? '',
+                    'source' => $data['source'] ?? '',
+                    'logo' => $data['logo'] ?? ''
+                ]);
         }
 
         ExtLoader::trigger('cms_content_on_after_update', $data);

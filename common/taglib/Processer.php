@@ -218,10 +218,7 @@ class Processer
             }
             $item['content'] = $detail ? $detail['content'] : '';
             $item['attachments'] = $detail ? $detail['attachments'] : '';
-            $item['attachmentsArray'] = [];
-            if ($item['attachments']) {
-                $item['attachmentsArray'] = array_filter(explode(',', $item['attachments']));
-            }
+            $item['attachments_array'] = static::getAttachments($item);
         } else if ($table == 'cms_banner') {
             $item['url'] = static::resolveWebPath($item['link']);
         } else if ($table == 'cms_tag') {
@@ -231,6 +228,54 @@ class Processer
         }
 
         return $item;
+    }
+
+    /**
+     * 提前处理附件
+     * @param array $item
+     * @return array
+     */
+    protected static function getAttachments($item)
+    {
+        $files = [];
+        if ($item['attachments']) {
+            $attachments_array = array_filter(explode(',', $item['attachments']));
+            $content_array = array_filter(explode("\n", strip_tags($item['content'])));
+            foreach ($attachments_array as $k => $v) {
+                $file = str_replace(['http://' . request()->host(), 'https://' . request()->host()], '', $v);
+                $fileSize = is_file('./' . ltrim($file, '/')) ? filesize('./' . ltrim($file, '/')) : 0;
+                if ($fileSize >= 1024 ** 2) {
+                    $fileSize = round($fileSize / (1024 ** 2), 2) . 'MB';
+                } else {
+                    $fileSize = round($fileSize / 1024, 2) . 'KB';
+                }
+                $files[$file] = [
+                    'file' => $file,
+                    'desc' => trim($content_array[$k] ?? $file),
+                    'size' => $fileSize,
+                ];
+            }
+        }
+        if (preg_match_all('/<a[^<>]*href=[\"\']([^<>\"\']+?\.(pdf|doc|docx|xls|xlsx|ppt|pptx|rar|zip|7z|tar|gz|bz2))[\"\'][^<>]*>(.+?)<\/a>/is', $item['content'], $mchs)) {
+            foreach ($mchs[1] as $k => $mch) {
+                $file = str_replace(['http://' . request()->host(), 'https://' . request()->host()], '', $mch);
+                if (isset($files[$file])) {
+                    continue;
+                }
+                $fileSize = is_file('./' . $mch) ? filesize('./' . $mch) : 0;
+                if ($fileSize >= 1024 ** 2) {
+                    $fileSize = round($fileSize / (1024 ** 2), 2) . 'MB';
+                } else {
+                    $fileSize = round($fileSize / 1024, 2) . 'KB';
+                }
+                $files[$file] = [
+                    'file' => $file,
+                    'desc' => trim(strip_tags($mchs[2][$k] ?? '')),
+                    'size' => $fileSize,
+                ];
+            }
+        }
+        return $files;
     }
 
     public static function getParents($table, $id, $idKey = 'id', $pidKey = 'parent_id')

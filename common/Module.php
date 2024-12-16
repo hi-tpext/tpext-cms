@@ -13,13 +13,15 @@ namespace tpext\cms\common;
 
 use tpext\think\App;
 use tpext\common\Tool;
+use think\facade\Cache;
 use tpext\cms\common\event;
 use tpext\common\Module as baseModule;
 use tpext\cms\common\model\CmsTemplate;
+use tpext\cms\common\model\CmsTemplateHtml;
 
 class Module extends baseModule
 {
-    protected $version = '1.0.1';
+    protected $version = '2.0.1';
 
     protected $name = 'tpext.cms';
 
@@ -125,8 +127,17 @@ class Module extends baseModule
             try {
                 CmsTemplate::initPath($view_path . 'theme/default');
                 CmsTemplate::initPath($view_path . 'theme/mobile');
+                CmsTemplateHtml::scanPageFiles(1, $view_path . 'theme/default');
+                CmsTemplateHtml::scanPageFiles(2, $view_path . 'theme/mobile');
+                Tool::deleteDir(App::getRuntimePath() . 'temp' . DIRECTORY_SEPARATOR . 'theme');
             } catch (\Throwable $e) {
                 trace($e->__toString());
+            }
+
+            $tags = ['cms_html', 'cms_page', 'cms_template', 'cms_channel', 'cms_content', 'cms_position', 'cms_banner', 'cms_tag'];
+
+            foreach ($tags as $tag) {
+                Cache::clear($tag);
             }
         }
 

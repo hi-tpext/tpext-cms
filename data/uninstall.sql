@@ -15,3 +15,9 @@ DROP TABLE IF EXISTS `__PREFIX__cms_template`;
 DROP TABLE IF EXISTS `__PREFIX__cms_content_page`;
 
 DROP TABLE IF EXISTS `__PREFIX__cms_template_html`;
+
+DROP TABLE IF EXISTS `__PREFIX__cms_content_model`;
+
+DROP TABLE IF EXISTS `__PREFIX__cms_content_field`;
+
+DROP TABLE IF EXISTS `__PREFIX__cms_content_model_field`;

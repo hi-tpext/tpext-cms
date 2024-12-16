@@ -11,9 +11,9 @@
 
 namespace tpext\cms\common\event;
 
+use tpext\think\App;
 use tpext\cms\common\model;
 use tpext\common\ExtLoader;
-use tpext\cms\common\RouteBuilder;
 use tpext\cms\common\TemplaBuilder;
 use tpext\cms\common\taglib\Processer;
 
@@ -44,13 +44,7 @@ class MakeStatic
         });
 
         ExtLoader::watch('cms_template_on_after_insert', function ($data) {
-            $this->templateChange($data);
-        });
-        ExtLoader::watch('cms_template_on_after_update', function ($data) {
-            $this->templateChange($data);
-        });
-        ExtLoader::watch('cms_template_on_after_delete', function ($data) {
-            $this->templateChange($data);
+            $this->templateNew($data);
         });
     }
 
@@ -99,10 +93,14 @@ class MakeStatic
      * @param mixed $data
      * @return void
      */
-    protected function templateChange($data)
+    protected function templateNew($data)
     {
-        $routeBuilder = new RouteBuilder;
-        $routeBuilder->builder(true);
-        trace('模板[' . $data['name'] . ']修改触路由生成', 'info');
+        $view_path = App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $data['view_path'];
+        model\CmsTemplate::initPath($view_path);
+        model\CmsTemplateHtml::scanPageFiles($data['id'], $view_path);
+        $builer = new TemplaBuilder;
+        $builer->copyStatic($data);
+
+        trace('模板[' . $data['name'] . ']触路由生成', 'info');
     }
 }

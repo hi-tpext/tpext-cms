@@ -127,7 +127,7 @@ class Cmscontent extends Controller
         $table = $this->table;
 
         $models = model\CmsContentModel::order('sort asc,id asc')->select();
-        $colors = ['primary', 'dark', 'info', 'success', 'warning', 'danger', 'default', 'pink'];
+        $colors = ['info', 'purple', 'dark', 'primary', 'success', 'warning', 'secondary', 'danger', 'yellow', 'pink', 'cyan'];
 
         $table->show('id', 'ID');
         $table->image('logo', '封面图')->thumbSize(60, 60);
@@ -136,7 +136,7 @@ class Cmscontent extends Controller
         if (count($models) > 1) {
             $classGroup = [];
             foreach ($models as $i => $model) {
-                $classGroup[] = [$model['id'], $colors[$i % 7], 'model_id'];
+                $classGroup[] = [$model['id'], $colors[$i % 11], 'model_id'];
             }
             $table->show('model_id', '模型', 1)->to('{model.name}')->mapClassGroup($classGroup);
         }
@@ -162,7 +162,7 @@ class Cmscontent extends Controller
             $table->getToolbar()->btnAdd(
                 url('add', ['model_id' => $model['id']]),
                 $model['name'],
-                'btn-' . $colors[$i % 7],
+                'btn-' . $colors[$i % 11],
                 'mdi-plus',
                 'data-layer-size="98%,98%" title="添加新的' . $model['name'] . '"'
             );
@@ -393,7 +393,9 @@ class Cmscontent extends Controller
                         $form->raw('content_html', '引用内容')->to('<div>复制于<label class="label label-default">@{reference_id}</label>，内容只读，去<a title="点击去编辑" href="' . url('edit', ['id' => $data['reference_id']]) . '">[编辑]</a></div>' . $data['content']);
                         $form->hidden('content')->value('@' . $data['reference_id']);
                     } else {
-                        $e = $form->$editor('content', $fields['content']['comment'] ?: '内容')->help($fields['content']['help']);
+                        $e = $form->$editor('content', $fields['content']['comment'] ?: '内容')
+                            ->help($fields['content']['help'])
+                            ->required(strstr($fields['content']['rules'], 'required'));
                         if ($editor == 'textarea') {
                             $e->rows(10);
                         }
@@ -430,6 +432,7 @@ class Cmscontent extends Controller
                     ->default($admin && $admin['group'] ? $admin['group']['name'] : '')
                     ->required(strstr($fields['source']['rules'], 'required'));
             }
+            $form->html('');
             foreach ($fields as $field) {
                 if ($field['is_custom'] == 1 && $field['position'] == 'main_right') {
                     $displayer = $field['displayer_type'];
@@ -475,6 +478,9 @@ class Cmscontent extends Controller
                     ->default(0)
                     ->required(strstr($fields['sort']['rules'], 'required'));
             }
+            
+            $form->html('');
+
             if (
                 in_array('is_recommend', $fieldsInfo['field_names'])
                 || in_array('is_top', $fieldsInfo['field_names'])
@@ -512,12 +518,12 @@ class Cmscontent extends Controller
             $fields = $fieldsInfo['fields'];
 
             if (in_array('link', $fieldsInfo['field_names'])) {
-                $form->text('link', $fields['sort']['comment'] ?: '跳转链接')
-                    ->help($fields['sort']['help'] ?? '设置后覆盖默认的页面地址')
+                $form->text('link', $fields['link']['comment'] ?: '跳转链接')
+                    ->help($fields['link']['help'] ?? '设置后覆盖默认的页面地址')
                     ->readonly($isReference);
             }
             if (in_array('mention_ids', $fieldsInfo['field_names'])) {
-                $form->multipleSelect('mention_ids', $fields['sort']['comment'] ?: '关联内容')
+                $form->multipleSelect('mention_ids', $fields['mention_ids']['comment'] ?: '关联内容')
                     ->dataUrl(url('/admin/cmscontent/selectPage'), '[{id}]{title}({channel.name})')
                     ->help($fields['mention_ids']['help'])
                     ->required(strstr($fields['mention_ids']['rules'], 'required'));
