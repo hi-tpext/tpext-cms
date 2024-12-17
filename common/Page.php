@@ -78,7 +78,7 @@ class Page
             ->find();
 
         if (!$channel) {
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>栏目不存在-' . $id . '</h4></body></html>';
+            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>404</title></head><body><h4>栏目不存在-' . $id . '</h4></body></html>';
         }
 
         if ($channel['link']) {
@@ -122,7 +122,7 @@ class Page
             ->find();
 
         if (!$content) {
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>内容不存在-' . $id . '</h4></body></html>';
+            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>404</title></head><body><h4>内容不存在-' . $id . '</h4></body></html>';
         }
 
         if ($content['link']) {

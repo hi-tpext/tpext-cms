@@ -259,7 +259,7 @@ class TemplaBuilder
             return false;
         }
 
-        return file_put_contents($path, $content);
+        return @file_put_contents($path, $content);
     }
 
     /**
