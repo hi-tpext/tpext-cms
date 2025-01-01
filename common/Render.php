@@ -353,7 +353,7 @@ EOT;
     {
         if ($type == 'single') {
             $tplHtml = $this->htmlModel->where(['type' => $type, 'template_id' => $template['id'], 'to_id' => $toId])
-                ->cache('cms_html_' . $toId, $this->cacheTime, 'cms_html')
+                ->cache('cms_html_to_' . $toId, $this->cacheTime, 'cms_html')
                 ->find();
             return $tplHtml;
         }

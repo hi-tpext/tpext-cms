@@ -48,6 +48,10 @@ class CmsTemplateHtml extends Model
             cache('cms_html_' . $data['id'], null);
         }
 
+        if (isset($data['to_id'])) {
+            cache('cms_html_to_' . $data['id'], null);
+        }
+
         if (isset($data['is_default']) && isset($data['type']) && isset($data['template_id'])) {
             if ($data['type'] == 'content' && $data['is_default'] == 1) {
                 cache('cms_html_content_default_' . $data['template_id'], null);
@@ -70,6 +74,14 @@ class CmsTemplateHtml extends Model
         if (is_file($file)) {
             @copy($file, $file . date('YmdHis') . '.del');
             @unlink($file);
+        }
+
+        if (isset($data['id'])) {
+            cache('cms_html_' . $data['id'], null);
+        }
+
+        if (isset($data['to_id'])) {
+            cache('cms_html_to_' . $data['id'], null);
         }
 
         CmsContentPage::where(['html_id' => $data['id']])->delete();

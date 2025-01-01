@@ -284,6 +284,11 @@ class TemplaBuilder
     public function clearHtml($template)
     {
         $outPath = App::getPublicPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $template['prefix']);
+
+        if ($template['prefix'] != '/') {
+            Tool::deleteDir($outPath);
+            return;
+        }
         //清除首页
         if (is_file($outPath . 'index.html')) {
             @unlink($outPath . 'index.html');

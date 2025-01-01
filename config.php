@@ -8,7 +8,7 @@ return [
     'assets_ver' => '1.0',
     'editor' => 'wangEditor',
     'use_layout' => 1,
-    'make_static' => 1,
+    'make_static' => 0,
     'allow_tables' => '',
     //配置描述
     '__config__' => [

@@ -175,7 +175,7 @@ class Cmscontentmodel extends Controller
         $form->text('name', '模型名称')->required()->maxlength(5)->size(12, 4);
         $form->items('use_fields', '字段')->required()->with(function () use ($form) {
             $form->show('name', '字段名');
-            $form->text('comment', '字段说明')->required()->getWrapper()->addStyle('width:100px');
+            $form->text('comment', '字段说明')->required();
             $form->switchBtn('is_use', '使用字段');
             $form->select('displayer_type', '输入类型')->required()
                 ->mapClass(1, 'disabled', 'protected')
