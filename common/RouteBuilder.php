@@ -183,7 +183,7 @@ class RouteBuilder
      */
     protected function witeToFile($routesRules, $focusWrite)
     {
-        $routeFile = App::getRootPath() . 'route/tpex-tcms.php';
+        $routeFile = App::getRootPath() . 'route/tpext-cms.php';
 
         if (is_file($routeFile) && time() - filemtime($routeFile) < 120 && !$focusWrite) {
             return;
@@ -199,7 +199,7 @@ class RouteBuilder
         $lines[] = ' *时间:' . date('Y-m-d H:i:s');
         $lines[] = ' */';
         $lines[] = '';
-        $lines[] = 'use think\Facade\Route;';
+        $lines[] = 'use think\facade\Route;';
         $lines[] = 'use tpext\cms\common\Page;';
         $lines[] = '';
 
