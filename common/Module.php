@@ -130,6 +130,11 @@ class Module extends baseModule
                 CmsTemplateHtml::scanPageFiles(1, $view_path . 'theme/default');
                 CmsTemplateHtml::scanPageFiles(2, $view_path . 'theme/mobile');
                 Tool::deleteDir(App::getRuntimePath() . 'temp' . DIRECTORY_SEPARATOR . 'theme');
+                $render = new Render;
+                $tpls = CmsTemplate::select();
+                foreach ($tpls as $tpl) {
+                    $render->copyStatic($tpl);
+                }
             } catch (\Throwable $e) {
                 trace($e->__toString());
             }
