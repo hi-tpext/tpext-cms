@@ -70,7 +70,7 @@ class Render
             ];
             $config = [
                 'cache_prefix' => $tplHtml['path'],
-                'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/'],
+                'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/', '__site_home__' => $template['prefix']],
                 'view_path' => App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR,
                 'tpl_cache' => true,
             ];
@@ -134,7 +134,7 @@ class Render
                 ];
                 $config = [
                     'cache_prefix' => $tplHtml['path'],
-                    'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/'],
+                    'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/', '__site_home__' => $template['prefix']],
                     'view_path' => App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR,
                     'tpl_cache' => true,
                 ];
@@ -203,7 +203,7 @@ class Render
                 ];
                 $config = [
                     'cache_prefix' => $tplHtml['path'],
-                    'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/'],
+                    'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/', '__site_home__' => $template['prefix']],
                     'view_path' => App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR,
                     'tpl_cache' => true,
                 ];
@@ -281,7 +281,6 @@ class Render
 EOT;
 
         return $script;
-
     }
 
     /**
@@ -329,7 +328,7 @@ EOT;
             $vars = array_merge($vars, $param);
             $config = [
                 'cache_prefix' => $tplHtml['path'],
-                'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/'],
+                'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/', '__site_home__' => $template['prefix']],
                 'view_path' => App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR,
                 'tpl_cache' => true,
             ];
@@ -395,10 +394,10 @@ EOT;
             file_put_contents(
                 App::getPublicPath() . $staticDir . DIRECTORY_SEPARATOR . '不要修改此目录中文件.txt',
                 '此目录是存放模板静态资源的，' . "\n"
-                . '不要修改、替换文件或上传新文件到此目录及子目录，' . "\n"
-                . '否则重新发布模板资源后改动文件将还原或丢失，' . "\n"
-                . '原始文件存放于' . $staticPath . '目录下。' . "\n"
-                . '请修改原始文件，再发布静态资源到此目录。'
+                    . '不要修改、替换文件或上传新文件到此目录及子目录，' . "\n"
+                    . '否则重新发布模板资源后改动文件将还原或丢失，' . "\n"
+                    . '原始文件存放于' . $staticPath . '目录下。' . "\n"
+                    . '请修改原始文件，再发布静态资源到此目录。'
             );
             return ['code' => 1, 'msg' => '[静态资源]发布成功：' . "{$staticPath} => public" . DIRECTORY_SEPARATOR . "{$staticDir}"];
         }
@@ -416,9 +415,9 @@ EOT;
     {
         $v = Module::getInstance()->config('assets_ver', '1.0');
         $staticDir = '/theme/' . $template['view_path'] . '/';
-        $content = preg_replace('/(<link\s+[^>]*?href=[\'\"])(?:\.{1,2}\/)?static\/(.+?\.css)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
-        $content = preg_replace('/(<script\s+[^>]*?src=[\'\"])(?:\.{1,2}\/)?static\/(.+?\.js)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
-        $content = preg_replace('/(<img\s+[^>]*?src=[\'\"])(?:\.{1,2}\/)?static\/(.+?\.\w+)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
+        $content = preg_replace('/(<link\s+[^>]*?href=[\'\"])(?:\.{1,2}\/)?static\/([^>]+?\.\w+)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
+        $content = preg_replace('/(<script\s+[^>]*?src=[\'\"])(?:\.{1,2}\/)?static\/([^>]+?\.js)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
+        $content = preg_replace('/(<img\s+[^>]*?src=[\'\"])(?:\.{1,2}\/)?static\/([^>]+?\.\w+)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
 
         return $content;
     }
