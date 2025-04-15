@@ -70,7 +70,7 @@ class Render
             ];
             $config = [
                 'cache_prefix' => $tplHtml['path'],
-                'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/', '__site_home__' => $template['prefix']],
+                'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/', '@site_home' => $template['prefix']],
                 'view_path' => App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR,
                 'tpl_cache' => true,
             ];
@@ -134,7 +134,7 @@ class Render
                 ];
                 $config = [
                     'cache_prefix' => $tplHtml['path'],
-                    'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/', '__site_home__' => $template['prefix']],
+                    'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/', '@site_home' => $template['prefix']],
                     'view_path' => App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR,
                     'tpl_cache' => true,
                 ];
@@ -203,7 +203,7 @@ class Render
                 ];
                 $config = [
                     'cache_prefix' => $tplHtml['path'],
-                    'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/', '__site_home__' => $template['prefix']],
+                    'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/', '@site_home' => $template['prefix']],
                     'view_path' => App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR,
                     'tpl_cache' => true,
                 ];
@@ -328,7 +328,7 @@ EOT;
             $vars = array_merge($vars, $param);
             $config = [
                 'cache_prefix' => $tplHtml['path'],
-                'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/', '__site_home__' => $template['prefix']],
+                'tpl_replace_string' => ['@static' => '/theme/' . $template['view_path'] . '/', '@site_home' => $template['prefix']],
                 'view_path' => App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR,
                 'tpl_cache' => true,
             ];
