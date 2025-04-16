@@ -26,6 +26,8 @@ class Cms extends Taglib
 
     protected $usedTags = [];
 
+    protected $bindFunctions = false;
+
     public function __construct($template)
     {
         $this->tags = Table::getTagsList();
@@ -39,8 +41,6 @@ class Cms extends Taglib
         if (!Table::isAllowTable($table)) {
             return "<!--数据表：{$table}未允许使用标签-->";
         }
-        $cid_key = $tag['cid_key'] ?? '';
-        $id_key = $tag['id_key'] ?? 'id';
 
         $take = $tag['num'] ?? 0;
         $pagesize = $tag['pagesize'] ?? 0;
@@ -53,95 +53,19 @@ class Cms extends Taglib
         $cacheTime = intval($cache[1] ?? 360);
         $tagOrder = !empty($tag['order']) ? $tag['order'] : Table::defaultOrder($table);
         $fields = $tag['fields'] ?? Table::defaultFields($table);
-        $where = $tag['where'] ?? '1=1';
+        $fields = is_array($fields) ? implode(',', $fields) : $fields;
+        $scope = Table::defaultScope($table);
+        $dbNameSpace = Processer::getDbNamespace();
         $links = true;
         if (isset($tag['links']) && ($tag['links'] == '0' || $tag['links'] == 'false' || $tag['links'] == 'n' || $tag['links'] == 'no')) {
             $links = false;
         }
 
-        $cid_val = '';
-        if ($cid_key && isset($tag[$cid_key]) && $tag[$cid_key] !== '') {
-            $cid_val = trim($tag[$cid_key]);
-        }
+        $parseStr = $this->bindKeyValWhere($tag);
 
-        if ($cid_val !== '') {
-            if ($cid_val[0] == '$' || $cid_val[0] == ':') { //变量或方法
-                $cid_val = $this->filterIdVar($cid_val);
-            } else if (is_int($cid_val)) {
-                $cid_val = "{$cid_val}";
-            } else if (preg_match('/^[\d,]+$/', $cid_val)) {
-                $cid_val = "'{$cid_val}'";
-            } else {
-                $whereExp = $this->parseIdVal($cid_key, $cid_val);
-                if ($whereExp) {
-                    $where .= $whereExp;
-                    $cid_val = '0';
-                }
-            }
-        } else if ($cid_key) {
-            $cid_val = "(!empty(\${$cid_key}s) ? \${$cid_key}s : (\${$cid_key} ?? 0))";
-        } else {
-            $cid_val = '0';
-        }
+        $parseStr .= <<<EOT
 
-        $id_val = '';
-        if ($id_key && isset($tag[$id_key]) && $tag[$id_key] !== '') {
-            $id_val = trim($tag[$id_key]);
-        }
-        if ($id_val !== '') {
-            if ($id_val[0] == '$' || $id_val[0] == ':') { //解析变量或方法
-                $id_val = $this->filterIdVar($id_val);
-            } else if (is_int($id_val)) {
-                $id_val = "{$id_val}";
-            } else if (preg_match('/^[\d,]+$/', $id_val)) {
-                $id_val = "'{$id_val}'";
-            } else {
-                $whereExp = $this->parseIdVal($id_key, $id_val);
-                if ($whereExp) {
-                    $where .= $whereExp;
-                    $id_val = '0';
-                }
-            }
-            $cid_val = '0';
-        } else {
-            $id_val = '0';
-        }
-        $binds = '';
-        if ($where && $where != '1=1') {
-            [$where, $binds] = $this->parseWhere($where); //解析变量
-        }
-
-        $fields = is_array($fields) ? implode(',', $fields) : $fields;
-        $scope = Table::defaultScope($table);
-        $dbNameSpace = Processer::getDbNamespace();
-
-        $parseStr = <<<EOT
         <?php
-        \$__where_raw__ = "{$where}";
-        \$__where__ = [];
-        \$__cid_key__ = '{$cid_key}';
-        \$__id_key__ = '{$id_key}';
-
-        if(\$__cid_key__) {
-            \$__cid_val__ = {$cid_val} ?? 0;
-            if(\$__cid_val__) {
-                if(is_array(\$__cid_val__) || strstr(\$__cid_val__, ',')) {
-                    \$__where__[] = [\$__cid_key__, 'in', \$__cid_val__];
-                } else {
-                    \$__where__[] = [\$__cid_key__, '=', \$__cid_val__];
-                }
-            }
-        }
-        if(\$__id_key__) {
-            \$__id_val__ = {$id_val} ?? 0;
-            if(\$__id_val__) {
-                if(is_array(\$__id_val__) || strstr(\$__id_val__, ',')) {
-                    \$__where__[] = [\$__id_key__, 'in', \$__id_val__];
-                } else {
-                    \$__where__[] = [\$__id_key__, '=', \$__id_val__];
-                }
-            }
-        }
         \$__page__ = 1;
         \$__render_links__ = '{$links}' == '1';
         \$__has_paginator__ = false;
@@ -161,7 +85,7 @@ class Cms extends Taglib
 
         \$__data__ = {$dbNameSpace}::name('{$table}')
             ->where(\$__where__)
-            ->whereRaw(\$__where_raw__, [{$binds}])
+            ->whereRaw(\$__where_raw__, \$__where_binds__)
             ->where('{$scope}')
             ->field('{$fields}')
             ->order(\$__order_by__)
@@ -174,7 +98,7 @@ class Cms extends Taglib
         if(\$__has_paginator__) {
             \$__total__ = {$dbNameSpace}::name('{$table}')
                 ->where(\$__where__)
-                ->whereRaw(\$__where_raw__, [{$binds}])
+                ->whereRaw(\$__where_raw__, \$__where_binds__)
                 ->where('{$scope}')
                 ->count();
                 
@@ -192,7 +116,8 @@ class Cms extends Taglib
         {/if}
         {assign name="{$assign}" value="\$__list__" /}
         <?php
-        unset(\$__data__, \$__where_raw__, \$__where__, \$__cid_key__, \$__cid_val__, \$__paginator__, \$__total__, \$__take__, \$__pagesize__, \$__page__);
+        unset(\$__data__, \$__where_raw__, \$__where_binds__, \$__where__, \$__id_key__, \$__id_val__, \$__cid_key__, \$__cid_val__);
+        unset(\$__order_by__, \$__paginator__, \$__total__, \$__take__, \$__pagesize__, \$__page__);
         ?>
 EOT;
         $this->usedTags[] = $tag;
@@ -255,7 +180,6 @@ EOT;
         if (!Table::isAllowTable($table)) {
             return "<!--数据表：{$table}未允许使用标签-->";
         }
-        $id_key = $tag['id_key'] ?? 'id';
         $assign = !empty($tag['assign']) ? $tag['assign'] : ($tag['default_assign'] ?? 'data');
         $assign = ltrim($assign, '$');
         $cache = explode(',', $tag['cache'] ?? '');
@@ -263,47 +187,18 @@ EOT;
         $cacheTime = intval($cache[1] ?? 360);
         $order = $tag['order'] ?? '';
         $fields = $tag['fields'] ?? Table::defaultFields($table);
-        $where = $tag['where'] ?? '1=1';
-        $id_val = '';
-        if ($id_key && isset($tag[$id_key]) && $tag[$id_key] !== '') {
-            $id_val = trim($tag[$id_key]);
-        }
-        if ($id_val !== '') {
-            if ($id_val[0] == '$' || $id_val[0] == ':') { //解析变量或方法
-                $id_val = $this->filterIdVar($id_val);
-            } else if (is_int($id_val)) {
-                $id_val = "{$id_val}";
-            } else {
-                $whereExp = $this->parseIdVal($id_key, $id_val);
-                if ($whereExp) {
-                    $id_val = '0';
-                    $where .= $whereExp;
-                }
-            }
-        } else {
-            $id_val = "\${$id_key}";
-        }
-        $binds = '';
-        if ($where && $where != '1=1') {
-            [$where, $binds] = $this->parseWhere($where); //解析变量
-        }
-
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
         $scope = Table::defaultScope($table);
         $dbNameSpace = Processer::getDbNamespace();
 
-        $parseStr = <<<EOT
+        $parseStr = $this->bindKeyValWhere($tag);
+
+        $parseStr .= <<<EOT
         <?php
-        \$__where_raw__ = "{$where}";
-        \$__where__ = [];
-        \$__id_key__ = '{$id_key}';
-        \$__id_val__ = {$id_val} ?? 0;
-        if(empty(\$__where_raw__) || \$__where_raw__ == '1=1') {
-            \$__where__[] = [\$__id_key__, '=', \$__id_val__];
-        }
+        
         \$__detail__ = {$dbNameSpace}::name('{$table}')
             ->where(\$__where__)
-            ->whereRaw(\$__where_raw__, [$binds])
+            ->whereRaw(\$__where_raw__, \$__where_binds__)
             ->where('{$scope}')
             ->order('{$order}')
             ->field('{$fields}')
@@ -316,10 +211,136 @@ EOT;
         {$content}
         {/notempty}
         <?php
-        unset(\$__where_raw__, \$__where__, \$__id_key__, \$__id_val__);
+        unset(\$__data__, \$__where_raw__, \$__where_binds__, \$__where__, \$__id_key__, \$__id_val__, \$__cid_key__, \$__cid_val__);
         ?>
 EOT;
         $this->usedTags[] = $tag;
+        return $parseStr;
+    }
+
+    /**
+     * 引入标签库助手方法
+     * 
+     * @return string
+     */
+    public function bindFunctions()
+    {
+        if ($this->bindFunctions) {
+            return '';
+        }
+
+        $this->bindFunctions = true;
+
+        $parseStr = <<<EOT
+
+        <?php
+        include_once \\tpext\\cms\\common\\Module::getInstance()->getRoot() . 'functions.php';
+
+        ?>
+EOT;
+
+        return $parseStr;
+    }
+
+    /**
+     * 解析标签中的 cid_key, id_key, where 等参数
+     * 
+     * @param mixed $tag
+     * @return string
+     */
+    protected function bindKeyValWhere($tag)
+    {
+        $cid_key = $tag['cid_key'] ?? '';
+        $id_key = $tag['id_key'] ?? 'id';
+        $where = $tag['where'] ?? '1=1';
+
+        $cid_val = '';
+        if ($cid_key && isset($tag['cid']) && $tag['cid'] !== '') {
+            $cid_val = trim($tag['cid']);
+        } else if ($cid_key && isset($tag[$cid_key]) && $tag[$cid_key] !== '') {
+            $cid_val = trim($tag[$cid_key]);
+        }
+
+        if ($cid_val !== '') {
+            if ($cid_val[0] == '$' || $cid_val[0] == ':') { //变量或方法
+                $cid_val = $this->filterIdVar($cid_val);
+            } else if (is_int($cid_val)) {
+                $cid_val = "{$cid_val}";
+            } else if (preg_match('/^[\d,]+$/', $cid_val)) {
+                $cid_val = "'{$cid_val}'";
+            } else {
+                $whereExp = $this->parseIdVal($cid_key, $cid_val);
+                if ($whereExp) {
+                    $where .= $whereExp;
+                    $cid_val = '0';
+                }
+            }
+        } else if ($cid_key) {
+            $cid_val = "(!empty(\${$cid_key}s) ? \${$cid_key}s : (\${$cid_key} ?? 0))";
+        } else {
+            $cid_val = '0';
+        }
+
+        $id_val = '';
+        if ($id_key && isset($tag[$id_key]) && $tag[$id_key] !== '') {
+            $id_val = trim($tag[$id_key]);
+        }
+        if ($id_val !== '') {
+            if ($id_val[0] == '$' || $id_val[0] == ':') { //解析变量或方法
+                $id_val = $this->filterIdVar($id_val);
+            } else if (is_int($id_val)) {
+                $id_val = "{$id_val}";
+            } else if (preg_match('/^[\d,]+$/', $id_val)) {
+                $id_val = "'{$id_val}'";
+            } else {
+                $whereExp = $this->parseIdVal($id_key, $id_val);
+                if ($whereExp) {
+                    $where .= $whereExp;
+                    $id_val = '0';
+                }
+            }
+            $cid_val = '0';
+        } else {
+            $id_val = '0';
+        }
+
+        $binds = '';
+        if ($where && $where != '1=1') {
+            [$where, $binds] = $this->parseWhere($where); //解析变量
+        }
+
+        $parseStr = <<<EOT
+
+        <?php
+        \$__where_raw__ = "{$where}";
+        \$__where_binds__ = [$binds];
+        \$__where__ = [];
+        \$__cid_key__ = '{$cid_key}';
+        \$__id_key__ = '{$id_key}';
+
+        if(\$__cid_key__) {
+            \$__cid_val__ = {$cid_val} ?? 0;
+            if(\$__cid_val__) {
+                if(is_array(\$__cid_val__) || strstr(\$__cid_val__, ',')) {
+                    \$__where__[] = [\$__cid_key__, 'in', \$__cid_val__];
+                } else {
+                    \$__where__[] = [\$__cid_key__, '=', \$__cid_val__];
+                }
+            }
+        }
+        if(\$__id_key__) {
+            \$__id_val__ = {$id_val} ?? 0;
+            if(\$__id_val__) {
+                if(is_array(\$__id_val__) || strstr(\$__id_val__, ',')) {
+                    \$__where__[] = [\$__id_key__, 'in', \$__id_val__];
+                } else {
+                    \$__where__[] = [\$__id_key__, '=', \$__id_val__];
+                }
+            }
+        }
+        ?>
+EOT;
+
         return $parseStr;
     }
 
@@ -428,6 +449,9 @@ EOT;
     {
         if (preg_match('/^tag(\w+@\w+)$/i', $name, $mchs) && count($arguments) == 2) {
             $tagName = strtolower($mchs[1]);
+            if ('use@functions' == $tagName) {
+                return $this->bindFunctions();
+            }
             $tag = $arguments[0];
             $content = $arguments[1];
             $tagArr = explode('@', $tagName);
@@ -459,6 +483,7 @@ EOT;
                     $tag['tag_name'] = $tagName;
                     $tag['default_assign'] = $tagArr[0];
                     $tag['id_key'] = $info['id_key'] ?? 'id';
+                    $tag['cid_key'] = $info['cid_key'] ?? '';
                     return $this->tagGet($tag, $content);
                 }
                 if ($info['tag_name'] . '@prev' == $tagName) {

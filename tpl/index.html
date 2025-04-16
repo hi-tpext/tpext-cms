@@ -6,7 +6,7 @@
         </div>
         <div class="bd">
             <ul>
-                {banner@list position_id="1" num="5"}
+                {banner@list cid="1" num="5"}
                 <li>
                     <a href="{$banner.url}"><img src="{$banner.image}" alt="{$banner.title}" /></a>
                 </li>
@@ -27,7 +27,7 @@
         <div class="bd">
             {foreach name="$newsChannel" item="row"} <!--循环栏目-->
             <ul>
-                {content@list channel_id="$row.id" num="7"}<!--获取栏目下文章-->
+                {content@list cid="$row.id" num="7"}<!--获取栏目下文章-->
                 <li>
                     <span class="date">{$content.publish_date}</span>
                     <a href="{$content.url}" target="_blank">{$content.title}</a>
@@ -46,7 +46,7 @@
                 <img src="{$channel.logo}" class="logo" alt="{$channel.name}" />
                 <a href="{$channel.url}">{$channel.name}</a>
             </div>
-            {content@list channel_id="$channel.id"}
+            {content@list cid="$channel.id"}
             <div class="item-info">
                 <span class="title">
                     <a target="_blank" href="{$content.url}">{:mb_substr($content.title,0,36)}</a>

@@ -9,8 +9,8 @@
 <p>
     栏目channel_id可以是一个固定值:3
 </p>
-<p>{<code>content@list channel_id="3"</code>}</p>
-{content@list channel_id="3"}
+<p>{<code>content@list cid="3"</code>}</p>
+{content@list cid="3"}
 <div style="background-color: rgb(0, 162, 255);">
     栏目id：{$content.channel_id}|文章id：{$content.id}|<a target="_blank" href="{$content.url}">{$content.title}</a>
 </div>
@@ -25,8 +25,8 @@
 
 <p>id一个表达式 <code>gt|eq|lt|egt|elt|neq|&lt;&gt;|=|!=|in|not in|like|not like|notlike|between|not between|notbetween</code></p>
 <p>避免使用尖括号<code>&gt;&nbsp;&lt;</code>，因为有些编辑器会识别为html标签起止符号，代码解析错误报警告</p>
-<p>{<code>content@list channel_id="gt 5"</code>}</p>
-{content@list channel_id="gt 5"}
+<p>{<code>content@list cid="gt 5"</code>}</p>
+{content@list cid="gt 5"}
 <div style="background-color: rgba(62, 139, 107, 0.678);">
     栏目id：{$content.channel_id}|文章id：{$content.id}|<a target="_blank" href="{$content.url}">{$content.title}</a>
 </div>
@@ -47,9 +47,9 @@
 <p>指定查询字段，如<code>fields="id,title,description"</code>，默认是所有字段。谨慎使用，有的字段在表间关联时需要。</p>
 <p>使用缓存，如<code>cache="index_news_7,3600"</code></p>
 
-<p>{<code>list channel_id="7" num="3" order="sort asc" item="hello" cache="index_news_7,3600"</code>}</p>
+<p>{<code>list cid="7" num="3" order="sort asc" item="hello" cache="index_news_7,3600"</code>}</p>
 
-{content@list channel_id="7" num="3" order="sort asc" item="hello" cache="index_news_7,3600"}
+{content@list cid="7" num="3" order="sort asc" item="hello" cache="index_news_7,3600"}
 <div style="background-color: rgba(42, 148, 151, 0.678);">
     栏目id：{$hello.channel_id}|文章id：{$hello.id}|排序：{$hello.sort}<a target="_blank" href="{$hello.url}">{$hello.title}</a>
 </div>
@@ -100,15 +100,15 @@
 </div>
 类似的，支持类型写法的标签还有：
 <h3>栏目</h3>
-支持表达式：<code>id=""</code><code>parent_id=""</code><code>where=""</code>
+支持表达式：<code>id=""</code><code>cid=""</code><code>where=""</code>
 <p>{<code>channel@list</code>}</p>
 <p>{<code>channel@get</code>}</p>
 <h3>内容</h3>
-支持表达式：<code>id=""</code><code>channel_id=""</code><code>where=""</code>
+支持表达式：<code>id=""</code><code>cid=""</code><code>where=""</code>
 <p>{<code>content@list</code>}</p>
 <p>{<code>content@get</code>}</p>
 <h3>广告</h3>
-支持表达式：<code>id=""</code><code>position_id=""</code><code>where=""</code>
+支持表达式：<code>id=""</code><code>cid=""</code><code>where=""</code>
 <p>{<code>banner@list</code>}</p>
 <p>{<code>banner@get</code>}</p>
 <h3>广告位</h3>
@@ -135,7 +135,7 @@
 <p>其实常用的数据表，直接使用上面的标签就可完成了。但对于没有支持的其他表，可以支持使用list或get标签。</p>
 <p>使用其他表，需要配置</p>
 <p>需要指定表名，如<code>table="cms_content"</code></p>
-<p>表达式只支持主键<code>id="xxx"</code>，不支持<code>channel_id="xxx"</code></p>
+<p>表达式只支持主键<code>id="xxx"</code>，不支持<code>cid="xxx"</code></p>
 
 <p>list</p>
 <p>循环变量默认为<code>item</code>，其他使用<code>item="xxx"</code>指定</p>

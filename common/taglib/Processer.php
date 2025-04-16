@@ -24,6 +24,11 @@ class Processer
         static::$path = $val;
     }
 
+    public static function getPath()
+    {
+        return static::$path;
+    }
+
     public static function setIsAdmin($val = true)
     {
         static::$isAdmin = $val;
