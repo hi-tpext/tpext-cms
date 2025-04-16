@@ -77,6 +77,8 @@ class Render
             $view = new View(App::getRootPath() . $tplFile, $vars, $config);
             $out = $view->getContent();
             $out = $this->replaceStaticPath($template, $out);
+
+            $out = str_replace('</body>', '<script type="text/javascript">' . $this->advScript() . "\n" . '</script>' . "\n" . '</body>', $out);
             return ['code' => 1, 'msg' => 'ok', 'data' => $out];
         } catch (\Throwable $e) {
             trace($e->__toString());
@@ -141,6 +143,8 @@ class Render
                 $view = new View(App::getRootPath() . $tplFile, $vars, $config);
                 $out = $view->getContent();
                 $out = $this->replaceStaticPath($template, $out);
+
+                $out = str_replace('</body>', '<script type="text/javascript">' . $this->advScript() . "\n" . '</script>' . "\n" . '</body>', $out);
             }
             return ['code' => 1, 'msg' => 'ok', 'data' => $out];
         } catch (\Throwable $e) {
@@ -213,8 +217,10 @@ class Render
 
                 if ($is_static == 1) {
                     $url = $template['prefix'] . 'content/__click__' . $content['id'];
-                    $out = str_replace('</body>', '    <script type="text/javascript">' . $this->clickScript($url) . '</script>', $out);
+                    $out = str_replace('</body>', '<script type="text/javascript">' . $this->clickScript($url) . "\n" . '</script>' . "\n" . '</body>', $out);
                 }
+
+                $out = str_replace('</body>', '<script type="text/javascript">' . $this->advScript() . "\n" . '</script>' . "\n" . '</body>', $out);
             }
             return ['code' => 1, 'msg' => 'ok', 'data' => $out];
         } catch (\Throwable $e) {
@@ -266,6 +272,7 @@ class Render
     protected function clickScript($url)
     {
         $script = <<<EOT
+
     var __content_click__ = document.getElementById("__content_click__");
     var xhr = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("");
     xhr.open("GET", "{$url}", true);
@@ -278,6 +285,23 @@ class Render
         }
     };
     xhr.send();
+EOT;
+
+        return $script;
+    }
+
+    protected function advScript()
+    {
+        $script = <<<EOT
+
+    try {
+        if (window.console && window.console.log) {
+            console.log("%c Powered by © tpext.cms", "font-size:32px;background:#333;color:#fff");
+            console.log("%c https://github.com/hi-tpext/tpext-cms", "font-size:20px;background:#333;color:#fff");
+        }
+    } catch (e) {
+     
+    }
 EOT;
 
         return $script;

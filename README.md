@@ -15,6 +15,16 @@
 
 2024-12-10 更新：不支持过往版本的直接升级，建议新项目使用。
 
+如果是老项目，请删除原数据表（建议重命名以备份），然后再安装。
+
+```sql
+DROP TABLE IF EXISTS `__PREFIX__cms_category`;
+DROP TABLE IF EXISTS `__PREFIX__cms_content`;
+DROP TABLE IF EXISTS `__PREFIX__cms_position`;
+DROP TABLE IF EXISTS `__PREFIX__cms_banner`;
+DROP TABLE IF EXISTS `__PREFIX__cms_tag`;
+```
+
 ### 一些细节
 
 `nginx` 默认文档问题
