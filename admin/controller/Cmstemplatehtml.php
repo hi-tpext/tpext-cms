@@ -109,10 +109,10 @@ class Cmstemplatehtml extends Controller
     {
         $table = $this->table;
 
-        $table->show('name', '名称');
+        $table->raw('dir', '目录')->getWrapper()->addStyle('text-align:left;');
         $table->text('description', '描述')->autoPost()->mapClass(1, 'disabled', 'is_default');
         $table->raw('path', '路径')->to('<a target="_blank" href="/admin/cmstemplatehtml/edit?id={id}">{val}</a>');
-        $table->match('type', '类型')->options($this->pageTypes)
+        $table->match('type', '类型')->options($this->pageTypes + ['dir' => '目录'])
             ->mapClassGroup([['channel', 'success'], ['content', 'info'], ['common', 'warning'], ['single', 'purple'], ['index', 'danger'], ['dynamic', 'dark']]);
         $table->show('ext', '后缀');
         $table->show('size', '大小')->to('{val}kb');
@@ -131,9 +131,12 @@ class Cmstemplatehtml extends Controller
             ->btnLink('apply', url('/admin/cmstemplatehtml/apply', ['html_id' => '__data.pk__']), '绑定', 'btn-success', 'mdi-link-variant', 'title="绑定到栏目/内容"')
             ->btnDelete()
             ->mapClass([
-                'apply' => ['disabled' => '__dis_apply__'],
-                'delete' => ['disabled' => '__dis_delete__'],
+                'edit' => ['hidden' => '__hi_edit__'],
+                'apply' => ['hidden' => '__hi_apply__'],
+                'delete' => ['hidden' => '__hi_delete__'],
             ]);
+
+        $list = [];
 
         foreach ($data as &$d) {
             $view_path = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $d['path']);
@@ -146,14 +149,40 @@ class Cmstemplatehtml extends Controller
             } else if ($d['type'] == 'content' && $d['is_default'] == 0) {
                 $d['conut'] = '栏目：' . CmsContentPage::where('html_type', 'content')->where('html_id', $d['id'])->count();
             } else if ($d['type'] == 'single') {
-                $d['conut'] = '文章：' . CmsContentPage::where('html_type', 'single')->where('html_id', $d['id'])->count();
+                $d['conut'] = '文章：' . ($d['to_id'] ? 'id-' . $d['to_id'] : '未绑定');
             } else {
                 $d['conut'] = '无';
             }
 
             $d['__dis_apply__'] = in_array($d['type'], ['common', 'dynamic']) || $d['is_default'];
             $d['__dis_delete__'] = $d['is_default'];
+
+            $dirs = explode('/', $d['path']);
+
+            if (count($dirs) > 3) {
+                $dir = $dirs[2];
+                if (!isset($list[$dir])) {
+                    $list[$dir] = [
+                        'dir' => $dir . '/',
+                        'name' => '',
+                        'description' => '存放' . $this->pageTypes[$dir] . '模板',
+                        '__hi_edit__' => 1,
+                        '__hi_apply__' => 1,
+                        '__hi_delete__' => 1,
+                        'is_default' => 1,
+                        'size' => '--',
+                        'type' => 'dir',
+                    ];
+                }
+                $d['dir'] = '<span style="margin-left:30px"></span>' . '-|--' . $dirs[3] . '.html';
+            } else {
+                $d['dir'] = '--' . $dirs[2] . '.html';
+            }
+
+            $list[] = $d;
         }
+
+        $data = $list;
     }
 
     /**
@@ -235,7 +264,6 @@ class Cmstemplatehtml extends Controller
         if ($page['type'] == 'single') {
             $to_id = input('post.to_id/d');
             $page->save(['to_id' => $to_id]);
-            trace('save');
             return $this->builder()->layer()->closeRefresh(1, '保存成功');
         }
 

@@ -181,7 +181,7 @@ class Render
             $tplFile = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
             $out = '';
             if ($content['__not_found__'] || $content['is_show'] != 1 || $content['delete_time']) {
-                return ['code' => 0, 'msg' => '内容不存在6' . json_encode($content)];
+                return ['code' => 0, 'msg' => '内容不存在'];
             } else {
                 if ($is_static == 1) {
                     $content['click'] = '<span id="__content_click__">-<span>';

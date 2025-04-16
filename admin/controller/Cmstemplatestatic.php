@@ -82,9 +82,10 @@ class Cmstemplatestatic extends Controller
     {
         $table = $this->table;
 
+        $table->raw('dir', '目录')->getWrapper()->addStyle('text-align:left;');
         $table->show('name', '名称');
         $table->raw('path', '路径')->to('<a target="_blank" href="/admin/cmstemplatestatic/edit?path={fpath}&ext={ext}">{val}</a>');
-        $table->match('type', '类型')->options(['js' => '脚本', 'css' => '样式'])->mapClassGroup([['js', 'success'], ['css', 'info']]);
+        $table->match('type', '类型')->options(['js' => '脚本', 'css' => '样式', 'dir' => '目录'])->mapClassGroup([['js', 'success'], ['css', 'info']]);
         $table->show('ext', '后缀');
         $table->show('size', '大小')->to('{val}kb');
         $table->show('filectime', '创建时间')->getWrapper()->addStyle('width:180px');
@@ -100,11 +101,42 @@ class Cmstemplatestatic extends Controller
 
         $table->getActionbar()
             ->btnEdit(url('edit', ['path' => '__data.fpath__', 'ext' => '__data.ext__']), '代码', 'btn-warning', 'mdi-table-edit', 'target="_blank"')
-            ->btnDelete();
+            ->btnDelete()
+            ->mapClass([
+                'edit' => ['hidden' => '__hi_edit__'],
+                'delete' => ['hidden' => '__hi_delete__'],
+            ]);;
 
         foreach ($data as &$d) {
             $d['fpath'] = str_replace(['/', '\\'], '--ds--', $d['path']);
         }
+
+        $list = [];
+
+        foreach ($data as &$d) {
+            $dirs = explode('/', $d['path']);
+
+            if (count($dirs) > 4) {
+                $dir = $dirs[3];
+                if (!isset($list[$dir])) {
+                    $list[$dir] = [
+                        'dir' => $dir . '/',
+                        '__hi_edit__' => 1,
+                        '__hi_delete__' => 1,
+                        'is_default' => 1,
+                        'size' => '--',
+                        'type' => 'dir',
+                    ];
+                }
+                $d['dir'] = '<span style="margin-left:10px"></span>-|--';
+            } else {
+                $d['dir'] = '--' . $dirs[3];
+            }
+
+            $list[] = $d;
+        }
+
+        $data = $list;
     }
 
     /**
