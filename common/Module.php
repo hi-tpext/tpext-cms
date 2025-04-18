@@ -94,7 +94,7 @@ class Module extends baseModule
                 [
                     'title' => '设置',
                     'sort' => 8,
-                    'url' => '/admin/config/edit/key/tpext-cms-common-Module',
+                    'url' => '/admin/config/edit?key=tpext-cms-common-Module',
                     'icon' => 'mdi mdi-settings'
                 ]
             ]

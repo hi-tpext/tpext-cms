@@ -21,7 +21,7 @@ class EmptyData extends Model
      * @param string $name 名称
      * @return mixed
      */
-    public function __get($name)
+    public function __get(string $name): mixed
     {
         if ($name == '__not_found__') {
             return true;
@@ -48,7 +48,7 @@ class EmptyData extends Model
      * @param string $name
      * @return bool
      */
-    public function offsetExists($name): bool
+    public function offsetExists(mixed $name): bool
     {
         return true;
     }
@@ -59,7 +59,7 @@ class EmptyData extends Model
      * @param string $name
      * @return mixed
      */
-    public function offsetGet($name)
+    public function offsetGet(mixed $name): mixed
     {
         if ($name == '__not_found__') {
             return true;
