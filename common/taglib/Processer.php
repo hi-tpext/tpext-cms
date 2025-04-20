@@ -141,10 +141,9 @@ class Processer
                     return $empty;
                 }
             }
-
             $item['channel'] = $channel;
             $item['content_id'] = $item['id'];
-            $item['publish_date'] = date('Y-m-d', strtotime($item['publish_time'] ?? '2024-01-01'));
+            $item = static::resolveContentDate($item);
         } else if ($table == 'cms_banner') {
             $item['url'] = static::resolveWebPath($item['link']);
         } else if ($table == 'cms_tag') {
@@ -204,10 +203,9 @@ class Processer
                     $channel = new EmptyData;
                 }
             }
-
             $item['channel'] = $channel;
             $item['content_id'] = $item['id'];
-            $item['publish_date'] = date('Y-m-d', strtotime($item['publish_time'] ?? '2024-01-01'));
+            $item = static::resolveContentDate($item);
 
             $detail = null;
             if (!empty($item['reference_id'])) {
@@ -231,6 +229,25 @@ class Processer
         } else {
             $item['url'] = '#';
         }
+
+        return $item;
+    }
+
+    /**
+     * 处理内容时间字段
+     * @param array $item
+     * @return array
+     */
+    protected static function resolveContentDate($item)
+    {
+        $item['datetime'] = $item['publish_time'];
+        $item['publish_date'] = date('Y-m-d', strtotime($item['publish_time'] ?? '2024-01-01'));
+        $item['date'] = $item['publish_date'];
+        $item['time'] = date('H:i:s', strtotime($item['publish_time'] ?? '2024-01-01'));
+        $ymdArr = explode('-', $item['publish_date']);
+        $item['yy'] = $ymdArr[0];
+        $item['mm'] = $ymdArr[1];
+        $item['dd'] = $ymdArr[2];
 
         return $item;
     }

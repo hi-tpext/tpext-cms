@@ -126,10 +126,8 @@ class Module extends baseModule
 
             try {
                 CmsTemplate::initPath($view_path . 'theme/default');
-                CmsTemplate::initPath($view_path . 'theme/mobile');
                 CmsTemplateHtml::scanPageFiles(1, $view_path . 'theme/default');
-                CmsTemplateHtml::scanPageFiles(2, $view_path . 'theme/mobile');
-                Tool::deleteDir(App::getRuntimePath() . 'temp' . DIRECTORY_SEPARATOR . 'theme');
+                Tool::deleteDir(App::getRootPath() . 'runtime' . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'theme');
                 $render = new Render;
                 $tpls = CmsTemplate::select();
                 foreach ($tpls as $tpl) {
@@ -156,7 +154,7 @@ class Module extends baseModule
      */
     public function afterCopyAssets()
     {
-        Tool::deleteDir(App::getRuntimePath() . 'temp' . DIRECTORY_SEPARATOR . 'theme');
+        Tool::deleteDir(App::getRootPath() . 'runtime' . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'theme');
         return true;
     }
 
@@ -167,7 +165,7 @@ class Module extends baseModule
      */
     public function uninstall($runSql = true)
     {
-        Tool::deleteDir(App::getRuntimePath() . 'temp' . DIRECTORY_SEPARATOR . 'theme');
+        Tool::deleteDir(App::getRootPath() . 'runtime' . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'theme');
         return parent::uninstall($runSql);
     }
 
@@ -178,7 +176,7 @@ class Module extends baseModule
      */
     public function upgrade()
     {
-        Tool::deleteDir(App::getRuntimePath() . 'temp' . DIRECTORY_SEPARATOR . 'theme');
+        Tool::deleteDir(App::getRootPath() . 'runtime' . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'theme');
         return parent::upgrade();
     }
 

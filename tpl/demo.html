@@ -1,6 +1,6 @@
 <!--动态页面(示例)-->
 <div class="breadcrumb">
-    当前位置：<a href="{$__site_home__}">首页</a>
+    当前位置：<a href="@site_home@">首页</a>
     &gt;<a>动态页面(示例)</a>
 </div>
 <h2>演示标签的使用：</h2>
@@ -90,7 +90,7 @@
 {content@get id="100"}
 <div style="background-color: rgba(50, 134, 10, 0.678);">
     栏目id：{$content.channel_id}|文章id：{$content.id}|<a target="_blank" href="{$content.url}">{$content.title}</a>
-    |发布日期：{$content.publish_date}
+    |发布日期：{$content.date}
     |栏目名称：{$content.channel.name}
 </div>
 
@@ -169,6 +169,24 @@
 <p>内容列表：默认{<code>content@list</code>}就行，<code>pagesize</code><code>order</code>等参数会自动注入后台配置，若不使用注入的，可添加对应参数覆盖</p>
 
 <p>内容详情：数据会自动注入，不需要再使用{<code>content@get</code>}标签重复获取</p>
+
+<h4>助手方法</h4>
+<p>1、字符截取<code>more($str,$len,$more='...更多')</code></p>
+<p>如截取标题长度为36，若长度超过36，则显示<code>...更多</code></p>
+<p>使用方式1(管道)：{$content.title|more=36,'...更多'}</p>
+<p>或方式2(方法)：{:more($content.title,36,'...更多')}</p>
+
+<p>2、获取指定栏目的url<code>channel_url($id)</code></p>
+<p>如：输出id为3的栏目的url：{<code>:channel_url(3)</code>}</p>
+
+<p>3、获取指定内容的url<code>content_url($id)</code></p>
+<p>如：输出id为3的栏目的url：{<code>:content_url(3)</code>}</p>
+
+<p>注：使用助手方法需在页面任意位置使用标签：<code>{use@functions/}</code></p>
+
+<h4>模板字符串替换</h4>
+<p>1、当前模板的静态资源路径<code>@static@</code></p>
+<p>2、当前模板的首页路径<code>@site_home@</code></p>
 
 <h4>结尾</h4>
 <p>

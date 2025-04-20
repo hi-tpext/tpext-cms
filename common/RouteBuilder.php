@@ -288,7 +288,7 @@ class RouteBuilder
             if (!strstr($routeConfig, 'route/tpext-cms.php')) {
                 $routeConfig .= PHP_EOL . '//引入cms路由';
                 $routeConfig .= PHP_EOL . "if (file_exists(base_path('route/tpext-cms.php'))) {";
-                $routeConfig .= PHP_EOL . '    require_once base_path(\'route/tpext-cms.php\');';
+                $routeConfig .= PHP_EOL . "    require_once base_path('route/tpext-cms.php');";
                 $routeConfig .= PHP_EOL . '}';
             }
 
