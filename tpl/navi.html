@@ -3,7 +3,7 @@
         <ul class="top-navi">
             <li class="navi-item"><a href="@site_home@">首页</a></li>
             <!--栏目列表或内容详情时，会有$channel_id变量，可以此判断当前栏目-->
-            <!--is_navi=1条件表示只显示栏目中开启[顶部导航]选项的栏目，cid=0表示只显示顶级栏目-->
+            <!--is_navi=1条件表示只显示栏目中开启[顶部导航]选项的栏目，pid=0表示只显示顶级栏目-->
             {channel@list pid="0" where="is_navi=1" num="20" cache="navi,600"}
             <li class="navi-item {if !empty($channel_id) && $channel_id==$channel.id}active{/if}">
                 <a href="{$channel.url}">{$channel.name}</a>

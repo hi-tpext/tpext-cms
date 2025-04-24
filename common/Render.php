@@ -66,8 +66,9 @@ class Render
                 '__site_home__' => $template['prefix'],
                 '__page_type__' => 'index',
                 '__set_order_by__' => 'is_recommend desc,',
-                '__wconf__' => Module::getInstance()->config(),
+                '__wconf__' => $this->getWconfig(),
             ];
+            $vars['vars'] = $vars;
             $config = [
                 'cache_prefix' => $tplHtml['path'],
                 'tpl_replace_string' => ['@static@' => '/theme/' . $template['view_path'] . '/', '@site_home@' => $template['prefix']],
@@ -115,8 +116,7 @@ class Render
             if ($channel['is_show'] != 1 || $channel['delete_time'] || $channel['channel_path'] == '#') {
                 return ['code' => 0, 'msg' => '栏目不存在'];
             } else {
-                $channel_ids = $channel['children_ids'] ?? [];
-                $channel_ids = array_merge([$channel['id']], $channel_ids, explode(',', $channel['extend_ids']));
+                $channel_ids = explode(',', $channel['extend_ids']);
 
                 $vars = [
                     'page' => $page,
@@ -125,7 +125,9 @@ class Render
                     'cid' => $channel['id'],
                     'parent_id' => $channel['parent_id'],
                     'pid' => $channel['parent_id'],
-                    'channel_ids' => implode(',', array_unique($channel_ids)),
+                    'channel_ids' => !empty($channel_ids) ? implode(',', array_merge([$channel['id']], $channel_ids)) : '',
+                    'children_ids' => implode(',', $channel['children_ids'] ??  []),
+                    'extend_ids' => $channel['extend_ids'],
                     'channel' => $channel,
                     'page_title' => $channel['name'] . '_',
                     'page_description' => $channel['description'] ?: $channel['name'],
@@ -135,8 +137,9 @@ class Render
                     '__set_pagesize__' => $channel['pagesize'],
                     '__set_order_by__' => 'is_top desc,',
                     '__set_page_path__' => $template['prefix'] . Processer::resolveChannelPath($channel) . '-[PAGE].html',
-                    '__wconf__' => Module::getInstance()->config(),
+                    '__wconf__' => $this->getWconfig(),
                 ];
+                $vars['vars'] = $vars;
                 $config = [
                     'cache_prefix' => $tplHtml['path'],
                     'tpl_replace_string' => ['@static@' => '/theme/' . $template['view_path'] . '/', '@site_home@' => $template['prefix']],
@@ -209,8 +212,9 @@ class Render
                     'page_keywords' => $content['keywords'] ?: $content['title'],
                     '__site_home__' => $template['prefix'],
                     '__page_type__' => 'content',
-                    '__wconf__' => Module::getInstance()->config(),
+                    '__wconf__' => $this->getWconfig(),
                 ];
+                $vars['vars'] = $vars;
                 $config = [
                     'cache_prefix' => $tplHtml['path'],
                     'tpl_replace_string' => ['@static@' => '/theme/' . $template['view_path'] . '/', '@site_home@' => $template['prefix']],
@@ -343,7 +347,7 @@ EOT;
 
             $vars = [
                 '__site_home__' => $template['prefix'],
-                '__wconf__' => Module::getInstance()->config(),
+                '__wconf__' => $this->getWconfig(),
                 '__set_page_path__' => $page_path,
             ];
 
@@ -356,6 +360,7 @@ EOT;
             });
 
             $vars = array_merge($vars, $param);
+            $vars['vars'] = $vars;
             $config = [
                 'cache_prefix' => $tplHtml['path'],
                 'tpl_replace_string' => ['@static@' => '/theme/' . $template['view_path'] . '/', '@site_home@' => $template['prefix']],
@@ -402,6 +407,13 @@ EOT;
         }
 
         return null;
+    }
+
+    protected function getWconfig()
+    {
+        $config = Module::getInstance()->config();
+        unset($config['allow_tables'], $config['editor']);
+        return $config;
     }
 
     /**

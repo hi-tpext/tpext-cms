@@ -26,6 +26,7 @@ class RouteObject extends BaseRouteObject
     public function append($params)
     {
         $this->params = array_merge($this->params, $params);
+        $this->middleware(MergeParameters::class);
 
         return $this;
     }
