@@ -333,7 +333,7 @@ EOT;
 
         <?php
         \$__where_raw__ = "{$where}";
-        \$__where_binds__ = [$binds];
+        \$__where_binds__ = [{$binds}];
         \$__where__ = [];
         \$__cid_key__ = '{$cid_key}';
         \$__id_key__ = '{$id_key}';
