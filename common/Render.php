@@ -116,7 +116,7 @@ class Render
             if ($channel['is_show'] != 1 || $channel['delete_time'] || $channel['channel_path'] == '#') {
                 return ['code' => 0, 'msg' => '栏目不存在'];
             } else {
-                $channel_ids = explode(',', $channel['extend_ids']);
+                $channel_ids = $channel['extend_ids'] ? explode(',', $channel['extend_ids']) : [];
 
                 $vars = [
                     'page' => $page,
@@ -428,6 +428,9 @@ EOT;
         $staticDir = 'theme' . DIRECTORY_SEPARATOR . $template['view_path'];
 
         if (is_dir(App::getPublicPath() . $staticDir)) {
+            if (is_file(App::getPublicPath() . $staticDir . DIRECTORY_SEPARATOR . 'no-publish.txt')) {
+                return ['code' => 0, 'msg' => '[静态资源]发布取消：目录中存在no-publish.txt文件，已关闭资源发布模式。' . "{$staticPath} => public" . DIRECTORY_SEPARATOR . "{$staticDir}"];
+            }
             Tool::copyDir(App::getPublicPath() . $staticDir, App::getPublicPath() . $staticDir . date('YmdHis'));
         }
         Tool::deleteDir(App::getPublicPath() . $staticDir);
@@ -439,7 +442,8 @@ EOT;
                     . '不要修改、替换文件或上传新文件到此目录及子目录，' . "\n"
                     . '否则重新发布模板资源后改动文件将还原或丢失，' . "\n"
                     . '原始文件存放于' . $staticPath . '目录下。' . "\n"
-                    . '请修改原始文件，再发布静态资源到此目录。'
+                    . '请修改原始文件，再发布静态资源到此目录。' . "\n"
+                    . '如果您不想使用此模式，请在此位置新建文件：no-publish.txt，以避免修改被覆盖。' . "\n"
             );
             return ['code' => 1, 'msg' => '[静态资源]发布成功：' . "{$staticPath} => public" . DIRECTORY_SEPARATOR . "{$staticDir}"];
         }

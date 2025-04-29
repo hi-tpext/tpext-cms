@@ -109,7 +109,7 @@ class Processer
      *
      * @param string $table
      * @param array $item
-     * @return array|\think\model
+     * @return array|EmptyData
      */
     public static function item($table, $item)
     {
@@ -126,6 +126,8 @@ class Processer
 
             if (empty($item['channel_id'])) {
                 $channel = new EmptyData;
+                $item['url'] = static::resolveWebPath($item['link']) ?: self::$path . self::resolveContentPath($item, ['content_path' => 'a[id]']) . '.html';
+                $item['channel_url'] = '#';
             } else {
                 $channelScope = Table::defaultScope($table);
                 $channel = $dbNameSpace::name('cms_channel')
@@ -160,7 +162,7 @@ class Processer
      *
      * @param string $table
      * @param array $item
-     * @return array|\think\model
+     * @return array|EmptyData
      */
     public static function detail($table, $item)
     {
@@ -189,6 +191,8 @@ class Processer
 
             if (empty($item['channel_id'])) {
                 $channel = new EmptyData;
+                $item['url'] = static::resolveWebPath($item['link']) ?: self::$path . self::resolveContentPath($item, ['content_path' => 'a[id]']) . '.html';
+                $item['channel_url'] = '#';
             } else {
                 $channelScope = Table::defaultScope($table);
                 $channel = $dbNameSpace::name('cms_channel')
