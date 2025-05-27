@@ -304,6 +304,9 @@ class CmsContent extends Model
 
     public function getClickAttr($value, $data)
     {
+        if (empty($data['id'])) {
+            return 0;
+        }
         return cache('cms_content_click_' . $data['id']) ?: $data['click'];
     }
 

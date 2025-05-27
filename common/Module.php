@@ -21,7 +21,7 @@ use tpext\cms\common\model\CmsTemplateHtml;
 
 class Module extends baseModule
 {
-    protected $version = '2.0.3';
+    protected $version = '2.0.4';
 
     protected $name = 'tpext.cms';
 
@@ -133,6 +133,8 @@ class Module extends baseModule
                 foreach ($tpls as $tpl) {
                     $render->copyStatic($tpl);
                 }
+                $routeBuilder = new RouteBuilder;
+                $routeBuilder->builder(true);
             } catch (\Throwable $e) {
                 trace($e->__toString());
             }
@@ -140,7 +142,7 @@ class Module extends baseModule
             $tags = ['cms_html', 'cms_page', 'cms_template', 'cms_channel', 'cms_content', 'cms_position', 'cms_banner', 'cms_tag'];
 
             foreach ($tags as $tag) {
-                Cache::clear($tag);
+                Cache::tag($tag)->clear($tag);
             }
         }
 

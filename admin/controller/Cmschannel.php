@@ -112,7 +112,7 @@ class Cmschannel extends Controller
         $builder = $this->builder();
         $step = input('step', '0');
         if ($step == 0) {
-            Cache::clear('cms_channel');
+            Cache::tag('cms_channel')->clear('cms_channel');
         }
         $list = [];
         $maxLevel = $this->dataModel->max('deep') + 1;

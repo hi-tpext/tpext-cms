@@ -139,7 +139,7 @@ class Cmstemplate extends Controller
 
         $msgs = ['已清除数据缓存'];
         foreach ($tags as $tag) {
-            Cache::clear($tag);
+            Cache::tag($tag)->clear($tag);
         }
 
         Tool::deleteDir(App::getRootPath() . 'runtime' . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'theme');

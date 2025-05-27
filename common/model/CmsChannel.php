@@ -62,7 +62,7 @@ class CmsChannel extends Model
             cache('cms_channel_children_ids_' . $data['parent_id'], null);
         }
 
-        Cache::clear('cms_channel');
+        Cache::tag('cms_channel')->clear('cms_channel');
 
         ExtLoader::trigger('cms_channel_on_after_insert', $data);
     }
@@ -78,7 +78,7 @@ class CmsChannel extends Model
             cache('cms_channel_children_ids_' . $data['parent_id'], null);
         }
 
-        Cache::clear('cms_channel');
+        Cache::tag('cms_channel')->clear('cms_channel');
 
         ExtLoader::trigger('cms_channel_on_after_update', $data);
 
@@ -120,7 +120,7 @@ class CmsChannel extends Model
         cache('cms_channel_' . $data['id'], null);
         cache('cms_channel_children_ids_' . $data['parent_id'], null);
 
-        Cache::clear('cms_channel');
+        Cache::tag('cms_channel')->clear('cms_channel');
 
         ExtLoader::trigger('cms_channel_on_after_delete', $data);
     }
