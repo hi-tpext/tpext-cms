@@ -12,6 +12,7 @@
 namespace tpext\cms\common\model;
 
 use think\Model;
+use tpext\cms\common\Cache;
 use tpext\common\ExtLoader;
 use think\model\concern\SoftDelete;
 
@@ -131,15 +132,15 @@ class CmsContent extends Model
             return;
         }
 
-        cache('cms_content_' . $data['id'], null);
-        cache('cms_content_click_' . $data['id'], null);
-        cache('cms_content_detail_' . $data['id'], null);
+        Cache::delete('cms_content_' . $data['id']);
+        Cache::delete('cms_content_click_' . $data['id']);
+        Cache::delete('cms_content_detail_' . $data['id']);
 
         $detail = CmsContentDetail::where('main_id', $data['id'])->find();
         if (!$detail) {
             $detail = new CmsContentDetail;
         } else {
-            cache('cms_content_detail_' . $detail['id'], null);
+            Cache::delete('cms_content_detail_' . $detail['id']);
         }
 
         if (isset($data['reference_id']) && $data['reference_id'] > 0) {
@@ -185,8 +186,8 @@ class CmsContent extends Model
     {
         CmsContentDetail::where('main_id', $data['id'])->delete();
 
-        cache('cms_content_' . $data['id'], null);
-        cache('cms_content_detail_' . $data['id'], null);
+        Cache::delete('cms_content_' . $data['id']);
+        Cache::delete('cms_content_detail_' . $data['id']);
 
         ExtLoader::trigger('cms_content_on_after_delete', $data);
     }
@@ -307,7 +308,7 @@ class CmsContent extends Model
         if (empty($data['id'])) {
             return 0;
         }
-        return cache('cms_content_click_' . $data['id']) ?: $data['click'];
+        return Cache::get('cms_content_click_' . $data['id']) ?: $data['click'];
     }
 
     public function getPublishDateAttr($value, $data)

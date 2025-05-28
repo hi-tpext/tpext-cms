@@ -12,6 +12,7 @@
 namespace tpext\cms\common\model;
 
 use think\Model;
+use tpext\cms\common\Cache;
 use tpext\common\ExtLoader;
 
 class CmsBanner extends Model
@@ -53,14 +54,14 @@ class CmsBanner extends Model
         if (!isset($data['id'])) {
             return;
         }
-        cache('cms_banner_' . $data['id'], null);
+        Cache::delete('cms_banner_' . $data['id']);
 
         ExtLoader::trigger('cms_banner_on_after_update', $data);
     }
 
     public static function onAfterDelete($data)
     {
-        cache('cms_banner_' . $data['id'], null);
+        Cache::delete('cms_banner_' . $data['id']);
         ExtLoader::trigger('cms_banner_on_after_delete', $data);
     }
 

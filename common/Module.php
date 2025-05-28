@@ -13,7 +13,7 @@ namespace tpext\cms\common;
 
 use tpext\think\App;
 use tpext\common\Tool;
-use think\facade\Cache;
+use tpext\cms\common\Cache;
 use tpext\cms\common\event;
 use tpext\common\Module as baseModule;
 use tpext\cms\common\model\CmsTemplate;
@@ -21,7 +21,7 @@ use tpext\cms\common\model\CmsTemplateHtml;
 
 class Module extends baseModule
 {
-    protected $version = '2.0.4';
+    protected $version = '2.0.5';
 
     protected $name = 'tpext.cms';
 

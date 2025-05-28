@@ -13,7 +13,7 @@ namespace tpext\cms\common;
 
 use tpext\think\App;
 use tpext\common\Tool;
-use think\facade\Cache;
+use tpext\cms\common\Cache;
 use tpext\common\ExtLoader;
 use tpext\cms\common\taglib\Table;
 use tpext\cms\common\taglib\Processer;

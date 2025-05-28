@@ -13,6 +13,7 @@ namespace tpext\cms\common\model;
 
 use think\Model;
 use tpext\think\App;
+use tpext\cms\common\Cache;
 use tpext\common\ExtLoader;
 use tpext\cms\common\DirFilter;
 
@@ -45,22 +46,22 @@ class CmsTemplateHtml extends Model
     public static function onAfterUpdate($data)
     {
         if (isset($data['id'])) {
-            cache('cms_html_' . $data['id'], null);
+            Cache::delete('cms_html_' . $data['id']);
         }
 
         if (isset($data['to_id'])) {
-            cache('cms_html_to_' . $data['id'], null);
+            Cache::delete('cms_html_to_' . $data['id']);
         }
 
         if (isset($data['is_default']) && isset($data['type']) && isset($data['template_id'])) {
             if ($data['type'] == 'content' && $data['is_default'] == 1) {
-                cache('cms_html_content_default_' . $data['template_id'], null);
+                Cache::delete('cms_html_content_default_' . $data['template_id']);
             }
             if ($data['type'] == 'channel' && $data['is_default'] == 1) {
-                cache('cms_html_channel_default_' . $data['template_id'], null);
+                Cache::delete('cms_html_channel_default_' . $data['template_id']);
             }
             if ($data['type'] == 'index') {
-                cache('cms_html_index_' . $data['template_id'], null);
+                Cache::delete('cms_html_index_' . $data['template_id']);
             }
         }
 
@@ -77,11 +78,11 @@ class CmsTemplateHtml extends Model
         }
 
         if (isset($data['id'])) {
-            cache('cms_html_' . $data['id'], null);
+            Cache::delete('cms_html_' . $data['id']);
         }
 
         if (isset($data['to_id'])) {
-            cache('cms_html_to_' . $data['id'], null);
+            Cache::delete('cms_html_to_' . $data['id']);
         }
 
         CmsContentPage::where(['html_id' => $data['id']])->delete();

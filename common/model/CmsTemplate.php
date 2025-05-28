@@ -13,6 +13,7 @@ namespace tpext\cms\common\model;
 
 use think\Model;
 use tpext\common\Tool;
+use tpext\cms\common\Cache;
 use tpext\common\ExtLoader;
 use tpext\cms\common\Module;
 
@@ -58,14 +59,14 @@ class CmsTemplate extends Model
             return;
         }
 
-        cache('cms_template_' . $data['id'], null);
+        Cache::delete('cms_template_' . $data['id']);
 
         ExtLoader::trigger('cms_template_on_after_update', $data);
     }
 
     public static function onAfterDelete($data)
     {
-        cache('cms_template_' . $data['id'], null);
+        Cache::delete('cms_template_' . $data['id']);
 
         ExtLoader::trigger('cms_template_on_after_delete', $data);
 
@@ -137,9 +138,8 @@ class CmsTemplate extends Model
                     file_put_contents($view_path . '/contact.html', str_replace('<!--__content__-->', $text, $newTpl));
                 }
             }
-        }
-        catch (\Throwable $e) {
-            trace('initPath error:'. $e->__tostring(), 'error');
+        } catch (\Throwable $e) {
+            trace('initPath error:' . $e->__tostring(), 'error');
         }
     }
 

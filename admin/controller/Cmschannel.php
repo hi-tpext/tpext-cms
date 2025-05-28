@@ -3,7 +3,7 @@
 namespace tpext\cms\admin\controller;
 
 use think\Controller;
-use think\facade\Cache;
+use tpext\cms\common\Cache;
 use tpext\builder\traits\actions;
 use tpext\cms\common\taglib\Processer;
 use tpext\cms\common\model\CmsTemplate;
@@ -112,7 +112,7 @@ class Cmschannel extends Controller
         $builder = $this->builder();
         $step = input('step', '0');
         if ($step == 0) {
-            Cache::tag('cms_channel')->clear('cms_channel');
+            Cache::deleteTag('cms_channel');
         }
         $list = [];
         $maxLevel = $this->dataModel->max('deep') + 1;

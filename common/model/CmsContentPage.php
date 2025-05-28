@@ -12,6 +12,7 @@
 namespace tpext\cms\common\model;
 
 use think\Model;
+use tpext\cms\common\Cache;
 use tpext\common\ExtLoader;
 
 class CmsContentPage extends Model
@@ -45,7 +46,7 @@ class CmsContentPage extends Model
         if (!isset($data['html_type']) || !isset($data['to_id']) || !isset($data['template_id'])) {
             return;
         }
-        cache('cms_page_' . $data['template_id'] . '_' . $data['html_type'] . '_' . $data['to_id'], null);
+        Cache::delete('cms_page_' . $data['template_id'] . '_' . $data['html_type'] . '_' . $data['to_id']);
 
         ExtLoader::trigger('cms_content_page_on_after_update', $data);
     }
@@ -55,7 +56,7 @@ class CmsContentPage extends Model
         if (!isset($data['html_type']) || !isset($data['to_id']) || !isset($data['template_id'])) {
             return;
         }
-        cache('cms_page_' . $data['template_id'] . '_' . $data['html_type'] . '_' . $data['to_id'], null);
+        Cache::delete('cms_page_' . $data['template_id'] . '_' . $data['html_type'] . '_' . $data['to_id']);
 
         ExtLoader::trigger('cms_content_page_on_after_delete', $data);
     }

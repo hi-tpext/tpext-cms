@@ -19,7 +19,7 @@ class EmptyData implements \JsonSerializable, \ArrayAccess
      * @param string $name 名称
      * @return mixed
      */
-    public function __get($name)
+    public function __get($name): mixed
     {
         if ($name == '__not_found__') {
             return true;
@@ -46,7 +46,7 @@ class EmptyData implements \JsonSerializable, \ArrayAccess
      * @param string $name
      * @return bool
      */
-    public function offsetExists($name)
+    public function offsetExists($name): bool
     {
         return true;
     }
@@ -57,7 +57,7 @@ class EmptyData implements \JsonSerializable, \ArrayAccess
      * @param string $name
      * @return mixed
      */
-    public function offsetGet($name)
+    public function offsetGet($name): mixed
     {
         if ($name == '__not_found__') {
             return true;
@@ -78,7 +78,10 @@ class EmptyData implements \JsonSerializable, \ArrayAccess
         return '__not_found__';
     }
 
-    public function __set($name, $value): void {}
+    public function __set($name, $value): void
+    {
+        //
+    }
 
     public function __isset($name)
     {
@@ -90,14 +93,14 @@ class EmptyData implements \JsonSerializable, \ArrayAccess
         return $this;
     }
 
-    public function offsetSet($name, $value)
+    public function offsetSet($name, $value): void
     {
-        return $this;
+        //
     }
 
-    public function offsetUnset($name)
+    public function offsetUnset($name): void
     {
-        return $this;
+        //
     }
 
     public function __toString(): string
@@ -110,12 +113,12 @@ class EmptyData implements \JsonSerializable, \ArrayAccess
         return $this;
     }
 
-    public function jsonSerialize()
+    public function jsonSerialize(): mixed
     {
         return $this->toArray();
     }
 
-    public function toArray()
+    public function toArray(): array
     {
         return [
             'title' => '无',

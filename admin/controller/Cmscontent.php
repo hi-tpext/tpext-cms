@@ -246,7 +246,7 @@ class Cmscontent extends Controller
     {
         $id = input('id/d');
 
-        $content = $this->dataModel->where('id', $id)->with(['content'])->find();
+        $content = $this->dataModel->where('id', $id)->with(['detail'])->find();
 
         $builder = $this->builder($this->pageTitle, '复制');
         if (!$content) {

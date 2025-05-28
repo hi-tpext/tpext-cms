@@ -12,6 +12,7 @@
 namespace tpext\cms\common\model;
 
 use think\Model;
+use tpext\cms\common\Cache;
 
 class CmsContentModel extends Model
 {
@@ -47,18 +48,18 @@ class CmsContentModel extends Model
         if (!isset($data['id'])) {
             return;
         }
-        cache('cms_content_model_fields_' . $data['id'], null);
-        cache('cms_content_model_fields_main_left_' . $data['id'], null);
-        cache('cms_content_model_fields_main_right_' . $data['id'], null);
-        cache('cms_content_model_fields_extend_' . $data['id'], null);
+        Cache::delete('cms_content_model_fields_' . $data['id']);
+        Cache::delete('cms_content_model_fields_main_left_' . $data['id']);
+        Cache::delete('cms_content_model_fields_main_right_' . $data['id']);
+        Cache::delete('cms_content_model_fields_extend_' . $data['id']);
     }
 
     public static function onAfterDelete($data)
     {
-        cache('cms_content_model_fields_' . $data['id'], null);
-        cache('cms_content_model_fields_main_left_' . $data['id'], null);
-        cache('cms_content_model_fields_main_right_' . $data['id'], null);
-        cache('cms_content_model_fields_extend_' . $data['id'], null);
+        Cache::delete('cms_content_model_fields_' . $data['id']);
+        Cache::delete('cms_content_model_fields_main_left_' . $data['id']);
+        Cache::delete('cms_content_model_fields_main_right_' . $data['id']);
+        Cache::delete('cms_content_model_fields_extend_' . $data['id']);
     }
 
     public function setFieldsAttr($value)

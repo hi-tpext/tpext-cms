@@ -12,6 +12,7 @@
 namespace tpext\cms\common\model;
 
 use think\Model;
+use tpext\cms\common\Cache;
 
 class CmsTag extends Model
 {
@@ -46,11 +47,11 @@ class CmsTag extends Model
         if (!isset($data['id'])) {
             return;
         }
-        cache('cms_tag_' . $data['id'], null);
+        Cache::delete('cms_tag_' . $data['id']);
     }
 
     public static function onAfterDelete($data)
     {
-        cache('cms_tag_' . $data['id'], null);
+        Cache::delete('cms_tag_' . $data['id']);
     }
 }
