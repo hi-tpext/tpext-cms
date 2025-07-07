@@ -60,7 +60,6 @@ class Render
 
         try {
             $tplFile = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
-            Processer::setPath($template['prefix']);
             $vars = [
                 'page_title' => '首页' . '_',
                 '__site_home__' => $template['prefix'],
@@ -111,7 +110,6 @@ class Render
         }
 
         try {
-            Processer::setPath($template['prefix']);
             $tplFile = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
             if ($channel['is_show'] != 1 || $channel['delete_time'] || $channel['channel_path'] == '#') {
                 return ['code' => 0, 'msg' => '栏目不存在'];
@@ -187,7 +185,6 @@ class Render
         }
 
         try {
-            Processer::setPath($template['prefix']);
             $tplFile = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
             $out = '';
             if ($content['__not_found__'] || $content['is_show'] != 1 || $content['delete_time']) {
@@ -326,7 +323,8 @@ EOT;
     public function dynamic($template, $tplHtmlId)
     {
         $tplHtml = $this->htmlModel->where('id', $tplHtmlId)
-            ->where(['type' => 'dynamic', 'template_id' => $template['id']])
+            ->where('template_id', $template['id'])
+            ->where('type', 'in', ['dynamic', 'single'])
             ->cache('cms_html_' . $tplHtmlId, $this->cacheTime, 'cms_html')
             ->find();
 
@@ -336,8 +334,6 @@ EOT;
 
         try {
             $tplFile = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
-            Processer::setPath($template['prefix']);
-
             $page_path = '';
             $get = request()->get();
             if (!empty($get)) {
@@ -423,9 +419,9 @@ EOT;
      */
     public function copyStatic($template)
     {
-        $staticPath = App::getRootPath() . 'theme/' . $template['view_path'] . '/static';
+        $staticPath = App::getRootPath() . 'theme/' . $template['view_path'] . '/static/';
         $staticPath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $staticPath);
-        $staticDir = 'theme' . DIRECTORY_SEPARATOR . $template['view_path'];
+        $staticDir = 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . '/';
 
         if (is_dir(App::getPublicPath() . $staticDir)) {
             if (is_file(App::getPublicPath() . $staticDir . DIRECTORY_SEPARATOR . 'no-publish.txt')) {
@@ -445,6 +441,19 @@ EOT;
                     . '请修改原始文件，再发布静态资源到此目录。' . "\n"
                     . '如果您不想使用此模式，请在此位置新建文件：no-publish.txt，以避免修改被覆盖。' . "\n"
             );
+
+            $directory = new \DirectoryIterator(App::getPublicPath() . $staticDir . '/css/');
+
+            $v = Module::getInstance()->config('assets_ver', '1.0');
+            $dir = '/theme/' . $template['view_path'] . '/';
+
+            foreach ($directory as $fileinfo) {
+                if ($fileinfo->isFile() && $fileinfo->getExtension() === "css") {
+                    $css = file_get_contents($fileinfo->getPathname());
+                    $css = $this->replaceCssImgPath($css, $v, $dir);
+                    file_put_contents($fileinfo->getPathname(), $css);
+                }
+            }
             return ['code' => 1, 'msg' => '[静态资源]发布成功：' . "{$staticPath} => public" . DIRECTORY_SEPARATOR . "{$staticDir}"];
         }
 
@@ -461,9 +470,27 @@ EOT;
     {
         $v = Module::getInstance()->config('assets_ver', '1.0');
         $staticDir = '/theme/' . $template['view_path'] . '/';
+
         $content = preg_replace('/(<link\s+[^>]*?href=[\'\"])(?:\.{1,2}\/)?static\/([^>]+?\.\w+)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
         $content = preg_replace('/(<script\s+[^>]*?src=[\'\"])(?:\.{1,2}\/)?static\/([^>]+?\.js)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
         $content = preg_replace('/(<img\s+[^>]*?src=[\'\"])(?:\.{1,2}\/)?static\/([^>]+?\.\w+)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
+
+        $content = $this->replaceCssImgPath($content, $v, $staticDir);
+
+        return $content;
+    }
+
+    /**
+     * 替换css中图片路径
+     * @param string $content
+     * @param string $v
+     * @param string $staticDir
+     * @return string
+     */
+    protected function replaceCssImgPath($content, $v, $staticDir)
+    {
+        $content = preg_replace('/(background\s*:[^>]+?url\([\'\"])(?:\.{1,2}\/)?static\/([^;]+?\.\w+)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
+        $content = preg_replace('/(background\-img\s*:[^>]+?url\([\'\"])(?:\.{1,2}\/)?static\/([^;]+?\.\w+)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
 
         return $content;
     }

@@ -216,6 +216,35 @@
 └─....         [更多单页]
 </pre>
 
+<p>页面类型说明</p>
+<p>公共片段：供其他页面引用，使用<code>{</code>include<code>}</code>标签引用</p>
+<p>栏目模板：使用<code>{</code>content@list<code>}</code>读取列表，一般不需要额外的参数，栏目id，分页大小、排序等都会默认注入。若需要个性化再单独设置</p>
+<p>详情模板：默认会注入当前内容变量`$content`，不需要再使用<code>{</code>content@get<code>}</code>读取了。直接使用<code>{</code>$content.title<code>}</code>等标签输出文章信息即可
+</p>
+<p>动态解析模板：使用比较自由，可做栏目列表也可做详情页，或者更复杂的组合。不像[栏目模板]和[详情模板]会有默认的注入或行为，纯看标签的写法。</p>
+<p>单页：可绑定已篇文章，绑定后和详情模板用法一样。若不绑定文章，用法和动态解析模板用法一样。</p>
+<p>
+    区别：
+</p>
+<p>详情页：全部可生成axx.html页面到真实路径实现静态化。访问路径为二级：<code>/content/axx.html</code></p>
+<p>栏目页：可以静态化第一页，如[<code>/channel/c4.html</code>,<code>/channel/c4-1.html</code>]可静态化，[<code>/channel/c4-2.html....</code>]不可静态化。访问路径为二级：<code>/channel/cxx-p.html</code>
+</p>
+<p>动态解析页：不可静态化，每次访问都要动态解析，并可自动注入url参数。访问路径为二级：<code>/dynamic/xx.html</code></p>
+<pre>
+    {literal}
+    如url：/dynamic/test?a=1&b=2 动态解析页
+    可在模板中使用：
+    {content@list cid="$a" num="$b"}
+    {/content@list}
+    安全事项，注入的参数会进行基本的strip_tags()过滤，查询条件页不会拼接字符串。
+    但从谨慎的角度考虑，对于一些明确类型的参数，可进行类型转换，
+    如上面的参数a、b可明确为数字类型，可以使用php的intval()函数进行转换：
+    {content@list cid=":intval($a)" num=":intval($b)"}
+    其他参数使用：$_SERVER|$_REQUEST|$_GET|$_POST|$_COOKIE|$_SESSION等在所有页面都可使用。
+    {/literal}
+</pre>
+<p>单页：绑定文章的可静态化，不绑定文章的不可静态化。访问路径为一级：<code>/xx.html</code>（与首页index.html同级）</p>
+
 <h4>静态资源</h4>
 <p>符串替换写法:<code>@static@css/style.css</code></p>
 <p>或相对路径:<code>../static/css/style.css</code>、<code>./static/css/style.css</code></p>

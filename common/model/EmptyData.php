@@ -19,7 +19,7 @@ class EmptyData implements \JsonSerializable, \ArrayAccess
      * @param string $name 名称
      * @return mixed
      */
-    public function __get($name): mixed
+    public function __get($name)
     {
         if ($name == '__not_found__') {
             return true;
@@ -57,7 +57,7 @@ class EmptyData implements \JsonSerializable, \ArrayAccess
      * @param string $name
      * @return mixed
      */
-    public function offsetGet($name): mixed
+    public function offsetGet($name)
     {
         if ($name == '__not_found__') {
             return true;
@@ -83,7 +83,7 @@ class EmptyData implements \JsonSerializable, \ArrayAccess
         //
     }
 
-    public function __isset($name)
+    public function __isset($name): bool
     {
         return true;
     }
@@ -113,7 +113,7 @@ class EmptyData implements \JsonSerializable, \ArrayAccess
         return $this;
     }
 
-    public function jsonSerialize(): mixed
+    public function jsonSerialize(): array
     {
         return $this->toArray();
     }

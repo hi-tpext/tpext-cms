@@ -251,7 +251,9 @@ class Cmstemplatehtml extends Controller
                     $form->tree('relation_ids', '选择栏目')->optionsData(CmsChannel::where('is_show', 1)->field('id,name,parent_id')->select())->value($relation_ids)
                         ->help('哪些' . ($page['type'] == 'content' ? '内容' : '栏目') . '页使用该模板，可选择多个栏目')->required();
                 } else if ($page['type'] == 'single') {
-                    $form->select('to_id', '选择内容详情')->help('选择一篇文章')->dataUrl(url('/admin/cmscontent/selectpage'), '{id}#{title} — [所属栏目：{channel.full_name}]')->required();
+                    $form->select('to_id', '选择内容详情')->help('选择一篇文章')
+                        ->help('绑定文章后模板中可使用{$content.xxx}读取文章信息')
+                        ->dataUrl(url('/admin/cmscontent/selectpage'), '{id}#{title} — [所属栏目：{channel.full_name}]');
                 } else {
                     $form->show('tips', ' ')->value('未知页面类型');
                 }

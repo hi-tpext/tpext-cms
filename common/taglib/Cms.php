@@ -417,19 +417,19 @@ EOT;
         if (preg_match('/^\(?\d,[,\d]+\)?$/is', $idVal)) {
             $op = 'in';
             $idVal = trim($idVal, ',');
-        } else if (preg_match('/^(in|not\s*in)\s*\(?(.+?)\)?$/is', $idVal, $mch)) {
+        } else if (preg_match('/^(in|not\s*in)\s+\(?(.+?)\)?$/is', $idVal, $mch)) {
             $op = $mch[1];
             $idVal = '(' . trim($mch[2]) . ')';
-        } else if (preg_match('/^(between|not\s*between)\s*\(?(.+?)\)?$/is', $idVal, $mch)) {
+        } else if (preg_match('/^(between|not\s*between)\s+\(?(.+?)\)?$/is', $idVal, $mch)) {
             $op = $mch[1];
             $idVal = trim($mch[2]);
             if (!strstr($idVal, 'and')) {
                 $idVal = str_replace(',', ' and ', $idVal);
             }
-        } else if (preg_match('/^(>|=|<|>=|<=|<>)\s*(.+?)$/is', $idVal, $mch)) {
+        } else if (preg_match('/^(>|=|<|>=|<=|<>)\s+(.+?)$/is', $idVal, $mch)) {
             $op = $mch[1];
             $idVal = trim($mch[2]);
-        } else if (preg_match('/^(gt|eq|lt|egt|elt|neq|!=)\s*(.+?)$/is', $idVal, $mch)) {
+        } else if (preg_match('/^(gt|eq|lt|egt|elt|neq|!=)\s+(.+?)$/is', $idVal, $mch)) {
             $op = $mch[1];
             $idVal = trim($mch[2]);
         } else if (preg_match('/^(like|not\s*like)\s+(.+)$/is', $idVal, $mch)) {
@@ -455,11 +455,11 @@ EOT;
     {
         //替换where中的cid语法糖为真实字段
         if ($cid_key && strstr($where, 'cid')) {
-            $where = preg_replace('/(\bcid\s+)(gt|eq|lt|egt|elt|neq|not\s*in|like|not\s*like|between|not\s*between)/is', $cid_key . '$2', $where);
+            $where = preg_replace('/(\bcid\s+)(gt|eq|lt|egt|elt|neq|not\s*in|like|not\s*like|between|not\s*between)\b/is', $cid_key . '$2', $where);
             $where = preg_replace('/(\bcid\s*)(\<|\>|=|!=)/is', $cid_key . '$2', $where);
         }
         if ($cid_key == 'parent_id' && strstr($where, 'pid')) {
-            $where = preg_replace('/(\bpid\s+)(gt|eq|lt|egt|elt|neq|not\s*in|like|not\s*like|between|not\s*between)/is', $cid_key . '$2', $where);
+            $where = preg_replace('/(\bpid\s+)(gt|eq|lt|egt|elt|neq|not\s*in|like|not\s*like|between|not\s*between)\b/is', $cid_key . '$2', $where);
             $where = preg_replace('/(\bpid\s*)(\<|\>|=|!=)/is', $cid_key . '$2', $where);
         }
         //替换表达式
@@ -479,9 +479,9 @@ EOT;
     protected function filterIdVar($var)
     {
         $var = $this->autoBuildVar($var);
-        if (preg_match('/\$_(SERVER|REQUEST|GET|POST|COOKIE|SESSION)/i', $var) || preg_match('/app\(/i', $var)) {
-            $var = "filter_var({$var}, FILTER_VALIDATE_INT)";
-        }
+        // if (preg_match('/\$_(SERVER|REQUEST|GET|POST|COOKIE|SESSION)/i', $var) || preg_match('/app\(/i', $var)) {
+        //     $var = "filter_var({$var}, FILTER_VALIDATE_INT)";
+        // }
         return $var;
     }
 

@@ -141,7 +141,8 @@ class RouteBuilder
         foreach ($singlePages as $page) {
             $path = preg_replace('/theme\/[\w\-]+?\/([\w\-]+?).html$/i', '$1', $page['path']);
             $pages[] = [
-                'id' => $page['to_id'],
+                'id' => $page['id'],
+                'to_id' => $page['to_id'],
                 'path' => $path,
             ];
         }
@@ -233,7 +234,11 @@ class RouteBuilder
                 }
 
                 foreach ($singlePages as $page) {
-                    $lines[] = "Route::get('/{$prefix}/{$page['path']}$', Page::class . '@content')->append(['id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
+                    if ($page['to_id'] > 0) {
+                        $lines[] = "Route::get('/{$prefix}/{$page['path']}$', Page::class . '@content')->append(['id' => {$page['to_id']}, 'tpl_id' => {$tmpl['id']}]);";
+                    } else {
+                        $lines[] = "Route::get('/{$prefix}/{$page['path']}$', Page::class . '@dynamic')->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
+                    }
                 }
 
                 foreach ($dynamicPages as $page) {
@@ -261,7 +266,11 @@ class RouteBuilder
                 }
 
                 foreach ($singlePages as $page) {
-                    $lines[] = "Route::get('/{$page['path']}$', Page::class . '@content')->append(['id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
+                    if ($page['to_id'] > 0) {
+                        $lines[] = "Route::get('/{$page['path']}$', Page::class . '@content')->append(['id' => {$page['to_id']}, 'tpl_id' => {$tmpl['id']}]);";
+                    } else {
+                        $lines[] = "Route::get('/{$page['path']}$', Page::class . '@dynamic')->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
+                    }
                 }
 
                 foreach ($dynamicPages as $page) {
