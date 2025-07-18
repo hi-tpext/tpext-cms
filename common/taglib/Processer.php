@@ -34,6 +34,11 @@ class Processer
         static::$isAdmin = $val;
     }
 
+    /**
+     * Undocumented function
+     *
+     * @return \think\facade\Db|\think\Db
+     */
     public static function getDbNamespace()
     {
         return class_exists('\think\facade\Db') ? '\think\facade\Db' : '\think\Db';
@@ -105,6 +110,51 @@ class Processer
     }
 
     /**
+     * 处理列表关联
+     * @param string $table
+     * @param array $data
+     * @return array
+     */
+    public static function list($table, $data)
+    {
+        foreach ($data as &$item) {
+            $item = self::item($table, $item);
+        }
+        
+        if ($table == 'cms_content') {
+            $dbNameSpace = self::getDbNamespace();
+            $channels = [];
+            $channelIds = array_column($data, 'channel_id');
+            if ($channelIds) {
+                $channelScope = Table::defaultScope('cms_channel');
+                $chnList = $dbNameSpace::name('cms_channel')
+                    ->where('id', 'in', $channelIds)
+                    ->where($channelScope)
+                    ->select();
+                foreach ($chnList as $chn) {
+                    $channels[$chn['id']] = $chn;
+                }
+            }
+
+            foreach ($data as &$item) {
+                $channel = null;
+                if (isset($channels[$item['channel_id']])) {
+                    $channel = self::item('cms_channel', $channels[$item['channel_id']]);
+                    $item['url'] = static::resolveWebPath($item['link']) ?: self::$path . self::resolveContentPath($item, $channel) . '.html';
+                    $item['channel_url'] = $channel['url'];
+                } else {
+                    $channel = new EmptyData;
+                    $item['url'] = static::resolveWebPath($item['link']) ?: self::$path . self::resolveContentPath($item, ['content_path' => 'a[id]']) . '.html';
+                    $item['channel_url'] = '#';
+                }
+                $item['channel'] = $channel;
+            }
+        }
+
+        return $data;
+    }
+
+    /**
      * 处理列表条目
      *
      * @param string $table
@@ -118,32 +168,10 @@ class Processer
             return $empty;
         }
 
-        $dbNameSpace = self::getDbNamespace();
         if ($table == 'cms_channel') {
             $item['channel_id'] = $item['id'];
             $item['url'] = static::resolveWebPath($item['link']) ?: ($item['channel_path'] == '#' ? '#' : self::$path . self::resolveChannelPath($item) . '.html');
         } else if ($table == 'cms_content') {
-
-            if (empty($item['channel_id'])) {
-                $channel = new EmptyData;
-                $item['url'] = static::resolveWebPath($item['link']) ?: self::$path . self::resolveContentPath($item, ['content_path' => 'a[id]']) . '.html';
-                $item['channel_url'] = '#';
-            } else {
-                $channelScope = Table::defaultScope($table);
-                $channel = $dbNameSpace::name('cms_channel')
-                    ->where('id', $item['channel_id'])
-                    ->where($channelScope)
-                    ->cache(static::$isAdmin ? false : 'cms_channel_' . $item['channel_id'], 0, 'cms_channel')
-                    ->find();
-                if ($channel) {
-                    $item['url'] = static::resolveWebPath($item['link']) ?: self::$path . self::resolveContentPath($item, $channel) . '.html';
-                    $item['channel_url'] = $channel['link'] ?: ($channel['channel_path'] == '#' ? '#' : self::$path . self::resolveChannelPath($channel) . '.html');
-                } else {
-                    $empty = new EmptyData;
-                    return $empty;
-                }
-            }
-            $item['channel'] = $channel;
             $item['content_id'] = $item['id'];
             $item = static::resolveContentDate($item);
         } else if ($table == 'cms_banner') {
@@ -194,7 +222,7 @@ class Processer
                 $item['url'] = static::resolveWebPath($item['link']) ?: self::$path . self::resolveContentPath($item, ['content_path' => 'a[id]']) . '.html';
                 $item['channel_url'] = '#';
             } else {
-                $channelScope = Table::defaultScope($table);
+                $channelScope = Table::defaultScope('cms_channel');
                 $channel = $dbNameSpace::name('cms_channel')
                     ->where('id', $item['channel_id'])
                     ->where($channelScope)
@@ -203,6 +231,8 @@ class Processer
                 if ($channel) {
                     $item['url'] = static::resolveWebPath($item['link']) ?: self::$path . self::resolveContentPath($item, $channel) . '.html';
                     $item['channel_url'] = $channel['link'] ?: ($channel['channel_path'] == '#' ? '#' : self::$path . self::resolveChannelPath($channel) . '.html');
+                    $channel['url'] = $item['channel_url'];
+                    $channel['channel_id'] = $channel['id'];
                 } else {
                     $channel = new EmptyData;
                 }

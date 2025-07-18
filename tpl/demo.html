@@ -218,8 +218,8 @@
 
 <p>页面类型说明</p>
 <p>公共片段：供其他页面引用，使用<code>{</code>include<code>}</code>标签引用</p>
-<p>栏目模板：使用<code>{</code>content@list<code>}</code>读取列表，一般不需要额外的参数，栏目id，分页大小、排序等都会默认注入。若需要个性化再单独设置</p>
-<p>详情模板：默认会注入当前内容变量`$content`，不需要再使用<code>{</code>content@get<code>}</code>读取了。直接使用<code>{</code>$content.title<code>}</code>等标签输出文章信息即可
+<p>栏目模板：默认会注入当前栏目变量`$channel`，不需要再使用<code>{</code>channel@get<code>}</code>重复读取了。直接使用<code>{</code>$channel.name<code>}</code>等标签输出栏目信息即可。使用<code>{</code>content@list<code>}</code>读取所属文章列表，一般不需要额外的参数，栏目id，分页大小、排序等都会注入栏目后台设置。若需要个性化再按需使用相关参数设置。</p>
+<p>详情模板：默认会注入当前内容变量`$content`，不需要再使用<code>{</code>content@get<code>}</code>重复读取了。直接使用<code>{</code>$content.title<code>}</code>等标签输出文章信息即可。
 </p>
 <p>动态解析模板：使用比较自由，可做栏目列表也可做详情页，或者更复杂的组合。不像[栏目模板]和[详情模板]会有默认的注入或行为，纯看标签的写法。</p>
 <p>单页：可绑定已篇文章，绑定后和详情模板用法一样。若不绑定文章，用法和动态解析模板用法一样。</p>

@@ -345,6 +345,7 @@ EOT;
                 '__site_home__' => $template['prefix'],
                 '__wconf__' => $this->getWconfig(),
                 '__set_page_path__' => $page_path,
+                '__page_type__' => 'dynamic',
             ];
 
             $param = request()->param();
@@ -352,7 +353,7 @@ EOT;
                 if (is_array($value)) {
                     $value = implode(',', $value);
                 }
-                $value = strip_tags($value);
+                $value = $this->sqlGuard($value);
             });
 
             $vars = array_merge($vars, $param);
@@ -371,6 +372,26 @@ EOT;
             trace($e->__toString());
             return ['code' => 0, 'msg' => '[页面]生成出错，' . str_replace(App::getRootPath(), '', $e->getFile()) . '#' . $e->getLine() . '|' . $e->getMessage()];
         }
+    }
+
+    /**
+     * sql 注入防御
+     * @param string $val
+     * @return string
+     */
+    protected function sqlGuard($val)
+    {
+        $val = strip_tags($val);
+
+        if (preg_match('/\b(?:select|delete)\b.+?\bfrom\b/is', $val)) {
+            return 'invalid words';
+        }
+
+        if (preg_match('/\bunion\b.+?\bselect\b/is', $val)) {
+            return 'invalid words';
+        }
+
+        return $val;
     }
 
     /**

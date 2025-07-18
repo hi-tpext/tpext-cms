@@ -45,7 +45,7 @@ class Cms extends Taglib
         $take = $tag['num'] ?? 0;
         $pagesize = $tag['pagesize'] ?? 0;
         $item = !empty($tag['item']) ? $tag['item'] : ($tag['default_item'] ?? 'item');
-        $assign = !empty($tag['assign']) ? $tag['assign'] : $table . '_list_' . time();
+        $assign = !empty($tag['assign']) ? $tag['assign'] : $table . '_list_' . time() . mt_rand(100,  999);
         $item = ltrim($item, '$');
         $assign = ltrim($assign, '$');
         $cache = explode(',', $tag['cache'] ?? '');
@@ -66,6 +66,7 @@ class Cms extends Taglib
         $parseStr .= <<<EOT
 
         <?php
+
         \$__page__ = 1;
         \$__render_links__ = '{$links}' == '1';
         \$__has_paginator__ = false;
@@ -73,7 +74,7 @@ class Cms extends Taglib
         \$__pagesize__ = {$pagesize} ?: (\$__set_pagesize__ ?? 0);
         if(\$__take__ == 0) {
             if(\$__pagesize__ > 0) {
-                \$__page__ = isset(\$page) && \$page > 0 ? \$page : 1;
+                \$__page__ = isset(\$page) && intval(\$page) > 0 ? intval(\$page) : 1;
                 \$__take__ = \$__pagesize__;
                 \$__has_paginator__ = true;
             } else {
@@ -83,7 +84,7 @@ class Cms extends Taglib
         \$__list__ = [];
         \$__order_by__ = '{$table}' =='cms_content' && !empty(\$__set_order_by__) ? \$__set_order_by__ . '{$tagOrder}' : '{$tagOrder}';
 
-        \$__data__ = {$dbNameSpace}::name('{$table}')
+        \$__list__ = {$dbNameSpace}::name('{$table}')
             ->where(\$__where__)
             ->whereRaw(\$__where_raw__, \$__where_binds__)
             ->where('{$scope}')
@@ -92,32 +93,38 @@ class Cms extends Taglib
             ->limit((\$__page__ - 1) * \$__take__, \$__take__)
             ->cache({$cacheKey}, {$cacheTime}, '{$table}')
             ->select();
-        foreach(\$__data__ as \$__d__) {
-            \$__list__[] = \\tpext\\cms\\common\\taglib\\Processer::item('{$table}', \$__d__);
-        }
+
+        \$__list__ = \\tpext\\cms\\common\\taglib\\Processer::list('{$table}', \$__list__);
+        
         if(\$__has_paginator__) {
             \$__total__ = {$dbNameSpace}::name('{$table}')
                 ->where(\$__where__)
                 ->whereRaw(\$__where_raw__, \$__where_binds__)
                 ->where('{$scope}')
-                ->count();
+                ->count('id');
                 
-            \$__paginator__ = new \\think\\paginator\\driver\\Bootstrap(\$__data__, \$__pagesize__, \$__page__, \$__total__, false, ['path' => \$__set_page_path__ ?? '']);
+            \$__paginator__ = new \\think\\paginator\\driver\\Bootstrap(\$__list__, \$__pagesize__, \$__page__, \$__total__, false, ['path' => \$__set_page_path__ ?? '']);
             \$__links_html__ = \$__paginator__->render();
         }
+        \${$assign} = \$__list__;
         ?>
+
         {volist name="__list__" id="{$item}"}
         {$content}
         {/volist}
         {if condition="\$__has_paginator__ && \$__render_links__ && !empty(\$__links_html__)"}
         {\$__links_html__|raw}
-        {elseif condition="\$__has_paginator__"}
-        <!-- 未自动输出分页，请在页面需要的位置调用 -->
         {/if}
-        {assign name="{$assign}" value="\$__list__" /}
         <?php
-        unset(\$__data__, \$__where_raw__, \$__where_binds__, \$__where__, \$__id_key__, \$__id_val__, \$__cid_key__, \$__cid_val__);
+        
+        unset(\$__list__, \$__where_raw__, \$__where_binds__, \$__where__, \$__id_key__, \$__id_val__, \$__cid_key__, \$__cid_val__);
         unset(\$__order_by__, \$__paginator__, \$__total__, \$__take__, \$__pagesize__, \$__page__);
+        if(\$__page_type__ == 'content' && '{$table}' =='cms_content') {
+            \$content = \$vars['content'];
+        }
+        else if(\$__page_type__ == 'channel' && '{$table}' =='cms_channel') {
+            \$channel = \$vars['channel'];
+        }
         ?>
 EOT;
         $this->usedTags[] = $tag;
@@ -133,7 +140,7 @@ EOT;
         $pid_key = $tag['pid_key'] ?? 'parent_id';
         $id_key = $tag['id_key'] ?? 'id';
         $item = !empty($tag['item']) ? $tag['item'] : ($tag['default_item'] ?? 'item');
-        $assign = !empty($tag['assign']) ? $tag['assign'] : $table . '_list_' . time();
+        $assign = !empty($tag['assign']) ? $tag['assign'] : $table . '_list_' . time() . mt_rand(100,  999);
         $item = ltrim($item, '$');
         $assign = ltrim($assign, '$');
         $fields = $tag['fields'] ?? Table::defaultFields($table);
@@ -417,10 +424,10 @@ EOT;
         if (preg_match('/^\(?\d,[,\d]+\)?$/is', $idVal)) {
             $op = 'in';
             $idVal = trim($idVal, ',');
-        } else if (preg_match('/^(in|not\s*in)\s+\(?(.+?)\)?$/is', $idVal, $mch)) {
+        } else if (preg_match('/^(in|not\s*in)\s*\(?(.+?)\)?$/is', $idVal, $mch)) {
             $op = $mch[1];
             $idVal = '(' . trim($mch[2]) . ')';
-        } else if (preg_match('/^(between|not\s*between)\s+\(?(.+?)\)?$/is', $idVal, $mch)) {
+        } else if (preg_match('/^(between|not\s*between)\s*\(?(.+?)\)?$/is', $idVal, $mch)) {
             $op = $mch[1];
             $idVal = trim($mch[2]);
             if (!strstr($idVal, 'and')) {
@@ -479,9 +486,9 @@ EOT;
     protected function filterIdVar($var)
     {
         $var = $this->autoBuildVar($var);
-        // if (preg_match('/\$_(SERVER|REQUEST|GET|POST|COOKIE|SESSION)/i', $var) || preg_match('/app\(/i', $var)) {
-        //     $var = "filter_var({$var}, FILTER_VALIDATE_INT)";
-        // }
+        if (preg_match('/\$_(SERVER|REQUEST|GET|POST|COOKIE|SESSION)/i', $var) || preg_match('/app\(/i', $var)) {
+            $var = "sql_guard({$var})";
+        }
         return $var;
     }
 
