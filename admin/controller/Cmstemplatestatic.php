@@ -136,7 +136,7 @@ class Cmstemplatestatic extends Controller
             $list[] = $d;
         }
 
-        $data = $list;
+        $data = array_values($list);
     }
 
     /**
