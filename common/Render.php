@@ -448,7 +448,7 @@ EOT;
             if (is_file(App::getPublicPath() . $staticDir . DIRECTORY_SEPARATOR . 'no-publish.txt')) {
                 return ['code' => 0, 'msg' => '[静态资源]发布取消：目录中存在no-publish.txt文件，已关闭资源发布模式。' . "{$staticPath} => public" . DIRECTORY_SEPARATOR . "{$staticDir}"];
             }
-            Tool::copyDir(App::getPublicPath() . $staticDir, App::getPublicPath() . $staticDir . date('YmdHis'));
+            Tool::copyDir(App::getPublicPath() . $staticDir, App::getPublicPath() . rtrim($staticDir, '/') . date('YmdHis'));
         }
         Tool::deleteDir(App::getPublicPath() . $staticDir);
         $res = Tool::copyDir($staticPath, App::getPublicPath() . $staticDir);

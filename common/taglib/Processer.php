@@ -37,7 +37,7 @@ class Processer
     /**
      * Undocumented function
      *
-     * @return \think\facade\Db|\think\Db
+     * @return \think\facade\Db|\think\Db|string
      */
     public static function getDbNamespace()
     {
@@ -112,15 +112,19 @@ class Processer
     /**
      * 处理列表关联
      * @param string $table
-     * @param array $data
+     * @param array|\think\Collection $data
      * @return array
      */
     public static function list($table, $data)
     {
-        foreach ($data as &$item) {
-            $item = self::item($table, $item);
+        if ($data instanceof \think\Collection) {
+            $data = $data->toArray();
         }
-        
+
+        foreach ($data as $k => $item) {
+            $data[$k] = self::item($table, $item);
+        }
+
         if ($table == 'cms_content') {
             $dbNameSpace = self::getDbNamespace();
             $channels = [];

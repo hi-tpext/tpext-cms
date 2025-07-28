@@ -56,7 +56,9 @@ class EmptyData implements \JsonSerializable, \ArrayAccess
      *
      * @param string $name
      * @return mixed
+     * 
      */
+     #[\ReturnTypeWillChange]
     public function offsetGet($name)
     {
         if ($name == '__not_found__') {
