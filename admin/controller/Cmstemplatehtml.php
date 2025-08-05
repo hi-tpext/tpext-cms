@@ -176,7 +176,7 @@ class Cmstemplatehtml extends Controller
                 }
                 $d['dir'] = '<span style="margin-left:30px"></span>' . '├─' . $dirs[3];
             } else {
-                $d['dir'] = '├─' . $dirs[2] . '.html';
+                $d['dir'] = '├─' . $dirs[2];
             }
 
             $list[] = $d;
