@@ -174,7 +174,7 @@ class Cmstemplatehtml extends Controller
                         'type' => 'dir',
                     ];
                 }
-                $d['dir'] = '<span style="margin-left:30px"></span>' . '├─' . $dirs[3] . '.html';
+                $d['dir'] = '<span style="margin-left:30px"></span>' . '├─' . $dirs[3];
             } else {
                 $d['dir'] = '├─' . $dirs[2] . '.html';
             }
