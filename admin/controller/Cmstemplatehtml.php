@@ -132,8 +132,8 @@ class Cmstemplatehtml extends Controller
             ->btnDelete()
             ->mapClass([
                 'edit' => ['hidden' => '__hi_edit__'],
-                'apply' => ['hidden' => '__hi_apply__'],
-                'delete' => ['hidden' => '__hi_delete__'],
+                'apply' => ['hidden' => '__hi_apply__', 'disabled' => '__dis_apply__'],
+                'delete' => ['hidden' => '__hi_delete__', 'disabled' => '__dis_delete__'],
             ]);
 
         $list = [];
@@ -154,7 +154,7 @@ class Cmstemplatehtml extends Controller
                 $d['conut'] = '无';
             }
 
-            $d['__dis_apply__'] = in_array($d['type'], ['common', 'dynamic']) || $d['is_default'];
+            $d['__dis_apply__'] = in_array($d['type'], ['common', 'dynamic', 'index']) || $d['is_default'];
             $d['__dis_delete__'] = $d['is_default'];
 
             $dirs = explode('/', $d['path']);
@@ -248,8 +248,12 @@ class Cmstemplatehtml extends Controller
             } else {
                 if ($page['type'] == 'channel' || $page['type'] == 'content') {
                     $relation_ids = CmsContentPage::where('html_id', $html_id)->column('to_id');
-                    $form->tree('relation_ids', '选择栏目')->optionsData(CmsChannel::where('is_show', 1)->field('id,name,parent_id')->select())->value($relation_ids)
-                        ->help('哪些' . ($page['type'] == 'content' ? '内容' : '栏目') . '页使用该模板，可选择多个栏目')->required();
+                    $optionsData = CmsChannel::where('is_show', 1)->field('id,name,parent_id')->select();
+                    $form->tree('relation_ids', '选择栏目')->optionsData($optionsData, 'name', 'id', 'parent_id', '')
+                        ->required()
+                        ->value($relation_ids)
+                        ->help('哪些' . ($page['type'] == 'content' ? '内容' : '栏目') . '页使用该模板，可选择多个栏目')
+                        ->expandAll();
                 } else if ($page['type'] == 'single') {
                     $form->select('to_id', '选择内容详情')->help('选择一篇文章')
                         ->help('绑定文章后模板中可使用{$content.xxx}读取文章信息')
