@@ -26,8 +26,6 @@ class Cms extends Taglib
 
     protected $usedTags = [];
 
-    protected $bindFunctions = false;
-
     public function __construct($template)
     {
         $this->tags = Table::getTagsList();
@@ -222,30 +220,6 @@ EOT;
         ?>
 EOT;
         $this->usedTags[] = $tag;
-        return $parseStr;
-    }
-
-    /**
-     * 引入标签库助手方法
-     * 
-     * @return string
-     */
-    protected function bindFunctions()
-    {
-        if ($this->bindFunctions) {
-            return '';
-        }
-
-        $this->bindFunctions = true;
-
-        $parseStr = <<<EOT
-
-        <?php
-        include_once \\tpext\\cms\\common\\Module::getInstance()->getRoot() . 'functions.php';
-
-        ?>
-EOT;
-
         return $parseStr;
     }
 
@@ -497,7 +471,7 @@ EOT;
         if (preg_match('/^tag(\w+@\w+)$/i', $name, $mchs) && count($arguments) == 2) {
             $tagName = strtolower($mchs[1]);
             if ('use@functions' == $tagName) {
-                return $this->bindFunctions();
+                return '';//弃用
             }
             if ('show@vars' == $tagName) {
                 return $this->showVars();

@@ -80,6 +80,8 @@ class View
         } else {
             ob_implicit_flush(0);
         }
+        
+        include Module::getInstance()->getRoot() . 'functions.php';
 
         try {
             $this->engine->fetch($template, $this->vars);
