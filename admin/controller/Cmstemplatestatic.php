@@ -23,23 +23,12 @@ class Cmstemplatestatic extends Controller
     {
         $this->pageTitle = '静态资源管理';
         $this->pagesize = 6;
-        $this->pk = 'path';
 
         $this->pagesize = 9999;
     }
 
     protected function filterWhere()
     {
-        $searchData = request()->get();
-
-        $where = [];
-        if (!empty($searchData['path'])) {
-            $where[] = ['path', 'like', '%' . $searchData['path'] . '%'];
-        }
-        if (!empty($searchData['name'])) {
-            $where[] = ['name', 'like', '%' . $searchData['name'] . '%'];
-        }
-
         $where[] = ['template_id', '=', input('template_id/d')];
 
         return $where;
@@ -53,9 +42,6 @@ class Cmstemplatestatic extends Controller
     protected function buildSearch()
     {
         $search = $this->search;
-
-        $search->text('path', '路径', 3)->maxlength(20);
-        $search->text('name', '名称', 3)->maxlength(20);
         $search->hidden('template_id')->value(input('template_id/d'));
     }
 
@@ -113,13 +99,20 @@ class Cmstemplatestatic extends Controller
 
         $list = [];
 
+        $i = 0;
         foreach ($data as &$d) {
+            $i += 1;
+
+            $d['id'] = $i;
+            
             $dirs = explode('/', $d['path']);
 
             if (count($dirs) > 4) {
                 $dir = $dirs[3];
                 if (!isset($list[$dir])) {
+                    $i += 1;
                     $list[$dir] = [
+                        'id' => $i,
                         'dir' => '├─' . $dir . ' /',
                         '__hi_edit__' => 1,
                         '__hi_delete__' => 1,
