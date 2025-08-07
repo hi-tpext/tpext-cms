@@ -470,9 +470,6 @@ EOT;
     {
         if (preg_match('/^tag(\w+@\w+)$/i', $name, $mchs) && count($arguments) == 2) {
             $tagName = strtolower($mchs[1]);
-            if ('use@functions' == $tagName) {
-                return '';//弃用
-            }
             if ('show@vars' == $tagName) {
                 return $this->showVars();
             }

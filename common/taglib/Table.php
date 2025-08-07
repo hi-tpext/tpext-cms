@@ -125,7 +125,6 @@ class Table
             'get' => ['attr' => 'table,where,order,fields,assign,cache', 'close' => 0],
             'prev' => ['attr' => 'table,where,order,fields,assign,cache,sort', 'close' => 0],
             'next' => ['attr' => 'table,where,order,fields,assign,cache,sort', 'close' => 0],
-            'use@functions' => ['attr' => '', 'close' => 0],
             'show@vars' => ['attr' => '', 'close' => 0],
         ];
 
