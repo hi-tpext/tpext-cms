@@ -138,12 +138,7 @@ class Cmstemplatehtml extends Controller
 
         $list = [];
 
-        $i = 0;
         foreach ($data as &$d) {
-            $i += 1;
-
-            $d['id'] = $i;
-
             $view_path = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $d['path']);
             if (!is_file($view_path)) {
                 $this->dataModel->where('id', $d['id'])->delete(); //真实文件不存在，删除记录
@@ -167,9 +162,8 @@ class Cmstemplatehtml extends Controller
             if (count($dirs) > 3) {
                 $dir = $dirs[2];
                 if (!isset($list[$dir])) {
-                    $i += 1;
                     $list[$dir] = [
-                        'id' => $i,
+                        'id' => '',
                         'dir' => '├─' . $dir . ' /',
                         'name' => '',
                         'description' => '存放' . $this->pageTypes[$dir] . '模板',

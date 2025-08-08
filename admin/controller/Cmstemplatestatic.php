@@ -99,20 +99,16 @@ class Cmstemplatestatic extends Controller
 
         $list = [];
 
-        $i = 0;
         foreach ($data as &$d) {
-            $i += 1;
-
-            $d['id'] = $i;
             
             $dirs = explode('/', $d['path']);
 
             if (count($dirs) > 4) {
                 $dir = $dirs[3];
                 if (!isset($list[$dir])) {
-                    $i += 1;
                     $list[$dir] = [
-                        'id' => $i,
+                        'id' => '',
+                        'path' => '',
                         'dir' => '├─' . $dir . ' /',
                         '__hi_edit__' => 1,
                         '__hi_delete__' => 1,
@@ -125,6 +121,8 @@ class Cmstemplatestatic extends Controller
             } else {
                 $d['dir'] = '├─' . $dirs[3];
             }
+
+            $d['id'] = $d['path'];
 
             $list[] = $d;
         }
