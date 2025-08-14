@@ -40,6 +40,7 @@ class CmsTemplateHtml extends Model
 
     public static function onAfterInsert($data)
     {
+        Cache::deleteTag('cms_html');
         ExtLoader::trigger('cms_template_html_on_after_insert', $data);
     }
 
@@ -65,6 +66,8 @@ class CmsTemplateHtml extends Model
             }
         }
 
+        Cache::deleteTag('cms_html');
+
         ExtLoader::trigger('cms_template_html_on_after_update', $data);
     }
 
@@ -84,6 +87,8 @@ class CmsTemplateHtml extends Model
         if (isset($data['to_id'])) {
             Cache::delete('cms_html_to_' . $data['id']);
         }
+
+        Cache::deleteTag('cms_html');
 
         CmsContentPage::where(['html_id' => $data['id']])->delete();
 
@@ -208,7 +213,7 @@ class CmsTemplateHtml extends Model
         //排除静态资源文件夹
         $excludDirs = ['images', 'fonts', 'font', 'img', 'lib', 'node_modules', 'components', 'dist', 'release', 'cache', 'runtime'];
 
-        $dirIterator = new \RecursiveDirectoryIterator($templatePath, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::FOLLOW_SYMLINKS);
+        $dirIterator = new \RecursiveDirectoryIterator($templatePath . DIRECTORY_SEPARATOR . '/static', \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::FOLLOW_SYMLINKS);
         $filterIterator = new DirFilter($dirIterator, $excludDirs);
         $iterator = new \RecursiveIteratorIterator($filterIterator);
 

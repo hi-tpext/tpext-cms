@@ -61,6 +61,19 @@ class CmsTemplate extends Model
 
         Cache::delete('cms_template_' . $data['id']);
 
+        if ($data['view_path']) {
+            //处理模板路径修改
+            $htmls = CmsTemplateHtml::where(['template_id' => $data['id']])
+                ->select();
+            foreach ($htmls as $html) {
+                if (preg_match('/theme\/(\w+)\//i', $html['path'], $mchs)) {
+                    if ($mchs[1] != $data['view_path']) {
+                        $html->save(['path' => str_replace('theme/' . $mchs[1], 'theme/' . $data['view_path'], $html['path'])]);
+                    }
+                }
+            }
+        }
+
         ExtLoader::trigger('cms_template_on_after_update', $data);
     }
 

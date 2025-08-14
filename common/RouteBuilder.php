@@ -88,18 +88,18 @@ class RouteBuilder
                 $ids = $url['ids'];
                 foreach ($ids as $id) {
                     $rules[] = [
-                        'rule' => "Route::get('__prefix__channel/{$path}-<page>$', Page::class . '@channel')",
+                        'rule' => "Route::get('__prefix__c/{$path}-<page>$', Page::class . '@channel')",
                         'append' => ['id' => $id],
                     ];
                     $rules[] = [
-                        'rule' => "Route::get('__prefix__channel/{$path}$', Page::class . '@channel')",
+                        'rule' => "Route::get('__prefix__c/{$path}$', Page::class . '@channel')",
                         'append' => ['id' => $id],
                     ];
                 }
             } else {
                 $path = str_replace('[id]', '<id>', $path);
-                $rules[] = "Route::get('__prefix__channel/{$path}-<page>$', Page::class . '@channel')->pattern(['id' => '\d+', 'page' => '\d+'])";
-                $rules[] = "Route::get('__prefix__channel/{$path}$', Page::class . '@channel')->pattern(['id' => '\d+'])";
+                $rules[] = "Route::get('__prefix__c/{$path}-<page>$', Page::class . '@channel')->pattern(['id' => '\d+', 'page' => '\d+'])";
+                $rules[] = "Route::get('__prefix__c/{$path}$', Page::class . '@channel')->pattern(['id' => '\d+'])";
             }
         }
         return $rules;
@@ -116,10 +116,10 @@ class RouteBuilder
         foreach ($urlPaths as $url) {
             $path = $url['path'];
             $path = str_replace('[id]', '<id>', $path);
-            $rules[] = "Route::get('__prefix__content/{$path}$', Page::class . '@content')->pattern(['id' => '\d+'])";
+            $rules[] = "Route::get('__prefix__d/{$path}$', Page::class . '@content')->pattern(['id' => '\d+'])";
         }
 
-        $rules[] = "Route::get('__prefix__content/__click__<id>$', Page::class . '@click')->pattern(['id' => '\d+'])->ajax()";
+        $rules[] = "Route::get('__prefix__d/__click__<id>$', Page::class . '@click')->pattern(['id' => '\d+'])->ajax()";
 
         return $rules;
     }

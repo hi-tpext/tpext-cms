@@ -133,7 +133,16 @@ class CmsChannel extends Model
 
     public function getContentCountAttr($value, $data)
     {
-        return CmsContent::where('channel_id', $data['id'])->count();
+        return CmsContent::where('channel_id', $data['id'])
+            ->cache('content_count_' . $data['id'], 60 * 60 * 24, 'cms_content')
+            ->count();
+    }
+
+    public function bindhtmls()
+    {
+        return $this->hasMany(CmsContentPage::class, 'to_id', 'id')
+            ->where('html_type', 'in', ['channel', 'content'])
+            ->where('template_id', 1);
     }
 
     /**
@@ -190,7 +199,7 @@ class CmsChannel extends Model
     public function getChannelPathAttr($value, $data)
     {
         if (empty($value)) {
-            $value = 'c[id]';
+            $value = '[id]';
         }
         return $value;
     }
@@ -198,7 +207,7 @@ class CmsChannel extends Model
     public function getContentPathAttr($value, $data)
     {
         if (empty($value)) {
-            $value = 'a[id]';
+            $value = '[id]';
         }
         return $value;
     }

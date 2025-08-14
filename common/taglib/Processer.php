@@ -52,7 +52,7 @@ class Processer
      */
     public static function resolveChannelPath($channel)
     {
-        return 'channel/' . str_replace('[id]', $channel['id'], ltrim($channel['channel_path'], '/'));
+        return 'c/' . str_replace('[id]', $channel['id'], ltrim($channel['channel_path'], '/'));
     }
 
     /**
@@ -64,7 +64,7 @@ class Processer
      */
     public static function resolveContentPath($content, $channel)
     {
-        return 'content/' . str_replace('[id]', $content['id'], ltrim($channel['content_path'], '/'));
+        return 'd/' . str_replace('[id]', $content['id'], ltrim($channel['content_path'], '/'));
     }
 
 
@@ -99,11 +99,11 @@ class Processer
     public static function getOutPath()
     {
         $outPath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, App::getPublicPath() . ltrim(self::$path, '/'));
-        if (!is_dir($outPath . 'channel/')) {
-            mkdir($outPath . 'channel/', 0755, true);
+        if (!is_dir($outPath . 'c/')) {
+            mkdir($outPath . 'c/', 0755, true);
         }
-        if (!is_dir($outPath . 'content/')) {
-            mkdir($outPath . 'content/', 0755, true);
+        if (!is_dir($outPath . 'd/')) {
+            mkdir($outPath . 'd/', 0755, true);
         }
 
         return $outPath;
@@ -384,6 +384,9 @@ class Processer
     {
         $dbNameSpace = self::getDbNamespace();
 
-        return $dbNameSpace::name($table)->where($idKey, $id)->cache(static::$isAdmin ? false : $table . '_' . $id, 3600, $table)->find();
+        return $dbNameSpace::name($table)
+            ->where($idKey, $id)
+            ->cache($table . '_' . $id, static::$isAdmin ? 120 : 3600, $table)
+            ->find();
     }
 }

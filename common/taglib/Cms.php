@@ -120,7 +120,7 @@ class Cms extends Taglib
         if(\$__page_type__ == 'content' && '{$table}' =='cms_content') {
             \$content = \$vars['content'];
         }
-        else if(\$__page_type__ == 'channel' && '{$table}' =='cms_channel') {
+        else if((\$__page_type__ == 'channel' || \$__page_type__ == 'content') && '{$table}' =='cms_channel') {
             \$channel = \$vars['channel'];
         }
         ?>
@@ -165,6 +165,9 @@ EOT;
         \$__pid_key__ ='{$pid_key}';
         \$__id_key__ = '{$id_key}';
         \$__id_val__ = {$id_val} ?? 0;
+        if(\$__page_type__ == 'channel' || \$__page_type__ == 'content') {
+            \$__id_val__ = \$vars['channel_id'];
+        }
         \$__list__ = \\tpext\\cms\\common\\taglib\\Processer::getParents('{$table}', \$__id_val__, \$__id_key__, \$__pid_key__);
         ?>
         {volist name="__list__" id="{$item}"}
@@ -173,6 +176,12 @@ EOT;
         {assign name="{$assign}" value="\$__list__" /}
         <?php
         unset(\$__pid_key__, \$__id_key__, \$__id_val__);
+        if(\$__page_type__ == 'content' && '{$table}' =='cms_content') {
+            \$content = \$vars['content'];
+        }
+        else if((\$__page_type__ == 'channel' || \$__page_type__ == 'content') && '{$table}' =='cms_channel') {
+            \$channel = \$vars['channel'];
+        }
         ?>
 EOT;
         $this->usedTags[] = $tag;

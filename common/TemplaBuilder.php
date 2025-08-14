@@ -141,14 +141,14 @@ class TemplaBuilder
             $msgArr[] = '[路由]生成成功';
 
             if (in_array('channel', $types) && empty($channelIds)) {
-                $htmlPath = Processer::getOutPath() . 'channel/';
+                $htmlPath = Processer::getOutPath() . 'c/';
                 $count = $this->delfiles($htmlPath, $startTime - 60, 1000);
-                $msgArr[] = '清理过期html文件' . $template['prefix'] . 'channel/*.html (' . $count . ')个';
+                $msgArr[] = '清理过期html文件' . $template['prefix'] . 'c/*.html (' . $count . ')个';
             }
             if (in_array('content', $types) && empty($channelIds)) {
-                $htmlPath = Processer::getOutPath() . 'content/';
+                $htmlPath = Processer::getOutPath() . 'd/';
                 $count = $this->delfiles($htmlPath, $startTime - 60 * 4, 1000);
-                $msgArr[] = '清理过期html文件' . $template['prefix'] . 'content/*.html (' . $count . ')个';
+                $msgArr[] = '清理过期html文件' . $template['prefix'] . 'd/*.html (' . $count . ')个';
             }
 
             $msgArr[] = '[完成]已全部处理';
@@ -294,12 +294,12 @@ class TemplaBuilder
             @unlink($outPath . 'index.html');
         }
         //清除栏目页
-        if (is_dir($outPath . 'channel')) {
-            Tool::deleteDir($outPath . 'channel');
+        if (is_dir($outPath . 'c')) {
+            Tool::deleteDir($outPath . 'c');
         }
         //清除内容页
-        if (is_dir($outPath . 'content')) {
-            Tool::deleteDir($outPath . 'content');
+        if (is_dir($outPath . 'd')) {
+            Tool::deleteDir($outPath . 'd');
         }
         //清除单页
         $singlePages = CmsTemplateHtml::where('template_id', $template['id'])->where('type', 'single')->select();

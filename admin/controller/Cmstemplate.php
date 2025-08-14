@@ -6,9 +6,11 @@ use tpext\think\App;
 use think\Controller;
 use tpext\common\Tool;
 use tpext\cms\common\Cache;
+use tpext\cms\common\Render;
 use tpext\builder\traits\actions;
 use tpext\cms\common\RouteBuilder;
 use tpext\cms\common\TemplaBuilder;
+use tpext\cms\common\model\CmsTemplateHtml;
 use tpext\cms\common\model\CmsTemplate as TemplateModel;
 
 /**
@@ -138,7 +140,7 @@ class Cmstemplate extends Controller
 
         $msgs = ['已清除数据缓存'];
         foreach ($tags as $tag) {
-            Cache::tag($tag)->clear($tag);
+            Cache::deleteTag($tag);
         }
 
         Tool::deleteDir(App::getRootPath() . 'runtime' . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'theme');
@@ -226,6 +228,26 @@ class Cmstemplate extends Controller
         }
 
         $view_path = App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $data['view_path'];
+
+        if ($id) {
+            //处理模板路径修改
+            $old = TemplateModel::find($id);
+            //如果改变模板路径，迁移模板文件和静态资源
+            if ($old['view_path'] != $data['view_path'] && !is_dir($view_path)) {
+                Tool::copyDir(App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $old['view_path'], $view_path);
+                $render = new Render();
+                $render->copyStatic(['view_path' => $data['view_path']]);
+            }
+            $htmls = CmsTemplateHtml::where(['template_id' => $id])
+                ->select();
+            foreach ($htmls as $html) {
+                if (preg_match('/theme\/(\w+)\//i', $html['path'], $mchs)) {
+                    if ($mchs[1] != $data['view_path']) {
+                        $html->save(['path' => str_replace('theme/' . $mchs[1], 'theme/' . $data['view_path'], $html['path'])]);
+                    }
+                }
+            }
+        }
 
         TemplateModel::initPath($view_path);
 

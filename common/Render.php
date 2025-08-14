@@ -223,7 +223,7 @@ class Render
                 $out = $this->replaceStaticPath($template, $out);
 
                 if ($is_static == 1) {
-                    $url = $template['prefix'] . 'content/__click__' . $content['id'];
+                    $url = $template['prefix'] . 'd/__click__' . $content['id'];
                     $out = str_replace('</body>', '<script type="text/javascript">' . $this->clickScript($url) . "\n" . '</script>' . "\n" . '</body>', $out);
                 }
 
@@ -404,7 +404,7 @@ EOT;
     {
         if ($type == 'single') {
             $tplHtml = $this->htmlModel->where(['type' => $type, 'template_id' => $template['id'], 'to_id' => $toId])
-                ->cache('cms_html_to_' . $toId, $this->cacheTime, 'cms_html')
+                ->cache('cms_page_' . $template['id'] . '_' . $type . '_' . $toId, $this->cacheTime, 'cms_html')
                 ->find();
             return $tplHtml;
         }
@@ -445,10 +445,11 @@ EOT;
         $staticDir = 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . '/';
 
         if (is_dir(App::getPublicPath() . $staticDir)) {
-            if (is_file(App::getPublicPath() . $staticDir . DIRECTORY_SEPARATOR . 'no-publish.txt')) {
+            file_put_contents(App::getPublicPath() . $staticDir . 'version.txt', date('Y-m-d-H:i:s'));
+            if (is_file(App::getPublicPath() . $staticDir . 'no-publish.txt')) {
                 return ['code' => 0, 'msg' => '[静态资源]发布取消：目录中存在no-publish.txt文件，已关闭资源发布模式。' . "{$staticPath} => public" . DIRECTORY_SEPARATOR . "{$staticDir}"];
             }
-            Tool::copyDir(App::getPublicPath() . $staticDir, App::getPublicPath() . rtrim($staticDir, '/') . date('YmdHis'));
+            Tool::copyDir(App::getPublicPath() . $staticDir, App::getPublicPath() . rtrim($staticDir, '/') . '__bak' . DIRECTORY_SEPARATOR . date('YmdHis'));
         }
         Tool::deleteDir(App::getPublicPath() . $staticDir);
         $res = Tool::copyDir($staticPath, App::getPublicPath() . $staticDir);
@@ -489,8 +490,14 @@ EOT;
      */
     public function replaceStaticPath($template, $content)
     {
-        $v = Module::getInstance()->config('assets_ver', '1.0');
         $staticDir = '/theme/' . $template['view_path'] . '/';
+        $versionFilePath = 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR . 'version.txt';
+        if (is_file($versionFilePath)) {
+            $v = file_get_contents($versionFilePath);
+        } else {
+            $v = date('Y-m-d-H:i:s');
+            file_put_contents($versionFilePath, $v);
+        }
 
         $content = preg_replace('/(<link\s+[^>]*?href=[\'\"])(?:\.{1,2}\/)?static\/([^>]+?\.\w+)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
         $content = preg_replace('/(<script\s+[^>]*?src=[\'\"])(?:\.{1,2}\/)?static\/([^>]+?\.js)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
