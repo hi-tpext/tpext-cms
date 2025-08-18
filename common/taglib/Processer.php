@@ -93,7 +93,7 @@ class Processer
      */
     public static function resolveTagPath($tag)
     {
-        return 'dynamic/tag-' . $tag['id'];
+        return 'e/tag-' . $tag['id'];
     }
 
     public static function getOutPath()

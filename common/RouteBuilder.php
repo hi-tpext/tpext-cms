@@ -216,69 +216,39 @@ class RouteBuilder
             $singlePages = $this->getSinglePages($tmpl);
             $dynamicPages = $this->getDynamicPages($tmpl);
 
-            if ($prefix) {
-                foreach ($routesRules as $rule) {
-                    if (is_array($rule)) {
-                        $append = $rule['append'];
-                        $rule = $rule['rule'];
-                        $append['tpl_id'] = $tmpl['id'];
-                        $rule = str_replace('__prefix__', '/' . $prefix . '/', $rule) . "->append([";
-                        foreach ($append as $k => $v) {
-                            $rule .= "'{$k}' => {$v}, ";
-                        }
-                        $rule = rtrim($rule, ', ') . "]);";
-                        $lines[] = $rule;
-                    } else {
-                        $lines[] = str_replace('__prefix__', '/' . $prefix . '/', $rule) . "->append(['tpl_id' => {$tmpl['id']}]);";
-                    }
-                }
+            $prefix = $prefix ? '/' . $prefix : '';
 
-                foreach ($singlePages as $page) {
-                    if ($page['to_id'] > 0) {
-                        $lines[] = "Route::get('/{$prefix}/{$page['path']}$', Page::class . '@content')->append(['id' => {$page['to_id']}, 'tpl_id' => {$tmpl['id']}]);";
-                    } else {
-                        $lines[] = "Route::get('/{$prefix}/{$page['path']}$', Page::class . '@dynamic')->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
+            foreach ($routesRules as $rule) {
+                if (is_array($rule)) {
+                    $append = $rule['append'];
+                    $rule = $rule['rule'];
+                    $append['tpl_id'] = $tmpl['id'];
+                    $rule = str_replace('__prefix__',  $prefix . '/', $rule) . "->append([";
+                    foreach ($append as $k => $v) {
+                        $rule .= "'{$k}' => {$v}, ";
                     }
+                    $rule = rtrim($rule, ', ') . "]);";
+                    $lines[] = $rule;
+                } else {
+                    $lines[] = str_replace('__prefix__',  $prefix . '/', $rule) . "->append(['tpl_id' => {$tmpl['id']}]);";
                 }
+            }
 
-                foreach ($dynamicPages as $page) {
-                    if ($page['path'] == 'tag') {
-                        $lines[] = "Route::get('/{$prefix}/dynamic/tag-<id>$', Page::class . '@dynamic')->pattern(['id' => '\d+'])->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
-                    } else {
-                        $lines[] = "Route::get('/{$prefix}/dynamic/{$page['path']}$', Page::class . '@dynamic')->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
-                    }
+            foreach ($singlePages as $page) {
+                if ($page['to_id'] > 0) {
+                    $lines[] = "Route::get('{$prefix}/{$page['path']}$', Page::class . '@content')->append(['id' => {$page['to_id']}, 'tpl_id' => {$tmpl['id']}]);";
+                } else {
+                    $lines[] = "Route::get('{$prefix}/{$page['path']}$', Page::class . '@dynamic')->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
                 }
-            } else {
-                foreach ($routesRules as $rule) {
-                    if (is_array($rule)) {
-                        $append = $rule['append'];
-                        $rule = $rule['rule'];
-                        $append['tpl_id'] = $tmpl['id'];
-                        $rule = str_replace('__prefix__', '/', $rule) . "->append([";
-                        foreach ($append as $k => $v) {
-                            $rule .= "'{$k}' => {$v}, ";
-                        }
-                        $rule = rtrim($rule, ', ') . "]);";
-                        $lines[] = $rule;
-                    } else {
-                        $lines[] = str_replace('__prefix__', '/', $rule) . "->append(['tpl_id' => {$tmpl['id']}]);";
-                    }
-                }
+            }
 
-                foreach ($singlePages as $page) {
-                    if ($page['to_id'] > 0) {
-                        $lines[] = "Route::get('/{$page['path']}$', Page::class . '@content')->append(['id' => {$page['to_id']}, 'tpl_id' => {$tmpl['id']}]);";
-                    } else {
-                        $lines[] = "Route::get('/{$page['path']}$', Page::class . '@dynamic')->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
-                    }
-                }
-
-                foreach ($dynamicPages as $page) {
-                    if ($page['path'] == 'tag') {
-                        $lines[] = "Route::get('/dynamic/tag-<id>$', Page::class . '@dynamic')->pattern(['id' => '\d+'])->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
-                    } else {
-                        $lines[] = "Route::get('/dynamic/{$page['path']}$', Page::class . '@dynamic')->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
-                    }
+            foreach ($dynamicPages as $page) {
+                if ($page['path'] == 'tag') {
+                    $lines[] = "Route::get('{$prefix}/e/tag-<id>$', Page::class . '@dynamic')->pattern(['id' => '\d+'])->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
+                    $lines[] = "Route::get('{$prefix}/dynamic/tag-<id>$', Page::class . '@dynamic')->pattern(['id' => '\d+'])->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
+                } else {
+                    $lines[] = "Route::get('{$prefix}/e/{$page['path']}$', Page::class . '@dynamic')->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
+                    $lines[] = "Route::get('{$prefix}/dynamic/{$page['path']}$', Page::class . '@dynamic')->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
                 }
             }
 

@@ -490,6 +490,9 @@ EOT;
      */
     public function replaceStaticPath($template, $content)
     {
+        if (!is_dir($versionFilePath = 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR)) {
+            return $content;
+        }
         $staticDir = '/theme/' . $template['view_path'] . '/';
         $versionFilePath = 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR . 'version.txt';
         if (is_file($versionFilePath)) {

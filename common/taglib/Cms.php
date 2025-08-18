@@ -51,6 +51,7 @@ class Cms extends Taglib
         $cacheTime = intval($cache[1] ?? 360);
         $tagOrder = !empty($tag['order']) ? $tag['order'] : Table::defaultOrder($table);
         $fields = $tag['fields'] ?? Table::defaultFields($table);
+        $simple = $tag['simple'] ?? 'false';
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
         $scope = Table::defaultScope($table);
         $dbNameSpace = Processer::getDbNamespace();
@@ -100,8 +101,11 @@ class Cms extends Taglib
                 ->whereRaw(\$__where_raw__, \$__where_binds__)
                 ->where('{$scope}')
                 ->count('id');
-                
-            \$__paginator__ = new \\think\\paginator\\driver\\Bootstrap(\$__list__, \$__pagesize__, \$__page__, \$__total__, false, ['path' => \$__set_page_path__ ?? '']);
+            \$simple = {$simple} ? true : false;
+            if(\$simple && count(\$__list__) == \$__pagesize__){
+                \$__pagesize__ -= 1;//简单分页问题
+            }
+            \$__paginator__ = new \\think\\paginator\\driver\\Bootstrap(\$__list__, \$__pagesize__, \$__page__, \$__total__, \$simple, ['path' => \$__set_page_path__ ?? '']);
             \$__links_html__ = \$__paginator__->render();
         }
         \${$assign} = \$__list__;
@@ -116,7 +120,7 @@ class Cms extends Taglib
         <?php
         
         unset(\$__list__, \$__where_raw__, \$__where_binds__, \$__where__, \$__id_key__, \$__id_val__, \$__cid_key__, \$__cid_val__);
-        unset(\$__order_by__, \$__paginator__, \$__total__, \$__take__, \$__pagesize__, \$__page__);
+        unset(\$__order_by__, \$__paginator__, \$__total__, \$__take__, \$__pagesize__, \$__page__, \$simple);
         if(\$__page_type__ == 'content' && '{$table}' =='cms_content') {
             \$content = \$vars['content'];
         }

@@ -146,7 +146,7 @@ li {
 
 p {
   line-height: 1.8;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-xs);
   color: var(--text-color);
 }
 

@@ -119,7 +119,7 @@ class Table
     {
         $tags = [
             // 标签定义： attr 属性列表 close 是否闭合（0 或者1 默认1） alias 标签别名 level 嵌套层次 expression 允许表达式
-            'list' => ['attr' => 'table,num,pagesize,where,order,fields,item,assign,cache,links'],
+            'list' => ['attr' => 'table,num,pagesize,where,order,fields,item,assign,cache,links,simple'],
             'parents' => ['attr' => 'table,num,until,where,order,fields,assign,id_key,pid_key'],
             //
             'get' => ['attr' => 'table,where,order,fields,assign,cache', 'close' => 0],
@@ -135,7 +135,7 @@ class Table
                 continue;
             }
 
-            $listAttr = 'num,pagesize,where,order,fields,item,assign,cache,links';
+            $listAttr = 'num,pagesize,where,order,fields,item,assign,cache,links,simple';
             $parentsAttr = 'num,until,where,order,fields,assign';
             $getAttr = 'where,order,fields,assign,cache';
             $parentAttr = 'where,order,fields,assign,cache';

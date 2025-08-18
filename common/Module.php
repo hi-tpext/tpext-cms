@@ -193,5 +193,8 @@ class Module extends baseModule
 
         $maker = new event\MakeRoute;
         $maker->watch();
+
+        $maker = new event\MakeTemplate;
+        $maker->watch();
     }
 }
