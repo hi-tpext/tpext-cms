@@ -124,7 +124,7 @@ class Render
                     'parent_id' => $channel['parent_id'],
                     'pid' => $channel['parent_id'],
                     'channel_ids' => !empty($channel_ids) ? implode(',', array_merge([$channel['id']], $channel_ids)) : '',
-                    'children_ids' => implode(',', $channel['children_ids'] ??  []),
+                    'children_ids' => implode(',', $channel['children_ids'] ?? []),
                     'extend_ids' => $channel['extend_ids'],
                     'channel' => $channel,
                     'page_title' => $channel['name'] . '_',
@@ -191,7 +191,7 @@ class Render
                 return ['code' => 0, 'msg' => '内容不存在'];
             } else {
                 if ($is_static == 1) {
-                    $content['click'] = '<span id="__content_click__">-<span>';
+                    $content['click'] = '<span id="__content_click__">--<span>';
                 } else {
                     $content['click'] = $this->click($content['id']);
                 }
@@ -287,7 +287,7 @@ class Render
     xhr.onreadystatechange = function () {
         if (xhr.readyState == 4 && xhr.status == 200) {
             if(__content_click__) {
-                __content_click__.replaceWith(xhr.responseText);
+                __content_click__.innerText = xhr.responseText;
             }
         }
     };
@@ -440,28 +440,28 @@ EOT;
      */
     public function copyStatic($template)
     {
-        $staticPath = App::getRootPath() . 'theme/' . $template['view_path'] . '/static/';
+        $staticPath = 'theme/' . $template['view_path'] . DIRECTORY_SEPARATOR . 'static';
         $staticPath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $staticPath);
-        $staticDir = 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . '/';
+        $staticDir = 'theme' . DIRECTORY_SEPARATOR . $template['view_path'];
 
         if (is_dir(App::getPublicPath() . $staticDir)) {
-            file_put_contents(App::getPublicPath() . $staticDir . 'version.txt', date('Y-m-d-H:i:s'));
-            if (is_file(App::getPublicPath() . $staticDir . 'no-publish.txt')) {
+            file_put_contents(App::getPublicPath() . $staticDir . DIRECTORY_SEPARATOR . 'version.txt', date('Y-m-d-H:i:s'));
+            if (is_file(App::getPublicPath() . $staticDir . DIRECTORY_SEPARATOR . 'no-publish.txt')) {
                 return ['code' => 0, 'msg' => '[静态资源]发布取消：目录中存在no-publish.txt文件，已关闭资源发布模式。' . "{$staticPath} => public" . DIRECTORY_SEPARATOR . "{$staticDir}"];
             }
-            Tool::copyDir(App::getPublicPath() . $staticDir, App::getPublicPath() . rtrim($staticDir, '/') . '__bak' . DIRECTORY_SEPARATOR . date('YmdHis'));
+            Tool::copyDir(App::getPublicPath() . $staticDir, App::getPublicPath() . $staticDir . '__bak' . DIRECTORY_SEPARATOR . date('YmdHis'));
         }
         Tool::deleteDir(App::getPublicPath() . $staticDir);
-        $res = Tool::copyDir($staticPath, App::getPublicPath() . $staticDir);
+        $res = Tool::copyDir(App::getRootPath() . $staticPath, App::getPublicPath() . $staticDir);
         if ($res) {
             file_put_contents(
                 App::getPublicPath() . $staticDir . DIRECTORY_SEPARATOR . '不要修改此目录中文件.txt',
                 '此目录是存放模板静态资源的，' . "\n"
-                    . '不要修改、替换文件或上传新文件到此目录及子目录，' . "\n"
-                    . '否则重新发布模板资源后改动文件将还原或丢失，' . "\n"
-                    . '原始文件存放于' . $staticPath . '目录下。' . "\n"
-                    . '请修改原始文件，再发布静态资源到此目录。' . "\n"
-                    . '如果您不想使用此模式，请在此位置新建文件：no-publish.txt，以避免修改被覆盖。' . "\n"
+                . '不要修改、替换文件或上传新文件到此目录及子目录，' . "\n"
+                . '否则重新发布模板资源后改动文件将还原或丢失，' . "\n"
+                . '原始文件存放于' . $staticPath . '目录下。' . "\n"
+                . '请修改原始文件，再发布静态资源到此目录。' . "\n"
+                . '如果您不想使用此模式，请在此位置新建文件：no-publish.txt，以避免修改被覆盖。' . "\n"
             );
 
             $directory = new \DirectoryIterator(App::getPublicPath() . $staticDir . '/css/');

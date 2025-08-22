@@ -259,6 +259,8 @@ class TemplaBuilder
             return false;
         }
 
+        $content = str_replace('</head>', '<!--静态页面由cms程序生成，不要手动修改此html文件 ' . date('Y-m-d H:i:s') . '-->' . "\n" . '</head>', $content);
+
         return @file_put_contents($path, $content);
     }
 
@@ -286,6 +288,7 @@ class TemplaBuilder
         $outPath = App::getPublicPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $template['prefix']);
 
         if ($template['prefix'] != '/') {
+            Tool::copyDir($outPath, rtrim($outPath, DIRECTORY_SEPARATOR) . '_bak' . DIRECTORY_SEPARATOR . date('YmdHis'));
             Tool::deleteDir($outPath);
             return;
         }

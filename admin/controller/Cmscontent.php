@@ -633,6 +633,7 @@ class Cmscontent extends Controller
             'channel_id',
             'reference_id',
             'model_id',
+            'attr',
         ], $modelFieldNames), 'post');
 
         $result = $this->validate($data, [
