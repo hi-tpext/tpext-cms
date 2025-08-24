@@ -466,7 +466,7 @@ EOT;
 
             $directory = new \DirectoryIterator(App::getPublicPath() . $staticDir . '/css/');
 
-            $v = Module::getInstance()->config('assets_ver', '1.0');
+            $v = $this->getStaticVersion($template['view_path']);
             $dir = '/theme/' . $template['view_path'] . '/';
 
             foreach ($directory as $fileinfo) {
@@ -490,25 +490,34 @@ EOT;
      */
     public function replaceStaticPath($template, $content)
     {
-        if (!is_dir($versionFilePath = 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR)) {
+        if (!is_dir('theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR)) {
             return $content;
         }
+
         $staticDir = '/theme/' . $template['view_path'] . '/';
-        $versionFilePath = 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR . 'version.txt';
-        if (is_file($versionFilePath)) {
-            $v = file_get_contents($versionFilePath);
-        } else {
-            $v = date('Y-m-d-H:i:s');
-            file_put_contents($versionFilePath, $v);
-        }
+        $v = $this->getStaticVersion($template['view_path']);
 
         $content = preg_replace('/(<link\s+[^>]*?href=[\'\"])(?:\.{1,2}\/)?static\/([^>]+?\.\w+)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
         $content = preg_replace('/(<script\s+[^>]*?src=[\'\"])(?:\.{1,2}\/)?static\/([^>]+?\.js)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
         $content = preg_replace('/(<img\s+[^>]*?src=[\'\"])(?:\.{1,2}\/)?static\/([^>]+?\.\w+)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
 
-        $content = $this->replaceCssImgPath($content, $v, $staticDir);
-
         return $content;
+    }
+
+    public function getStaticVersion($viewPath)
+    {
+        $versionFilePath = App::getPublicPath() . 'theme' . DIRECTORY_SEPARATOR . $viewPath . DIRECTORY_SEPARATOR . 'version.txt';
+        if (is_file($versionFilePath)) {
+            $v = file_get_contents($versionFilePath);
+            return $v;
+        } else {
+            $v = date('Y-m-d-H:i:s');
+            if (file_put_contents($versionFilePath, $v)) {
+                return $v;
+            }
+        }
+
+        return '1';
     }
 
     /**
@@ -520,8 +529,8 @@ EOT;
      */
     protected function replaceCssImgPath($content, $v, $staticDir)
     {
-        $content = preg_replace('/(background\s*:[^>]+?url\([\'\"])(?:\.{1,2}\/)?static\/([^;]+?\.\w+)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
-        $content = preg_replace('/(background\-img\s*:[^>]+?url\([\'\"])(?:\.{1,2}\/)?static\/([^;]+?\.\w+)([\'\"])/is', "$1{$staticDir}$2?v={$v}$3", $content);
+        $content = preg_replace('/(background\s*:[^>]*?url\([\'\"]?)(?:\.{1,2}\/)?static\/([^\'\"\);]+?\.\w+)([\'\"]?)/is', "$1{$staticDir}$2?v={$v}$3", $content);
+        $content = preg_replace('/(background\-img\s*:[^>]*?url\([\'\"]?)(?:\.{1,2}\/)?static\/([^\'\"\);]+?\.\w+)([\'\"]?)/is', "$1{$staticDir}$2?v={$v}$3", $content);
 
         return $content;
     }
