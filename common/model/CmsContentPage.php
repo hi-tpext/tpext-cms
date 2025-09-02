@@ -20,22 +20,6 @@ class CmsContentPage extends Model
     protected $name = 'cms_content_page';
     protected $autoWriteTimestamp = 'datetime';
 
-    protected static function init()
-    {
-        /**是否为tp5**/
-        if (method_exists(static::class, 'event')) {
-            self::afterInsert(function ($data) {
-                return self::onAfterInsert($data);
-            });
-            self::afterUpdate(function ($data) {
-                return self::onAfterUpdate($data);
-            });
-            self::afterDelete(function ($data) {
-                return self::onAfterDelete($data);
-            });
-        }
-    }
-
     public static function onAfterInsert($data)
     {
         ExtLoader::trigger('cms_content_page_on_after_insert', $data);

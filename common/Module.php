@@ -15,6 +15,7 @@ use tpext\think\App;
 use tpext\common\Tool;
 use tpext\cms\common\Cache;
 use tpext\cms\common\event;
+use tpext\common\ExtLoader;
 use tpext\common\Module as baseModule;
 use tpext\cms\common\model\CmsTemplate;
 use tpext\cms\common\model\CmsTemplateHtml;
@@ -142,7 +143,7 @@ class Module extends baseModule
             $tags = ['cms_html', 'cms_page', 'cms_template', 'cms_channel', 'cms_content', 'cms_position', 'cms_banner', 'cms_tag'];
 
             foreach ($tags as $tag) {
-                Cache::tag($tag)->clear($tag);
+                Cache::deleteTag($tag);
             }
         }
 
@@ -196,5 +197,11 @@ class Module extends baseModule
 
         $maker = new event\MakeTemplate;
         $maker->watch();
+
+        //tp5.1模型事件处理
+        if (ExtLoader::isTP51()) {
+            $maker = new event\ModelEvent;
+            $maker->watch();
+        }
     }
 }
