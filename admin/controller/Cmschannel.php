@@ -83,15 +83,16 @@ class Cmschannel extends Controller
 
         $table->getToolbar()
             ->btnAdd()
-            ->btnRefresh()
-            ->btnLink(url('refresh'), '刷新层级', 'btn-success', 'mdi-autorenew', 'data-layer-size="300px,150px" title="重新整理栏目上下级关系"');
+            ->btnOpenChecked(url('/admin/cmstemplatemake/makeChannel'), '生成静态', 'btn-yellow', 'mdi-xml', 'title="批量生成静态"')
+            ->btnLink(url('refresh'), '刷新层级', 'btn-success', 'mdi-autorenew', 'data-layer-size="300px,150px" title="重新整理栏目上下级关系"')
+            ->btnRefresh();
 
         $table->getActionbar()
             ->btnLink('add', url('add', ['parend_id' => '__data.pk__']), '', 'btn-secondary', 'mdi-plus', 'title="添加下级"')
             ->btnEdit()
             ->btnView()
             ->br()
-            ->btnLink('make_channel', url('/admin/cmstemplatemake/makeChannel', ['channel_id' => '__data.pk__']), '', 'btn-dark', 'mdi-xml', 'title="生成静态"')
+            ->btnLink('make_channel', url('/admin/cmstemplatemake/makeChannel', ['ids' => '__data.pk__']), '', 'btn-yellow', 'mdi-xml', 'title="生成静态"')
             ->btnDelete()
             ->mapClass([
                 'add' => [
@@ -226,11 +227,11 @@ class Cmschannel extends Controller
                 }
 
                 $form->divider($tpl['name'], '模板');
-                $form->select('channel_template.' . $tpl['id'],  '栏目列表')
+                $form->select('channel_template.' . $tpl['id'], '栏目列表')
                     ->beforOptions([0 => '默认'])
                     ->dataUrl(url('/admin/cmstemplatehtml/selectByTplid', ['template_id' => $tpl['id'], 'type' => 'channel']));
 
-                $form->select('content_template.' . $tpl['id'],   '内容详情')
+                $form->select('content_template.' . $tpl['id'], '内容详情')
                     ->beforOptions([0 => '默认'])
                     ->dataUrl(url('/admin/cmstemplatehtml/selectByTplid', ['template_id' => $tpl['id'], 'type' => 'content']));
                 $form->raw('template_' . $tpl['id'], $tpl['name'])

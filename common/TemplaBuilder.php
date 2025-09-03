@@ -129,12 +129,6 @@ class TemplaBuilder
             } else {
                 $msgArr[] = '[首页]未选择生成';
             }
-            if (in_array('static', $types)) {
-                $resD = $this->copyStatic($template);
-                $msgArr[] = $resD['msg'];
-            } else {
-                $msgArr[] = '[静态资源]未选择发布';
-            }
 
             $routeBuilder = new RouteBuilder;
             $routeBuilder->builder(true);
