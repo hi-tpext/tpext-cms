@@ -12,7 +12,6 @@
 namespace tpext\cms\common\event;
 
 use tpext\cms\common\model;
-use think\Loader;
 
 class ModelEvent
 {
@@ -48,7 +47,7 @@ class ModelEvent
 
         foreach ($classMap as $class) {
             foreach ($observe as $method) {
-                $on = 'on' . ucfirst(Loader::parseName($method, 1));
+                $on = 'on' . $this->parseName($method);
                 if (method_exists($class, $on)) {
                     $class::event($method, function ($data) use ($class, $on) {
                         $class::$on($data);
@@ -56,5 +55,20 @@ class ModelEvent
                 }
             }
         }
+    }
+
+    /**
+     * 下划线转驼峰
+     * @access public
+     * @param  string  $name 字符串
+     * @return string
+     */
+    public static function parseName($name)
+    {
+        $name = preg_replace_callback('/_([a-zA-Z])/', function ($match) {
+            return strtoupper($match[1]);
+        }, $name);
+
+        return ucfirst($name);
     }
 }
