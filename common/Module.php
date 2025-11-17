@@ -22,7 +22,7 @@ use tpext\cms\common\model\CmsTemplateHtml;
 
 class Module extends baseModule
 {
-    protected $version = '2.0.14';
+    protected $version = '2.0.15';
 
     protected $name = 'tpext.cms';
 
@@ -185,9 +185,9 @@ class Module extends baseModule
 
     public function loaded()
     {
-        $makeMtatic = self::config('make_static', 1);
+        $makeStatic = self::config('make_static', 1);
 
-        if ($makeMtatic) {
+        if ($makeStatic) {
             $maker = new event\MakeStatic;
             $maker->watch();
         }

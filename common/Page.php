@@ -150,7 +150,28 @@ class Page
     public function click($id)
     {
         $render = new Render();
-        return $render->click($id);
+        $click = $render->click($id);
+
+        $config = Module::getInstance()->config();
+        $clickMakeStatic = $config['click_make_static'] ?? 123;
+        if ($clickMakeStatic < 10) {
+            $clickMakeStatic = 10;
+        }
+        $makeStatic = $config['make_static'] ?? false;
+        if ($makeStatic && $click % $clickMakeStatic == 0) {
+            $content = model\CmsContent::withTrashed()->where('id', $id)->find();
+            if (!$content) {
+                return $click;
+            }
+            $channel = model\CmsChannel::withTrashed()->where('id', $content['channel_id'])->find();
+            $buiilder = new TemplaBuilder;
+            $templates = model\CmsTemplate::select();
+            foreach ($templates as $template) {
+                $res = $buiilder->makeContent($template, $channel, $content);
+                trace('[' . $content['title'] . ']生成静态文件：' . $res['msg'], 'info');
+            }
+        }
+        return $click;
     }
 
     /**

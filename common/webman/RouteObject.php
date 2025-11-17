@@ -26,7 +26,10 @@ class RouteObject extends BaseRouteObject
     public function append($params)
     {
         $this->params = array_merge($this->params, $params);
-        $this->middleware(MergeParameters::class);
+
+        if (PHP_VERSION < 8.1) {
+            $this->middleware(MergeParameters::class);//webman-framework >= 2.1.3 不需要
+        }
 
         return $this;
     }

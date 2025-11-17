@@ -190,11 +190,7 @@ class Render
             if ($content['__not_found__'] || $content['is_show'] != 1 || $content['delete_time']) {
                 return ['code' => 0, 'msg' => '内容不存在'];
             } else {
-                if ($is_static == 1) {
-                    $content['click'] = '<span id="__content_click__">--<span>';
-                } else {
-                    $content['click'] = $this->click($content['id']);
-                }
+                $content['click'] = $this->click($content['id']);
                 $vars = [
                     'id' => $content['id'],
                     'channel_id' => $content['channel_id'],
@@ -264,7 +260,12 @@ class Render
         $click += 1;
         Cache::tag('cms_content')->set('cms_content_click_' . $id, $click);
 
-        if ($click % 10 == 0) {
+        $config = Module::getInstance()->config();
+        $clickWrite = $config['click_write'] ?? 10;
+        if ($clickWrite < 10) {
+            $clickWrite = 10;
+        }
+        if ($click % $clickWrite == 0) {
             $dbNameSpace::name($table)
                 ->where('id', $id)
                 ->where($contentScope)
@@ -280,15 +281,12 @@ class Render
     {
         $script = <<<EOT
 
-    var __content_click__ = document.getElementById("__content_click__");
     var xhr = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("");
     xhr.open("GET", "{$url}", true);
     xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
     xhr.onreadystatechange = function () {
         if (xhr.readyState == 4 && xhr.status == 200) {
-            if(__content_click__) {
-                __content_click__.innerText = xhr.responseText;
-            }
+            console.log('click:' + xhr.responseText);
         }
     };
     xhr.send();
@@ -457,11 +455,11 @@ EOT;
             file_put_contents(
                 App::getPublicPath() . $staticDir . DIRECTORY_SEPARATOR . '不要修改此目录中文件.txt',
                 '此目录是存放模板静态资源的，' . "\n"
-                . '不要修改、替换文件或上传新文件到此目录及子目录，' . "\n"
-                . '否则重新发布模板资源后改动文件将还原或丢失，' . "\n"
-                . '原始文件存放于' . $staticPath . '目录下。' . "\n"
-                . '请修改原始文件，再发布静态资源到此目录。' . "\n"
-                . '如果您不想使用此模式，请在此位置新建文件：no-publish.txt，以避免修改被覆盖。' . "\n"
+                    . '不要修改、替换文件或上传新文件到此目录及子目录，' . "\n"
+                    . '否则重新发布模板资源后改动文件将还原或丢失，' . "\n"
+                    . '原始文件存放于' . $staticPath . '目录下。' . "\n"
+                    . '请修改原始文件，再发布静态资源到此目录。' . "\n"
+                    . '如果您不想使用此模式，请在此位置新建文件：no-publish.txt，以避免修改被覆盖。' . "\n"
             );
 
             $directory = new \DirectoryIterator(App::getPublicPath() . $staticDir . '/css/');

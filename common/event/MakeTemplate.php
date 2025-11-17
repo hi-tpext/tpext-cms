@@ -14,7 +14,6 @@ namespace tpext\cms\common\event;
 use tpext\think\App;
 use tpext\common\Tool;
 use tpext\cms\common\Render;;
-
 use tpext\cms\common\model;
 use tpext\common\ExtLoader;
 use tpext\cms\common\TemplaBuilder;
