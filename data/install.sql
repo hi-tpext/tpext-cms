@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_position`  (
   `create_time` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '添加时间',
   `update_time` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '更新时间',
   PRIMARY KEY (`id`)
-) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET=utf8 COMMENT = '文章栏目';
+) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET=utf8 COMMENT = '广告位';
 
 CREATE TABLE IF NOT EXISTS `__PREFIX__cms_banner` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '轮播ID',
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_banner` (
   `update_time` datetime NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '更新时间',
   PRIMARY KEY (`id`),
   KEY `position_id` (`position_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='CMS轮播';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='轮播/广告';
 
 CREATE TABLE IF NOT EXISTS `__PREFIX__cms_tag` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '标签ID',
