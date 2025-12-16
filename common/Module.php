@@ -136,14 +136,15 @@ class Module extends baseModule
                 }
                 $routeBuilder = new RouteBuilder;
                 $routeBuilder->builder(true);
+
+                $tags = ['cms_html', 'cms_page', 'cms_template', 'cms_channel', 'cms_content', 'cms_position', 'cms_banner', 'cms_tag'];
+
+                foreach ($tags as $tag) {
+                    Cache::deleteTag($tag);
+                }
+                
             } catch (\Throwable $e) {
                 trace($e->__toString());
-            }
-
-            $tags = ['cms_html', 'cms_page', 'cms_template', 'cms_channel', 'cms_content', 'cms_position', 'cms_banner', 'cms_tag'];
-
-            foreach ($tags as $tag) {
-                Cache::deleteTag($tag);
             }
         }
 
