@@ -208,7 +208,7 @@ class Cmscontentfield extends Controller
         }
 
         if (!$res) {
-            $this->error(__blang('bilder_save_failed'));
+            $this->error(__blang('builder_save_failed'));
         }
 
         $fieldExists = CmsContentFieldModel::where('name', $data['COLUMN_NAME'])->find();
@@ -225,7 +225,7 @@ class Cmscontentfield extends Controller
             'options' => isset($data['options']) ? $data['options'] : '',
         ]);
 
-        return $this->builder()->layer()->closeRefresh(1, __blang('bilder_save_succeeded'));
+        return $this->builder()->layer()->closeRefresh(1, __blang('builder_save_succeeded'));
     }
 
     /**
@@ -278,7 +278,7 @@ class Cmscontentfield extends Controller
     {
         if (request()->isGet()) {
 
-            $builder = $this->builder($this->pageTitle, $this->addText ?: __blang('bilder_page_add_text'), 'add');
+            $builder = $this->builder($this->pageTitle, $this->addText ?: __blang('builder_page_add_text'), 'add');
             $form = $builder->form();
             $data = [];
             $this->form = $form;
@@ -376,12 +376,12 @@ class Cmscontentfield extends Controller
 
         if (request()->isGet()) {
 
-            $builder = $this->builder($this->pageTitle, $this->editText ?: __blang('bilder_page_edit_text'), 'edit');
+            $builder = $this->builder($this->pageTitle, $this->editText ?: __blang('builder_page_edit_text'), 'edit');
 
             $field = $this->getFieldInfo($id);
 
             if (!$field) {
-                return $builder->layer()->close(0, __blang('bilder_data_not_found'));
+                return $builder->layer()->close(0, __blang('builder_data_not_found'));
             }
 
             $form = $builder->form();
@@ -464,7 +464,7 @@ class Cmscontentfield extends Controller
         $ids = input('post.ids', '');
         $ids = array_filter(explode(',', $ids), 'strlen');
         if (empty($ids)) {
-            $this->error(__blang('bilder_parameter_error'));
+            $this->error(__blang('builder_parameter_error'));
         }
         $res = 0;
         foreach ($ids as $id) {
@@ -477,9 +477,9 @@ class Cmscontentfield extends Controller
         }
 
         if ($res) {
-            $this->success(__blang('bilder_delete_{:num}_records_succeeded', ['num' => $res]));
+            $this->success(__blang('builder_delete_{:num}_records_succeeded', ['num' => $res]));
         } else {
-            $this->error(__blang('bilder_delete_failed'));
+            $this->error(__blang('builder_delete_failed'));
         }
     }
 

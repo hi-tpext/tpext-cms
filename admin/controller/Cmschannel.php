@@ -256,11 +256,11 @@ class Cmschannel extends Controller
         $value = input('post.value', '');
 
         if (empty($id) || empty($name)) {
-            $this->error(__blang('bilder_parameter_error'));
+            $this->error(__blang('builder_parameter_error'));
         }
 
         if (!empty($this->postAllowFields) && !in_array($name, $this->postAllowFields)) {
-            $this->error(__blang('bilder_field_not_allowed'));
+            $this->error(__blang('builder_field_not_allowed'));
         }
 
         $info = $this->dataModel->where($this->getPk(), $id)->find();
@@ -268,9 +268,9 @@ class Cmschannel extends Controller
         $res = $info && $info->save([$name => $value]);
 
         if ($res) {
-            $this->success(__blang('bilder_update_succeeded'));
+            $this->success(__blang('builder_update_succeeded'));
         } else {
-            $this->error(__blang('bilder_update_failed_or_no_changes'));
+            $this->error(__blang('builder_update_failed_or_no_changes'));
         }
     }
 

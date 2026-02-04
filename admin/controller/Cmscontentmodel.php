@@ -243,7 +243,7 @@ class Cmscontentmodel extends Controller
         }
 
         if (!$res) {
-            $this->error(__blang('bilder_save_failed'));
+            $this->error(__blang('builder_save_failed'));
         }
 
         $modelFieldNames = CmsContentField::column('name');
@@ -287,7 +287,7 @@ class Cmscontentmodel extends Controller
 
         CmsContentModelField::where('model_id', $id)->whereNotIn('name', $fieldNames)->delete();
 
-        return $this->builder()->layer()->closeRefresh(1, __blang('bilder_save_succeeded'));
+        return $this->builder()->layer()->closeRefresh(1, __blang('builder_save_succeeded'));
     }
 
     protected function getProtectedFields()
