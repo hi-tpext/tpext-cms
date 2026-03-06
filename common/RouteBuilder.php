@@ -245,10 +245,8 @@ class RouteBuilder
             foreach ($dynamicPages as $page) {
                 if ($page['path'] == 'tag') {
                     $lines[] = "Route::get('{$prefix}/e/tag-<id>$', Page::class . '@dynamic')->pattern(['id' => '\d+'])->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
-                    $lines[] = "Route::get('{$prefix}/dynamic/tag-<id>$', Page::class . '@dynamic')->pattern(['id' => '\d+'])->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
                 } else {
                     $lines[] = "Route::get('{$prefix}/e/{$page['path']}$', Page::class . '@dynamic')->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
-                    $lines[] = "Route::get('{$prefix}/dynamic/{$page['path']}$', Page::class . '@dynamic')->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
                 }
             }
 

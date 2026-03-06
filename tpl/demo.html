@@ -59,7 +59,7 @@
 
 <p>分页列表，使用<code>pagesize</code>参数后，列表会分页显示，如<code>pagesize="5"</code>，每页显示5条记录</p>
 <p>注意区分<code>num</code>和<code>pagesize</code>，使用<code>num</code>不产生分页链接</p>
-<p>控制分页导航位置，正常情况下，分页连接跟随列表后面，可以使用<code>links="no"</code>列表下面的分页链接暂不显示</p>
+<p>控制分页导航位置，正常情况下，分页连接跟随列表后面，可以使用<code>links="no"</code>让列表下面的分页链接暂不显示，然后在页面其他合适的位置显示。</p>
 <p>然后可以在其他地方输出分页链接</p>
 <p>{<code>content@list id="between 70 and 90" pagesize="5" links="no"</code>}</p>
 {content@list id="between 70 and 90" pagesize="5" links="no"}
@@ -75,10 +75,13 @@
 <!--正常情况下，列表内容包含在此处-->
 {/content@list}
 
-输出上面的分页：{$__links_html__|raw}
+<p>输出上面的分页：{<code>$__links_html__|raw</code>}</p>
+<div>
+    {$__links_html__|raw}
+</div>
 
-输出上面的列表：
-{volist name="mylist" id="li"}
+<p>输出上面的列表：可使用<code>volist</code>或<code>foreach</code>标签循环输出列表（都是thinkphp内置标签，这里不展开讲）</p>
+{volist name="mylist" id="content"}
 <div style="background-color: rgba(43, 46, 80, 0.678);">
     栏目id：{$content.channel_id}|文章id：{$content.id}|<a target="_blank" href="{$content.url}">{$content.title}</a>
 </div>
@@ -175,9 +178,11 @@
 <p>如<code>dynamic/test.html</code>目录下，访问路径为<code>http://yourhost.com/e/test</code></p>
 
 <h4>单页</h4>
-<p>单页必须绑定一篇文章，访问路径层级更高，一般用于突出显示的内容</p>
+<p>单页可以定一篇文章，访问路径层级更高，一般用于突出显示的内容</p>
 <p>如<code>about.html</code>，访问路径为<code>http://yourhost.com/about.html</code></p>
 <p>而普通内容访问路径为<code>http://yourhost.com/content/a1.html</code></p>
+<p>单页绑定一篇文章后，文章数据会自动注入，使用{<code>$content.xxx</code>}读取</p>
+<p>如果单页没有绑定文章，则相当于动态页面，自由发挥</p>
 
 <h4>助手方法</h4>
 <p>1、字符截取<code>more($str,$len,$more='...更多')</code></p>
