@@ -178,7 +178,6 @@ class Cmscontent extends Controller
             ->btnDelete();
 
         $template = model\CmsTemplate::order('sort asc,id asc')->find();
-
         Processer::setPath($template['prefix']);
 
         foreach ($data as &$d) {

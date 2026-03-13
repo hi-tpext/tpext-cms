@@ -100,7 +100,7 @@ class Cmschannel extends Controller
                 ]
             ]);
 
-        $template = CmsTemplate::where('id', 1)->find();
+        $template = CmsTemplate::order('sort asc,id asc')->find();
         Processer::setPath($template['prefix']);
 
         foreach ($data as &$d) {
