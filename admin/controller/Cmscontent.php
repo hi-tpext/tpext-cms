@@ -9,6 +9,7 @@ use tpext\builder\traits\actions;
 use tpext\cms\common\model\CmsChannel;
 use tpext\cms\common\taglib\Processer;
 use tpext\cms\common\model\CmsContentModel;
+use tpext\myadmin\admin\model\AdminGroup;
 use tpext\cms\common\model\CmsContent as ContentModel;
 
 /**
@@ -425,7 +426,7 @@ class Cmscontent extends Controller
                     ->maxlength(32)
                     ->readonly($isReference)
                     ->help($fields['source']['help'])
-                    ->default($admin && $admin['group'] ? $admin['group']['name'] : '')
+                    ->default($admin ? AdminGroup::where(['id' => $admin['group_id']])->value('name') : '')
                     ->required(strstr($fields['source']['rules'], 'required'));
             }
             $form->html('');
