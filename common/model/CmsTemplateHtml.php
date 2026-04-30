@@ -131,10 +131,10 @@ class CmsTemplateHtml extends Model
                     $to_id = 0;
                     if (stripos($path, 'channel') !== false) {
                         $type = 'channel';
-                        $description = '栏目页' . ($isDefault ? '[默认模板]' : '');
+                        $description = '栏目页' . ($isDefault ? '[默认模板]请勿删除！' : '');
                     } else if (stripos($path, 'content') !== false) {
                         $type = 'content';
-                        $description = '详情页' . ($isDefault ? '[默认模板]' : '');
+                        $description = '详情页' . ($isDefault ? '[默认模板]请勿删除！' : '');
                     } else if (stripos($path, 'common') !== false) {
                         $type = 'common';
                         $description = '公共模板';

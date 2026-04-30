@@ -175,6 +175,22 @@ class Cmstemplatehtml extends Controller
             $view_path = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $d['path']);
             if (!is_file($view_path)) {
                 $d['path'] .= '[文件不存在]';
+                if ($d['is_default']) {
+                    try {
+                        Builder::getInstance()->notify('默认模板(channel/default.html、content/default.html)请勿删除或改名！');
+                        if ($d['type'] == 'channel') {
+                            $newTpl = CmsTemplate::getNewTpl();
+                            $text = CmsTemplate::getTemplatePart('tpl/channel.html');
+                            file_put_contents($view_path, str_replace('<!--__content__-->', $text, $newTpl));
+                        } else if ($d['type'] == 'content') {
+                            $newTpl = CmsTemplate::getNewTpl();
+                            $text = CmsTemplate::getTemplatePart('tpl/content.html');
+                            file_put_contents($view_path, str_replace('<!--__content__-->', $text, $newTpl));
+                        }
+                    } catch (\Throwable $e) {
+                        trace('initPath error:' . $e->__tostring(), 'error');
+                    }
+                }
             }
 
             if (in_array($d['type'], ['channel', 'content']) && $d['is_default'] == 0) {
