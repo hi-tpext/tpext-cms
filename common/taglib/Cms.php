@@ -17,7 +17,7 @@ use think\Exception;
 /**
  * Cms标签库解析类
  */
-class Cms extends Taglib
+class Cms extends TagLib
 {
     // 标签定义
     protected $tags = [];
@@ -33,6 +33,12 @@ class Cms extends Taglib
         parent::__construct($template);
     }
 
+    /**
+     * tagList
+     * @param array $tag
+     * @param string $content
+     * @return string
+     */
     public function tagList($tag, $content)
     {
         $table = $tag['table'] ?? '';
@@ -43,7 +49,7 @@ class Cms extends Taglib
         $take = $tag['num'] ?? 0;
         $pagesize = $tag['pagesize'] ?? 0;
         $item = !empty($tag['item']) ? $tag['item'] : ($tag['default_item'] ?? 'item');
-        $assign = !empty($tag['assign']) ? $tag['assign'] : $table . '_list_' . time() . mt_rand(100,  999);
+        $assign = !empty($tag['assign']) ? $tag['assign'] : $table . '_list_' . time() . mt_rand(100, 999);
         $item = ltrim($item, '$');
         $assign = ltrim($assign, '$');
         $cache = explode(',', $tag['cache'] ?? '');
@@ -54,7 +60,6 @@ class Cms extends Taglib
         $simple = $tag['simple'] ?? 'false';
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
         $scope = Table::defaultScope($table);
-        $dbNameSpace = Processer::getDbNamespace();
         $links = true;
         if (isset($tag['links']) && ($tag['links'] == '0' || $tag['links'] == 'false' || $tag['links'] == 'n' || $tag['links'] == 'no')) {
             $links = false;
@@ -63,51 +68,10 @@ class Cms extends Taglib
         $parseStr = $this->bindKeyValWhere($tag);
 
         $parseStr .= <<<EOT
-
-        <?php
-
-        \$__page__ = 1;
-        \$__render_links__ = '{$links}' == '1';
-        \$__has_paginator__ = false;
-        \$__take__ = {$take};
-        \$__pagesize__ = {$pagesize} ?: (\$__set_pagesize__ ?? 0);
-        if(\$__take__ == 0) {
-            if(\$__pagesize__ > 0) {
-                \$__page__ = isset(\$page) && intval(\$page) > 0 ? intval(\$page) : 1;
-                \$__take__ = \$__pagesize__;
-                \$__has_paginator__ = true;
-            } else {
-                \$__take__ = 10;
-            }
-        }
-        \$__list__ = [];
-        \$__order_by__ = '{$table}' =='cms_content' && !empty(\$__set_order_by__) ? \$__set_order_by__ . '{$tagOrder}' : '{$tagOrder}';
-
-        \$__list__ = {$dbNameSpace}::name('{$table}')
-            ->where(\$__where__)
-            ->whereRaw(\$__where_raw__, \$__where_binds__)
-            ->where('{$scope}')
-            ->field('{$fields}')
-            ->order(\$__order_by__)
-            ->limit((\$__page__ - 1) * \$__take__, \$__take__)
-            ->cache({$cacheKey}, {$cacheTime}, '{$table}')
-            ->select();
-
-        \$__list__ = \\tpext\\cms\\common\\taglib\\Processer::list('{$table}', \$__list__);
-        
-        if(\$__has_paginator__) {
-            \$__total__ = {$dbNameSpace}::name('{$table}')
-                ->where(\$__where__)
-                ->whereRaw(\$__where_raw__, \$__where_binds__)
-                ->where('{$scope}')
-                ->count('id');
-            \$simple = {$simple} ? true : false;
-            if(\$simple && count(\$__list__) == \$__pagesize__){
-                \$__pagesize__ -= 1;//简单分页问题
-            }
-            \$__paginator__ = new \\think\\paginator\\driver\\Bootstrap(\$__list__, \$__pagesize__, \$__page__, \$__total__, \$simple, ['path' => \$__set_page_path__ ?? '']);
-            \$__links_html__ = \$__paginator__->render();
-        }
+        \$__data__ = cms_query_list(
+            '{$table}', \$__where__, \$__where_raw__, \$__where_binds__, '{$scope}', '{$fields}', '{$tagOrder}', {$take}, {$pagesize}, {$cacheKey}, {$cacheTime}, {$simple}, '{$links}', \$vars
+        );
+        extract(\$__data__);
         \${$assign} = \$__list__;
         ?>
 
@@ -118,21 +82,22 @@ class Cms extends Taglib
         {\$__links_html__|raw}
         {/if}
         <?php
-        
-        unset(\$__list__, \$__where_raw__, \$__where_binds__, \$__where__, \$__id_key__, \$__id_val__, \$__cid_key__, \$__cid_val__);
-        unset(\$__order_by__, \$__paginator__, \$__total__, \$__take__, \$__pagesize__, \$__page__, \$simple);
-        if(\$__page_type__ == 'content' && '{$table}' =='cms_content') {
-            \$content = \$vars['content'];
-        }
-        else if((\$__page_type__ == 'channel' || \$__page_type__ == 'content') && '{$table}' =='cms_channel') {
-            \$channel = \$vars['channel'];
-        }
+
+        \$__data__ = cms_restore_page_vars('{$table}', \$vars);
+        extract(\$__data__);
+        unset(\$__list__, \$__data__);
         ?>
 EOT;
         $this->usedTags[] = $tag;
         return $parseStr;
     }
 
+    /**
+     * tagParents
+     * @param array $tag
+     * @param string $content
+     * @return string
+     */
     public function tagParents($tag, $content)
     {
         $table = $tag['table'] ?? '';
@@ -142,7 +107,7 @@ EOT;
         $pid_key = $tag['pid_key'] ?? 'parent_id';
         $id_key = $tag['id_key'] ?? 'id';
         $item = !empty($tag['item']) ? $tag['item'] : ($tag['default_item'] ?? 'item');
-        $assign = !empty($tag['assign']) ? $tag['assign'] : $table . '_list_' . time() . mt_rand(100,  999);
+        $assign = !empty($tag['assign']) ? $tag['assign'] : $table . '_list_' . time() . mt_rand(100, 999);
         $item = ltrim($item, '$');
         $assign = ltrim($assign, '$');
         $fields = $tag['fields'] ?? Table::defaultFields($table);
@@ -166,32 +131,30 @@ EOT;
 
         $parseStr = <<<EOT
         <?php
-        \$__pid_key__ ='{$pid_key}';
-        \$__id_key__ = '{$id_key}';
-        \$__id_val__ = {$id_val} ?? 0;
-        if(\$__page_type__ == 'channel' || \$__page_type__ == 'content') {
-            \$__id_val__ = \$vars['channel_id'];
-        }
-        \$__list__ = \\tpext\\cms\\common\\taglib\\Processer::getParents('{$table}', \$__id_val__, \$__id_key__, \$__pid_key__);
+
+        \$__list__ = cms_get_parents('{$table}', {$id_val}, '{$id_key}', '{$pid_key}', \$vars);
         ?>
         {volist name="__list__" id="{$item}"}
         {$content}
         {/volist}
         {assign name="{$assign}" value="\$__list__" /}
         <?php
-        unset(\$__pid_key__, \$__id_key__, \$__id_val__);
-        if(\$__page_type__ == 'content' && '{$table}' =='cms_content') {
-            \$content = \$vars['content'];
-        }
-        else if((\$__page_type__ == 'channel' || \$__page_type__ == 'content') && '{$table}' =='cms_channel') {
-            \$channel = \$vars['channel'];
-        }
+
+        \$__data__ = cms_restore_page_vars('{$table}', \$vars);
+        extract(\$__data__);
+        unset(\$__list__, \$__data__);
         ?>
 EOT;
         $this->usedTags[] = $tag;
         return $parseStr;
     }
 
+    /**
+     * tagGet
+     * @param array $tag
+     * @param string $content
+     * @return string
+     */
     public function tagGet($tag, $content)
     {
         $table = $tag['table'] ?? '';
@@ -207,29 +170,20 @@ EOT;
         $fields = $tag['fields'] ?? Table::defaultFields($table);
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
         $scope = Table::defaultScope($table);
-        $dbNameSpace = Processer::getDbNamespace();
 
         $parseStr = $this->bindKeyValWhere($tag);
 
         $parseStr .= <<<EOT
-        <?php
-        
-        \$__detail__ = {$dbNameSpace}::name('{$table}')
-            ->where(\$__where__)
-            ->whereRaw(\$__where_raw__, \$__where_binds__)
-            ->where('{$scope}')
-            ->order('{$order}')
-            ->field('{$fields}')
-            ->cache({$cacheKey}, {$cacheTime}, '{$table}')
-            ->find();
-        \$__detail__ = \\tpext\\cms\\common\\taglib\\Processer::detail('{$table}', \$__detail__);
+        \$__detail__ = cms_query_detail(
+            '{$table}', \$__where__, \$__where_raw__, \$__where_binds__, '{$scope}', '{$order}', '{$fields}', {$cacheKey}, {$cacheTime}
+        );
         ?>
         {assign name="{$assign}" value="\$__detail__" /}
         {notempty name="{$assign}"}
         {$content}
         {/notempty}
-        <?php
-        unset(\$__data__, \$__where_raw__, \$__where_binds__, \$__where__, \$__id_key__, \$__id_val__, \$__cid_key__, \$__cid_val__);
+         <?php
+        unset(\$__detail__);
         ?>
 EOT;
         $this->usedTags[] = $tag;
@@ -241,6 +195,7 @@ EOT;
         $parseStr = <<<EOT
 
         <?php
+        
         \$vars = \$vars ?? [];
         if(isset(\$vars['content']) && is_array(\$vars['content'])) {
             \$vars['content']['content'] = '**这里是文章内容(省略' . mb_strlen(\$vars['content']['content']) . '字)**';
@@ -278,7 +233,7 @@ EOT;
         if ($cid_val !== '') {
             if ($cid_val[0] == '$' || $cid_val[0] == ':') { //变量或方法
                 $cid_val = $this->filterIdVar($cid_val);
-            } else if (is_int($cid_val)) {
+            } else if (ctype_digit($cid_val)) {
                 $cid_val = "{$cid_val}";
             } else if (preg_match('/^[\d,]+$/', $cid_val)) {
                 $cid_val = "'{$cid_val}'";
@@ -302,7 +257,7 @@ EOT;
         if ($id_val !== '') {
             if ($id_val[0] == '$' || $id_val[0] == ':') { //解析变量或方法
                 $id_val = $this->filterIdVar($id_val);
-            } else if (is_int($id_val)) {
+            } else if (ctype_digit($id_val)) {
                 $id_val = "{$id_val}";
             } else if (preg_match('/^[\d,]+$/', $id_val)) {
                 $id_val = "'{$id_val}'";
@@ -326,33 +281,10 @@ EOT;
         $parseStr = <<<EOT
 
         <?php
+        \$__where__ = cms_build_where('{$cid_key}', {$cid_val}, '{$id_key}', {$id_val});
         \$__where_raw__ = "{$where}";
         \$__where_binds__ = [{$binds}];
-        \$__where__ = [];
-        \$__cid_key__ = '{$cid_key}';
-        \$__id_key__ = '{$id_key}';
 
-        if(\$__cid_key__) {
-            \$__cid_val__ = {$cid_val} ?? 0;
-            if(\$__cid_val__ !== 0) {
-                if(is_array(\$__cid_val__) || strstr(\$__cid_val__, ',')) {
-                    \$__where__[] = [\$__cid_key__, 'in', \$__cid_val__];
-                } else {
-                    \$__where__[] = [\$__cid_key__, '=', \$__cid_val__];
-                }
-            }
-        }
-        if(\$__id_key__) {
-            \$__id_val__ = {$id_val} ?? 0;
-            if(\$__id_val__ !== 0) {
-                if(is_array(\$__id_val__) || strstr(\$__id_val__, ',')) {
-                    \$__where__[] = [\$__id_key__, 'in', \$__id_val__];
-                } else {
-                    \$__where__[] = [\$__id_key__, '=', \$__id_val__];
-                }
-            }
-        }
-        ?>
 EOT;
 
         return $parseStr;
@@ -370,39 +302,41 @@ EOT;
     {
         $where = $this->whereExp($where, $cid_key);
         $binds = [];
-        preg_match_all('/([\'\"])?\%?(\$[a-zA-Z_][a-zA-Z_\.\[\]\'\"]*)\%?\1?/', $where, $matches);
-        if (isset($matches[2]) && count($matches[2]) > 0) {
-            foreach ($matches[2] as $i => $match) {
-                $varName = preg_replace('/\W/is', '_', $match) . $i;
-                $replace = ':' . $varName;
-                $bind = '';
+
+        $where = preg_replace_callback(
+            '/([\'\"])?\%?(\$[a-zA-Z_][a-zA-Z_\.\[\]\'\"]*)\%?\1?/',
+            function ($m) use (&$binds) {
+                $match = $m[2];
+                $full = $m[0];
+                $varName = preg_replace('/\W/is', '_', $match) . count($binds);
+
                 if (strpos($match, '.') !== false) {
-                    $names = explode('.', $match);
-                    $first = array_shift($names);
-                    $bind = $first . '[\'' . implode('\'][\'', $names) . '\']';
+                    $bind = preg_replace('/\.([a-zA-Z_][a-zA-Z_0-9]*)/', '[\'\1\']', $match);
                 } else {
                     $bind = $match;
                 }
-                $find = $match;
-                if ($matches[0][$i][0] == '%') {
-                    $find = '%' . $find;
+
+                if ($full[0] == '%') {
                     $bind = "'%' . {$bind}";
                 }
-                if ($matches[0][$i][-1] == '%') {
-                    $find = $find . '%';
+                if (substr($full, -1) == '%') {
                     $bind = "{$bind} . '%'";
                 }
+
                 $binds[] = "'{$varName}' => {$bind}";
-                $where = substr_replace($where, $replace, strpos($where, $find), strlen($find));
-            }
-        }
+                return ':' . $varName;
+            },
+            $where
+        );
+
         return [$where, implode(', ', $binds)];
     }
 
     /**
      * 解析id值
      *
-     * @param string $where
+     * @param string $idKey
+     * @param string $idVal
      * @return string
      */
     protected function parseIdVal($idKey, $idVal)
@@ -430,7 +364,7 @@ EOT;
             $op = $mch[1];
             $idVal = trim($mch[2], "'\"");
             if (!strstr($idVal, '%')) {
-                $mch[2] = '%' . $idVal . '%';
+                $idVal = '%' . $idVal . '%';
             }
         }
 
@@ -448,18 +382,22 @@ EOT;
     protected function whereExp($where, $cid_key)
     {
         //替换where中的cid语法糖为真实字段
-        if ($cid_key && strstr($where, 'cid')) {
+        if ($cid_key && stripos($where, 'cid') !== false) {
             $where = preg_replace('/(\bcid\s+)(gt|eq|lt|egt|elt|neq|not\s*in|like|not\s*like|between|not\s*between)\b/is', $cid_key . '$2', $where);
             $where = preg_replace('/(\bcid\s*)(\<|\>|=|!=)/is', $cid_key . '$2', $where);
         }
-        if ($cid_key == 'parent_id' && strstr($where, 'pid')) {
+        if ($cid_key == 'parent_id' && stripos($where, 'pid') !== false) {
             $where = preg_replace('/(\bpid\s+)(gt|eq|lt|egt|elt|neq|not\s*in|like|not\s*like|between|not\s*between)\b/is', $cid_key . '$2', $where);
             $where = preg_replace('/(\bpid\s*)(\<|\>|=|!=)/is', $cid_key . '$2', $where);
         }
         //替换表达式
-        $where = str_ireplace(['egt', 'elt', 'neq'], ['>=', '<=', '<>'], $where);
-        $where = str_ireplace(['gt', 'eq', 'lt', '!='], ['>', '=', '<', '<>'], $where);
-        $where = str_ireplace(['notbetween', 'notin', 'notlike'], ['not between', 'not in', 'not like'], $where);
+        if (preg_match('/egt|elt|neq|!=|not(?:between|in|like)|\b(?:gt|eq|lt)\b/i', $where)) {
+            $where = str_ireplace(
+                ['egt', 'elt', 'neq', 'notbetween', 'notin', 'notlike', 'gt', 'eq', 'lt', '!='],
+                ['>=', '<=', '<>', 'not between', 'not in', 'not like', '>', '=', '<', '<>'],
+                $where
+            );
+        }
 
         return $where;
     }
@@ -477,6 +415,67 @@ EOT;
             $var = "sql_guard({$var})";
         }
         return $var;
+    }
+
+    /**
+     * 构建上一篇/下一篇标签
+     *
+     * @param array $tag
+     * @param string $content
+     * @param array $info
+     * @param string $table
+     * @param array $tagArr
+     * @param bool $isPrev
+     * @return string
+     */
+    protected function buildPrevNextTag($tag, $content, $info, $table, $tagArr, $isPrev)
+    {
+        $tag['table'] = $table;
+        $tag['tag_name'] = $tagArr[0] . '@' . ($isPrev ? 'prev' : 'next');
+        $tag['assign'] = empty($tag['assign']) ? ($isPrev ? 'prev' : 'next') : $tag['assign'];
+        $tag['default_assign'] = $tagArr[0];
+        $tag['id_key'] = $info['id_key'] ?? 'id';
+
+        $where = '';
+        if (empty($tag['where'])) {
+            $cid_key = $info['cid_key'] ?? '';
+            if ($cid_key) {
+                $where = $cid_key . "=\${$tagArr[0]}." . $cid_key;
+            } else {
+                $where = '1=1';
+            }
+        } else {
+            $where = $tag['where'];
+        }
+
+        $id = $tag[$tag['id_key']] ?? '$id';
+        $order = $tag['order'] ?? Table::defaultOrder($table);
+        $orders = explode(',', $order);
+        $first = preg_replace('/\s*(?:desc|asc)/i', '', $orders[0]);
+        $sort = $tag['sort'] ?? "\${$tagArr[0]}." . trim($first);
+        $isDesc = preg_match('/\s+desc\s*$/i', $orders[0]);
+
+        if ($isPrev) {
+            $cmp = $isDesc ? '>' : '<';
+            $fields = [];
+            foreach ($orders as $sod) {
+                if (preg_match('/\s+desc\s*$/i', $sod)) {
+                    $fields[] = preg_replace('/\s+desc\s*$/i', ' asc', trim($sod));
+                } else if (preg_match('/\s+asc\s*$/i', $sod)) {
+                    $fields[] = preg_replace('/\s+asc\s*$/i', ' desc', trim($sod));
+                } else {
+                    $fields[] = trim($sod) . ' desc';
+                }
+            }
+            $tag['order'] = implode(',', $fields);
+        } else {
+            $cmp = $isDesc ? '<' : '>';
+            $tag['order'] = $order;
+        }
+
+        $tag['where'] = "{$tag['id_key']} != {$id} and {$first} {$cmp} {$sort} and " . $where;
+        $tag[$tag['id_key']] = '';
+        return $this->tagGet($tag, $content);
     }
 
     public function __call($name, $arguments = [])
@@ -521,71 +520,10 @@ EOT;
                     return $this->tagGet($tag, $content);
                 }
                 if ($info['tag_name'] . '@prev' == $tagName) {
-                    $tag['table'] = $table;
-                    $tag['tag_name'] = $tagName;
-                    $tag['assign'] = empty($tag['assign']) ? 'prev' : $tag['assign'];
-                    $tag['default_assign'] = $tagArr[0];
-                    $tag['id_key'] = $info['id_key'] ?? 'id';
-                    $where = '';
-                    if (empty($tag['where'])) {
-                        $cid_key = $info['cid_key'] ?? '';
-                        if ($cid_key) {
-                            $where = $cid_key . "=\${$tagArr[0]}." . $cid_key;
-                        } else {
-                            $where = '1=1';
-                        }
-                    } else {
-                        $where = $tag['where'];
-                    }
-
-                    $id = $tag[$tag['id_key']] ?? '$id';
-                    $order = $tag['order'] ?? Table::defaultOrder($table);
-                    $sort = $tag['sort'] ?? "\${$tagArr[0]}.sort";
-                    $fields = [];
-                    $orders = explode(',', $order);
-                    foreach ($orders as $sod) {
-                        if (stripos($sod, 'desc') !== false) {
-                            $fields[] = preg_replace('/^(\w+\s+)desc$/is', '$1asc', $sod);
-                        } else {
-                            $fields[] = preg_replace('/^(\w+)(?:\s+asc)?$/is', '$1 desc', $sod);
-                        }
-                    }
-                    $first = preg_replace('/\s*(?:desc|asc)/', '', $orders[0]);
-                    $isDesc = stripos($orders[0], 'desc') !== false;
-                    $cmp = $isDesc ? '>' : '<';
-                    $tag['where'] = "{$tag['id_key']} != {$id} and {$first} {$cmp} {$sort} and " . $where;
-                    $tag['order'] = implode(',', $fields);
-                    $tag[$tag['id_key']] = '';
-                    return $this->tagGet($tag, $content);
+                    return $this->buildPrevNextTag($tag, $content, $info, $table, $tagArr, true);
                 }
                 if ($info['tag_name'] . '@next' == $tagName) {
-                    $tag['table'] = $table;
-                    $tag['tag_name'] = $tagName;
-                    $tag['assign'] = empty($tag['assign']) ? 'next' : $tag['assign'];
-                    $tag['default_assign'] = $tagArr[0];
-                    $tag['id_key'] = $info['id_key'] ?? 'id';
-                    $where = '';
-                    if (empty($tag['where'])) {
-                        $cid_key = $info['cid_key'] ?? '';
-                        if ($cid_key) {
-                            $where = $cid_key . "=\${$tagArr[0]}." . $cid_key;
-                        } else {
-                            $where = '1=1';
-                        }
-                    } else {
-                        $where = $tag['where'];
-                    }
-                    $id = $tag[$tag['id_key']] ?? '$id';
-                    $order = $tag['order'] ?? Table::defaultOrder($table);
-                    $sort = $tag['sort'] ?? "\${$tagArr[0]}.sort";
-                    $orders = explode(',', $order);
-                    $first = preg_replace('/\s*(?:desc|asc)/', '', $orders[0]);
-                    $isDesc = stripos($orders[0], 'desc') !== false;
-                    $cmp = $isDesc ? '<' : '>';
-                    $tag['where'] = "{$tag['id_key']} != {$id} and {$first} {$cmp} {$sort} and " . $where;
-                    $tag['order'] = $order;
-                    $tag[$tag['id_key']] = '';
-                    return $this->tagGet($tag, $content);
+                    return $this->buildPrevNextTag($tag, $content, $info, $table, $tagArr, false);
                 }
             }
             throw new Exception("未知标签：{$tagName}");

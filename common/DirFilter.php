@@ -54,6 +54,8 @@ class DirFilter extends \RecursiveFilterIterator
      */
     public function getChildren(): ?\RecursiveFilterIterator
     {
-        return new self($this->getInnerIterator()->getChildren(), $this->exclude);
+        /** @var \RecursiveIterator $inner */
+        $inner = $this->getInnerIterator();
+        return new self($inner->getChildren(), $this->exclude);
     }
 }
