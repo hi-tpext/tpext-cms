@@ -13,7 +13,7 @@ namespace tpext\cms\common\event;
 
 use tpext\think\App;
 use tpext\common\Tool;
-use tpext\cms\common\Render;;
+use tpext\cms\common\Render;
 use tpext\cms\common\model;
 use tpext\common\ExtLoader;
 use tpext\cms\common\TemplaBuilder;
@@ -81,14 +81,14 @@ class MakeTemplate
     {
         if (!empty($data['id']) && !empty($data['view_path'])) {
             //处理模板路径修改
-            $htmls = model\CmsTemplateHtml::where(['template_id' => $data['id']])->select();
+            $htmls = model\CmsTemplateHtml::where(['template_id' => $data['id']])
+                ->where('path', 'not like', 'theme/' . $data['view_path'] . '/%')
+                ->select();
             foreach ($htmls as $html) {
-                if (preg_match('/theme\/(\w+)\//i', $html['path'], $mchs)) {
-                    if ($mchs[1] != $data['view_path']) {
-                        $newPath = str_replace('theme/' . $mchs[1], 'theme/' . $data['view_path'], $html['path']);
-                        trace('模板[' . $data['name'] . ']下的文件：' . $html['path'] . '路径不匹配，迁移到：' . $newPath, 'info');
-                        $html->save(['path' => $newPath]);
-                    }
+                if (preg_match('/theme\/([\w\-]+)\//i', $html['path'], $mchs)) {
+                    $newPath = str_replace('theme/' . $mchs[1] . '/', 'theme/' . $data['view_path'] . '/', $html['path']);
+                    trace('模板[' . $data['name'] . ']下的文件：' . $html['path'] . '路径不匹配，迁移到：' . $newPath, 'info');
+                    $html->save(['path' => $newPath]);
                 }
             }
         }

@@ -176,8 +176,8 @@ class Cmstemplatehtml extends Controller
             if (!is_file($view_path)) {
                 $d['path'] .= '[文件不存在]';
                 if ($d['is_default']) {
+                    Builder::getInstance()->notify('默认模板(channel/default.html、content/default.html)请勿删除或改名！');
                     try {
-                        Builder::getInstance()->notify('默认模板(channel/default.html、content/default.html)请勿删除或改名！');
                         if ($d['type'] == 'channel') {
                             $newTpl = CmsTemplate::getNewTpl();
                             $text = CmsTemplate::getTemplatePart('tpl/channel.html');

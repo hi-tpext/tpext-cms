@@ -140,14 +140,14 @@ class RouteBuilder
         $pages = [];
         foreach ($singlePages as $page) {
             $path = preg_replace('/theme\/[\w\-]+?\/([\w\-]+?).html$/i', '$1', $page['path']);
-            $pages[] = [
+            $pages[$path] = [
                 'id' => $page['id'],
                 'to_id' => $page['to_id'],
                 'path' => $path,
             ];
         }
 
-        return $pages;
+        return array_values($pages);
     }
 
     /**
@@ -167,19 +167,19 @@ class RouteBuilder
         $pages = [];
         foreach ($dynamicPages as $page) {
             $path = preg_replace('/theme\/[\w\-]+?\/dynamic\/([\w\-]+?).html$/i', '$1', $page['path']);
-            $pages[] = [
+            $pages[$path] = [
                 'id' => $page['id'],
                 'path' => $path,
             ];
         }
 
-        return $pages;
+        return array_values($pages);
     }
 
     /**
      * Undocumented function
      *
-     * @param array $routesGroup
+     * @param array $routesRules
      * @param boolean $forceWrite
      * @return void
      */
@@ -223,14 +223,14 @@ class RouteBuilder
                     $append = $rule['append'];
                     $rule = $rule['rule'];
                     $append['tpl_id'] = $tmpl['id'];
-                    $rule = str_replace('__prefix__',  $prefix . '/', $rule) . "->append([";
+                    $rule = str_replace('__prefix__', $prefix . '/', $rule) . "->append([";
                     foreach ($append as $k => $v) {
                         $rule .= "'{$k}' => {$v}, ";
                     }
                     $rule = rtrim($rule, ', ') . "]);";
                     $lines[] = $rule;
                 } else {
-                    $lines[] = str_replace('__prefix__',  $prefix . '/', $rule) . "->append(['tpl_id' => {$tmpl['id']}]);";
+                    $lines[] = str_replace('__prefix__', $prefix . '/', $rule) . "->append(['tpl_id' => {$tmpl['id']}]);";
                 }
             }
 

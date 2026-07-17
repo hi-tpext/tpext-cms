@@ -193,10 +193,10 @@ class Cmschannel extends Controller
         $form->tab('生成设置');
         $form->number('pagesize', '分页大小')->default(12)->required();
         $form->text('order_by', '内容排序方式')->help('默认为：sort desc,publish_time desc,id desc');
-        $form->text('channel_path', '栏目生成路径')->required()->size(2, 6)->beforSymbol('c/')->afterSymbol('[-page].html')->default('[id]')->help('[id]为栏目编号变量。如不生成，填入#');
+        $form->text('channel_path', '栏目生成路径')->required()->size(2, 6)->beforSymbol('c/')->afterSymbol('[-page].html')->default('[id]')->help('[id]为栏目编号变量，避免使用`xxx-1`这样的格式。如不生成，填入#');
         $form->text('content_path', '内容生成路径')->required()->size(2, 6)->beforSymbol('d/')->afterSymbol('.html')->default('[id]')->help('[id]为内容编号变量');
         $form->text('link', '跳转链接')->help('设置后覆盖栏目生成地址，用于外链或站内跳转');
-        $form->selectTree('extend_ids', '附加栏目')->optionsData($list, 'name', 'id', 'parent_id', '')->help('可选多个附加栏目，此栏目列表页同时显示其他栏目内容');
+        $form->selectTree('extend_ids', '附加栏目')->optionsData($list, 'name', 'id', 'parent_id')->help('可选多个附加栏目，此栏目列表页同时显示其他栏目内容');
 
         if ($isEdit) {
             $form->hidden('id');

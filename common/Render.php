@@ -455,23 +455,26 @@ EOT;
             file_put_contents(
                 App::getPublicPath() . $staticDir . DIRECTORY_SEPARATOR . '不要修改此目录中文件.txt',
                 '此目录是存放模板静态资源的，' . "\n"
-                    . '不要修改、替换文件或上传新文件到此目录及子目录，' . "\n"
-                    . '否则重新发布模板资源后改动文件将还原或丢失，' . "\n"
-                    . '原始文件存放于' . $staticPath . '目录下。' . "\n"
-                    . '请修改原始文件，再发布静态资源到此目录。' . "\n"
-                    . '如果您不想使用此模式，请在此位置新建文件：no-publish.txt，以避免修改被覆盖。' . "\n"
+                . '不要修改、替换文件或上传新文件到此目录及子目录，' . "\n"
+                . '否则重新发布模板资源后改动文件将还原或丢失，' . "\n"
+                . '原始文件存放于' . $staticPath . '目录下。' . "\n"
+                . '请修改原始文件，再发布静态资源到此目录。' . "\n"
+                . '如果您不想使用此模式，请在此位置新建文件：no-publish.txt，以避免修改被覆盖。' . "\n"
             );
 
-            $directory = new \DirectoryIterator(App::getPublicPath() . $staticDir . '/css/');
+            if (is_dir($staticDir . '/css/')) {
+                
+                $directory = new \DirectoryIterator(App::getPublicPath() . $staticDir . '/css/');
 
-            $v = $this->getStaticVersion($template['view_path']);
-            $dir = '/theme/' . $template['view_path'] . '/';
+                $v = $this->getStaticVersion($template['view_path']);
+                $dir = '/theme/' . $template['view_path'] . '/';
 
-            foreach ($directory as $fileinfo) {
-                if ($fileinfo->isFile() && $fileinfo->getExtension() === "css") {
-                    $css = file_get_contents($fileinfo->getPathname());
-                    $css = $this->replaceCssImgPath($css, $v, $dir);
-                    file_put_contents($fileinfo->getPathname(), $css);
+                foreach ($directory as $fileinfo) {
+                    if ($fileinfo->isFile() && $fileinfo->getExtension() === "css") {
+                        $css = file_get_contents($fileinfo->getPathname());
+                        $css = $this->replaceCssImgPath($css, $v, $dir);
+                        file_put_contents($fileinfo->getPathname(), $css);
+                    }
                 }
             }
             return ['code' => 1, 'msg' => '[静态资源]发布成功：' . "{$staticPath} => public" . DIRECTORY_SEPARATOR . "{$staticDir}"];
@@ -502,13 +505,22 @@ EOT;
         return $content;
     }
 
+    /**
+     * Summary of getStaticVersion
+     * @param mixed $viewPath
+     * @return bool|int|string
+     */
     public function getStaticVersion($viewPath)
     {
-        $versionFilePath = App::getPublicPath() . 'theme' . DIRECTORY_SEPARATOR . $viewPath . DIRECTORY_SEPARATOR . 'version.txt';
+        $dir = App::getPublicPath() . 'theme' . DIRECTORY_SEPARATOR . $viewPath . DIRECTORY_SEPARATOR;
+        $versionFilePath = $dir . 'version.txt';
         if (is_file($versionFilePath)) {
             $v = file_get_contents($versionFilePath);
             return $v;
         } else {
+            if (!is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
             $v = date('Y-m-d-H:i:s');
             if (file_put_contents($versionFilePath, $v)) {
                 return $v;

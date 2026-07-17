@@ -89,7 +89,6 @@ class CmsTemplateHtml extends Model
      *
      * @param int $templateId
      * @param string $templatePath
-     * @param array $exts
      * @return void
      */
     public static function scanPageFiles($templateId, $templatePath)
@@ -183,7 +182,6 @@ class CmsTemplateHtml extends Model
      *
      * @param int $templateId
      * @param string $templatePath
-     * @param array $exts
      * @return array
      */
     public static function scanStaticFiles($templateId, $templatePath)

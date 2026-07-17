@@ -167,7 +167,7 @@ class Cmstemplate extends Controller
         $form->text('name', '标题')->required()->maxlength(55);
         $form->radio('platform', '类型')->required()->options(self::$platforms)->default('pc');
         $form->text('view_path', '模板路径')->beforSymbol('/theme/')->required()->help('模板放在网站根目录的/theme/目录下，如：pc-default。格式：只能包含[英文数字-_]，不支持多级目录')->default('your-path');
-        $form->text('prefix', '路径前缀')->required()->maxlength(25)->default('/')->help('页面生成的访问基础路径，如/、/m/、/h5/');
+        $form->text('prefix', '路径前缀')->required()->maxlength(25)->default('/')->help('页面生成的访问基础路径，如/、/m/、/h5/。不同模板不要使用相同的路径。避免使用/c/、/d/、/e/这些路径');
         $form->textarea('description', '描述')->maxlength(255);
         $form->number('sort', '排序')->default(0);
         if ($isEdit) {
