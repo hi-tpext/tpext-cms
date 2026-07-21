@@ -441,19 +441,29 @@ EOT;
         $staticPath = 'theme/' . $template['view_path'] . DIRECTORY_SEPARATOR . 'static';
         $staticPath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $staticPath);
         $staticDir = 'theme' . DIRECTORY_SEPARATOR . $template['view_path'];
+        $statiFullPath = App::getPublicPath() . $staticDir;
 
-        if (is_dir(App::getPublicPath() . $staticDir)) {
-            file_put_contents(App::getPublicPath() . $staticDir . DIRECTORY_SEPARATOR . 'version.txt', date('Y-m-d-H:i:s'));
-            if (is_file(App::getPublicPath() . $staticDir . DIRECTORY_SEPARATOR . 'no-publish.txt')) {
+        if (is_dir($statiFullPath)) {
+            file_put_contents($statiFullPath . DIRECTORY_SEPARATOR . 'version.txt', date('Y-m-d-H:i:s'));
+            if (is_file($statiFullPath . DIRECTORY_SEPARATOR . 'no-publish.txt')) {
                 return ['code' => 0, 'msg' => '[静态资源]发布取消：目录中存在no-publish.txt文件，已关闭资源发布模式。' . "{$staticPath} => public" . DIRECTORY_SEPARATOR . "{$staticDir}"];
             }
-            Tool::copyDir(App::getPublicPath() . $staticDir, App::getPublicPath() . $staticDir . '__bak' . DIRECTORY_SEPARATOR . date('YmdHis'));
+            if (class_exists(\ZipArchive::class)) {
+                $zipBackup = new \ZipArchive();
+                if (!is_dir($statiFullPath . '__bak' . DIRECTORY_SEPARATOR)) {
+                    mkdir($statiFullPath . '__bak' . DIRECTORY_SEPARATOR, 0755, true);
+                }
+                $zipBackup->open($statiFullPath . '__bak' . DIRECTORY_SEPARATOR . date('YmdHis') . '.zip', \ZipArchive::CREATE);
+                $this->addFilesToZip($zipBackup, $statiFullPath);
+                $zipBackup->close();
+            }
+            $this->clearDirOldFiles($statiFullPath . '__bak' . DIRECTORY_SEPARATOR);
         }
-        Tool::deleteDir(App::getPublicPath() . $staticDir);
-        $res = Tool::copyDir(App::getRootPath() . $staticPath, App::getPublicPath() . $staticDir);
+        Tool::deleteDir($statiFullPath);
+        $res = Tool::copyDir(App::getRootPath() . $staticPath, $statiFullPath);
         if ($res) {
             file_put_contents(
-                App::getPublicPath() . $staticDir . DIRECTORY_SEPARATOR . '不要修改此目录中文件.txt',
+                $statiFullPath . DIRECTORY_SEPARATOR . '不要修改此目录中文件.txt',
                 '此目录是存放模板静态资源的，' . "\n"
                 . '不要修改、替换文件或上传新文件到此目录及子目录，' . "\n"
                 . '否则重新发布模板资源后改动文件将还原或丢失，' . "\n"
@@ -462,9 +472,9 @@ EOT;
                 . '如果您不想使用此模式，请在此位置新建文件：no-publish.txt，以避免修改被覆盖。' . "\n"
             );
 
-            if (is_dir($staticDir . '/css/')) {
-                
-                $directory = new \DirectoryIterator(App::getPublicPath() . $staticDir . '/css/');
+            if (is_dir($statiFullPath . '/css/')) {
+
+                $directory = new \DirectoryIterator($statiFullPath . '/css/');
 
                 $v = $this->getStaticVersion($template['view_path']);
                 $dir = '/theme/' . $template['view_path'] . '/';
@@ -481,6 +491,95 @@ EOT;
         }
 
         return ['code' => 0, 'msg' => '[静态资源]发布失败：' . "{$staticPath} => public" . DIRECTORY_SEPARATOR . "{$staticDir}"];
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param \ZipArchive $zipHandler
+     * @param string $path
+     * @param string $subPath
+     * @return void
+     */
+    protected function addFilesToZip($zipHandler, $path, $subPath = '')
+    {
+        if (!is_dir($path)) {
+            return;
+        }
+
+        $dir = opendir($path);
+
+        $sonDir = null;
+
+        while (false !== ($file = readdir($dir))) {
+
+            if (($file != '.') && ($file != '..') && ($file != '.git')) {
+
+                $sonDir = $path . DIRECTORY_SEPARATOR . $file;
+
+                if (is_dir($sonDir)) {
+                    $this->addFilesToZip($zipHandler, $sonDir, $subPath . $file . '/');
+                } else {
+
+                    $zipHandler->addFile($sonDir, $subPath . $file);  //向压缩包中添加文件
+                }
+            }
+        }
+        closedir($dir);
+        unset($sonDir);
+    }
+
+    /**
+     * 保留目录最新N个文件，其余全部删除
+     * @param string $dir 文件夹路径
+     * @param int $keepNum 保留文件数量
+     * @return void
+     */
+    protected function clearDirOldFiles(string $dir, int $keepNum = 3): void
+    {
+        // 路径校验
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        $files = [];
+        $handle = opendir($dir);
+        while (($filename = readdir($handle)) !== false) {
+            if ($filename === '.' || $filename === '..') {
+                continue;
+            }
+            $filePath = $dir . DIRECTORY_SEPARATOR . $filename;
+            if (is_file($filePath)) {
+                $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                if ($ext == 'zip') {
+                    $files[] = [
+                        'path' => $filePath,
+                        'mtime' => filemtime($filePath) // 文件修改时间戳
+                    ];
+                }
+            } else {
+                $files[] = [
+                    'path' => $filePath,
+                    'mtime' => filemtime($filePath) // 文件修改时间戳
+                ];
+            }
+        }
+        closedir($handle);
+
+        // 按修改时间倒序，最新文件排在前面
+        usort($files, function ($a, $b) {
+            return $b['mtime'] - $a['mtime'];
+        });
+
+        // 超过保留数量的文件全部删除
+        $delFiles = array_slice($files, $keepNum);
+        foreach ($delFiles as $item) {
+            if (is_file($item['path'])) {
+                unlink($item['path']);
+            } else if (is_dir($item['path'])) {
+                Tool::deleteDir($item['path']);
+            }
+        }
     }
 
     /**
