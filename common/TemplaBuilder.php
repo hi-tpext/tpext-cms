@@ -282,7 +282,6 @@ class TemplaBuilder
         $outPath = App::getPublicPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $template['prefix']);
 
         if ($template['prefix'] != '/') {
-            Tool::copyDir($outPath, rtrim($outPath, DIRECTORY_SEPARATOR) . '_bak' . DIRECTORY_SEPARATOR . date('YmdHis'));
             Tool::deleteDir($outPath);
             return;
         }

@@ -53,6 +53,9 @@ class View
             $this->app = app();
             $this->engine = new Template($this->app, $config);
         } else {
+            if (ExtLoader::isWebman()) {
+                $config['cache_prefix'] .= date('ymdHis', filemtime($tpl));//常驻内存框架，修改前缀避免模板修改不生效
+            }
             $this->engine = new Template($config);
         }
 
