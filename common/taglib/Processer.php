@@ -13,25 +13,56 @@ namespace tpext\cms\common\taglib;
 
 use tpext\cms\common\model\EmptyData;
 use tpext\think\App;
+use Webman\Context;
 
 class Processer
 {
     protected static $path = '';
     protected static $isAdmin = false;
 
+    protected static $isWebmanContext = null;
+
+    protected static function isWebmanContext()
+    {
+        if (is_null(self::$isWebmanContext)) {
+            self::$isWebmanContext = class_exists(Context::class);
+        }
+
+        return self::$isWebmanContext;
+    }
+
     public static function setPath($val = '')
     {
-        static::$path = $val;
+        if (self::isWebmanContext()) {
+            Context::set(static::class . '::path', $val);
+        } else {
+            static::$path = $val;
+        }
     }
 
     public static function getPath()
     {
+        if (self::isWebmanContext()) {
+            return Context::get(static::class . '::path');
+        }
         return static::$path;
     }
 
     public static function setIsAdmin($val = true)
     {
-        static::$isAdmin = $val;
+        if (self::isWebmanContext()) {
+            Context::set(static::class . '::isAdmin', $val);
+        } else {
+            static::$isAdmin = $val;
+        }
+    }
+
+    public static function isAdmin()
+    {
+        if (self::isWebmanContext()) {
+            return Context::get(static::class . '::isAdmin');
+        }
+        return static::$isAdmin;
     }
 
     /**
@@ -215,7 +246,7 @@ class Processer
                     ->where('parent_id', $item['id'])
                     ->where($channelScope)
                     ->where('type', '<>', 2)
-                    ->cache(static::$isAdmin ? false : 'cms_channel_children_ids_' . $item['channel_id'], 0, 'cms_channel')
+                    ->cache(static::isAdmin() ? false : 'cms_channel_children_ids_' . $item['channel_id'], 0, 'cms_channel')
                     ->column('id');
             }
             $item['children_ids'] = $childrenIds;
@@ -230,7 +261,7 @@ class Processer
                 $channel = $dbNameSpace::name('cms_channel')
                     ->where('id', $item['channel_id'])
                     ->where($channelScope)
-                    ->cache(static::$isAdmin ? false : 'cms_channel_' . $item['channel_id'], 0, 'cms_channel')
+                    ->cache(static::isAdmin() ? false : 'cms_channel_' . $item['channel_id'], 0, 'cms_channel')
                     ->find();
                 if ($channel) {
                     $item['url'] = static::resolveWebPath($item['link']) ?: self::$path . self::resolveContentPath($item, $channel) . '.html';
@@ -249,12 +280,12 @@ class Processer
             if (!empty($item['reference_id'])) {
                 $detail = $dbNameSpace::name('cms_content_detail')
                     ->where('main_id', $item['reference_id'])
-                    ->cache(static::$isAdmin ? false : 'cms_content_detail_' . $item['reference_id'], 3600, $table)
+                    ->cache(static::isAdmin() ? false : 'cms_content_detail_' . $item['reference_id'], 3600, $table)
                     ->find();
             } else {
                 $detail = $dbNameSpace::name('cms_content_detail')
                     ->where('main_id', $item['id'])
-                    ->cache(static::$isAdmin ? false : 'cms_content_detail_' . $item['id'], 3600, $table)
+                    ->cache(static::isAdmin() ? false : 'cms_content_detail_' . $item['id'], 3600, $table)
                     ->find();
             }
             $item['content'] = $detail ? $detail['content'] : '';
@@ -386,7 +417,7 @@ class Processer
 
         return $dbNameSpace::name($table)
             ->where($idKey, $id)
-            ->cache($table . '_' . $id, static::$isAdmin ? 120 : 3600, $table)
+            ->cache($table . '_' . $id, static::isAdmin() ? 120 : 3600, $table)
             ->find();
     }
 }
