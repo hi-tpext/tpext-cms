@@ -170,7 +170,6 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_content_field` (
 	`numerc_scale` INT(10) UNSIGNED NULL DEFAULT '0' COMMENT '小数点',
 	`data_type` VARCHAR(55) NULL DEFAULT '' COMMENT '数据类型',
 	`default` VARCHAR(55) NULL DEFAULT '' COMMENT '默认值',
-	`position` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '位置',
 	`create_time` DATETIME NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '添加时间',
 	`update_time` DATETIME NOT NULL DEFAULT '2020-01-01 00:00:00' COMMENT '更新时间',
 	PRIMARY KEY (`id`)

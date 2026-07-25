@@ -353,11 +353,7 @@ class Cmscontent extends Controller
 
                 foreach ($fields as $field) {
                     if ($field['is_custom'] == 1 && $field['position'] == 'main_left') {
-                        $displayer = $field['displayer_type'];
-                        $form->$displayer($field['name'], $field['comment'])
-                            ->readonly($isReference)
-                            ->help($field['help'])
-                            ->required(strstr($field['rules'], 'required'));
+                        $this->customField($form, $field, $isReference);
                     }
                 }
 
@@ -432,11 +428,7 @@ class Cmscontent extends Controller
             $form->html('');
             foreach ($fields as $field) {
                 if ($field['is_custom'] == 1 && $field['position'] == 'main_right') {
-                    $displayer = $field['displayer_type'];
-                    $form->$displayer($field['name'], $field['comment'])
-                        ->readonly($isReference)
-                        ->help($field['help'])
-                        ->required(strstr($field['rules'], 'required'));
+                    $this->customField($form, $field, $isReference);
                 }
             }
 
@@ -527,11 +519,7 @@ class Cmscontent extends Controller
             }
             foreach ($fields as $field) {
                 if ($field['is_custom'] == 1 && $field['position'] == 'extend') {
-                    $displayer = $field['displayer_type'];
-                    $form->$displayer($field['name'], $field['comment'])
-                        ->readonly($isReference)
-                        ->help($field['help'])
-                        ->required(strstr($field['rules'], 'required'));
+                    $this->customField($form, $field, $isReference);
                 }
             }
 
@@ -554,6 +542,45 @@ class Cmscontent extends Controller
                     $f->bigSize();
                 }
             }
+        }
+    }
+
+    /**
+     * Summary of customField
+     * @param mixed $form
+     * @param array $modelField
+     * @param bool $isReference
+     * @return void
+     */
+    protected function customField($form, $modelField, $isReference)
+    {
+        $displayer = $modelField['displayer_type'];
+        $f = $form->$displayer($modelField['name'], $modelField['comment'])
+            ->readonly($isReference)
+            ->help($modelField['help'])
+            ->required(strstr($modelField['rules'], 'required'));
+
+        if (in_array($displayer, ['radio', 'checkbox', 'tree', 'selecttree', 'transfer', 'select', 'multipleSelect'])) {
+            $field = model\CmsContentField::where('name', $modelField['name'])->find();
+            if (!empty($field) && !empty($field['options'])) {
+                $options = trim($field['options']);
+                if (in_array($displayer, ['select', 'multipleSelect']) && preg_match('/^api:.+$/is', $options)) {
+                    $api = explode(',', str_replace('api:', '', $options));
+                    $url = $api[0];
+                    $text = $api[1] ?? '';
+                    $id = $api[2] ?? '';
+                    $f->dataUrl($url, $text, $id);
+                } else {
+                    $optionsArr = [];
+                    $arr = explode("\n", $options);
+                    foreach ($arr as $a) {
+                        $aa = explode(':', trim($a));
+                        $optionsArr[$aa[0]] = $aa[1] ?? $aa[0];
+                    }
+                    $f->options($optionsArr);
+                }
+            }
+
         }
     }
 

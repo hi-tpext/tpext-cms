@@ -169,8 +169,10 @@ class Cmscontentfield extends Controller
                 )
                 ->when(['none'])->with(
                     $form->select('DATA_TYPE', '数据类型')->options(CmsContentFieldModel::$FIELD_TYPES)->default('varchar')
-                )->when(['select', 'radio', 'checkbox', 'multipleSelect'])->with(
+                )->when(['radio', 'checkbox', 'tree', 'selecttree', 'transfer'])->with(
                     $form->textarea('options', '选项')->required()->help('可选择的项，每行一个，格式：key : value或value')
+                )->when(['select', 'multipleSelect'])->with(
+                    $form->textarea('options', '选项')->required()->help('可选择的项，每行一个，格式：key : value或value，或者使用ajax加载：api:url,text,id')
                 );
         });
     }

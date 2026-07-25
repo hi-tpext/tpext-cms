@@ -22,7 +22,7 @@ use tpext\cms\common\model\CmsTemplateHtml;
 
 class Module extends baseModule
 {
-    protected $version = '2.1.5';
+    protected $version = '2.1.6';
 
     protected $name = 'tpext.cms';
 
