@@ -28,6 +28,7 @@ class Cmscontentfield extends Controller
 
     protected function initialize()
     {
+        $this->dataModel = new CmsContentFieldModel;
         $this->pageTitle = '内容字段管理';
         $this->indexText = '字段列表';
 
