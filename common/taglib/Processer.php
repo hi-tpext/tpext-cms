@@ -230,7 +230,7 @@ class Processer
     public static function detail($table, $item)
     {
         if (empty($item)) {
-            $empty = new EmptyData;
+            $empty = new EmptyData('content');
             return $empty;
         }
 
@@ -408,6 +408,7 @@ class Processer
      * Undocumented function
      *
      * @param string $table
+     * @param string $idKey
      * @param int $id
      * @return array
      */

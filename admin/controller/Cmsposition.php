@@ -67,6 +67,7 @@ class Cmsposition extends Controller
     /**
      * 构建表格
      *
+     * @param array $data
      * @return void
      */
     protected function buildTable(&$data = [])
@@ -103,6 +104,7 @@ class Cmsposition extends Controller
      * Undocumented function
      * @title 预览
      *
+     * @param int $id
      * @return mixed
      */
     public function preview($id)

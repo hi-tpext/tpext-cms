@@ -68,6 +68,7 @@ class Cmstag extends Controller
     /**
      * 构建表格
      *
+     * @param array $data
      * @return void
      */
     protected function buildTable(&$data = [])

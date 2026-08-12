@@ -165,6 +165,7 @@ class Module extends baseModule
     /**
      * Undocumented function
      *
+     * @param bool $runSql
      * @return boolean
      */
     public function uninstall($runSql = true)

@@ -44,7 +44,6 @@ class Render
     /**
      * 生成首页
      * @param array|CmsTemplate $template
-     * @param int $page
      * @return array
      */
     public function index($template)

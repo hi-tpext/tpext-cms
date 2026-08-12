@@ -41,6 +41,8 @@ class Cmscontentfield extends Controller
     /**
      * 构建表格
      *
+     * @param array $data
+     * @param bool $isExporting
      * @return void
      */
     protected function buildTable(&$data = [], $isExporting = false)
@@ -181,7 +183,7 @@ class Cmscontentfield extends Controller
     /**
      * 保存数据
      *
-     * @param string $field
+     * @param string|int $id
      * @return mixed
      */
     protected function save($id = '')
@@ -487,7 +489,7 @@ class Cmscontentfield extends Controller
     }
 
     /**
-     * @param string $field
+     * @param string $name
      * @return array
      */
     protected function getFieldInfo($name)

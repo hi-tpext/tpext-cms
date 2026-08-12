@@ -102,7 +102,8 @@ class Table
     /**
      * 添加允许的表
      * tables（包含扩展的）中的默认允许，其他的表设为允许后可以使用{list}或{detail}标签
-     * 
+     *
+     * @param array $allowTables
      * @return void
      */
     public static function addAllowTables($allowTables)

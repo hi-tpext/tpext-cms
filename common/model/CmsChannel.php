@@ -125,7 +125,7 @@ class CmsChannel extends Model
     /**
      * Undocumented function
      *
-     * @param array $membnodeer 用户
+     * @param array $node 节点
      * @param array $list 已获取的上级列表，第一次是传空数组
      * @param integer $limit 层级限制
      * @return array

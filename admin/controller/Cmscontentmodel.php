@@ -58,6 +58,8 @@ class Cmscontentmodel extends Controller
     /**
      * 构建表格
      *
+     * @param array $data
+     * @param bool $isExporting
      * @return void
      */
     protected function buildTable(&$data = [], $isExporting = false)
