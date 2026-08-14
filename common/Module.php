@@ -22,7 +22,7 @@ use tpext\cms\common\model\CmsTemplateHtml;
 
 class Module extends baseModule
 {
-    protected $version = '2.1.8';
+    protected $version = '2.2.1';
 
     protected $name = 'tpext.cms';
 
@@ -31,6 +31,17 @@ class Module extends baseModule
     protected $description = '内容管理功能';
 
     protected $root = __DIR__ . '/../';
+
+    /**
+     * 版本列表
+     * 版本号 => 升级脚本
+     *
+     * @var array
+     */
+    protected $versions = [
+        '1.0.1' => '',
+        '2.2.0' => '2.2.0.sql',
+    ];
 
     /**
      * 后台菜单
@@ -142,7 +153,7 @@ class Module extends baseModule
                 foreach ($tags as $tag) {
                     Cache::deleteTag($tag);
                 }
-                
+
             } catch (\Throwable $e) {
                 trace($e->__toString());
             }

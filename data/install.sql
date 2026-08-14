@@ -262,3 +262,6 @@ INSERT INTO `__PREFIX__cms_content_model_field` (`id`, `model_id`, `name`, `comm
 (22, 3, 'attachments', '视频', '', 'file', 'main_left', 'required', 0, '2024-12-13 22:24:45', '2024-12-16 11:15:51'),
 (23, 3, 'logo', '封面图', '视频封面', 'auto', 'main_left', '', 0, '2024-12-16 11:17:48', '2024-12-16 11:39:49');
 
+/** 2.2.0 **/
+ALTER TABLE `__PREFIX__cms_channel`
+	ADD COLUMN `extend_table` VARCHAR(55) NOT NULL DEFAULT '' COMMENT '附加表' AFTER `path`;

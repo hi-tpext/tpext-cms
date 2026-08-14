@@ -14,6 +14,12 @@ namespace tpext\cms\common\model;
 class EmptyData implements \JsonSerializable, \ArrayAccess
 {
     protected $name = 'empty_data';
+    protected $table = 'channel';
+
+    public function __construct($table = 'channel')
+    {
+        $this->table = $table;
+    }
 
     /**
      * @param string $name 名称
@@ -30,7 +36,7 @@ class EmptyData implements \JsonSerializable, \ArrayAccess
         if ($name == 'url' || $name == 'link') {
             return '#';
         }
-        if ($name = 'channel') {
+        if ($this->table == 'content' && $name == 'channel') {
             return $this;
         }
         if ($name == 'id' || $name == 'parent_id') {
@@ -58,7 +64,7 @@ class EmptyData implements \JsonSerializable, \ArrayAccess
      * @return mixed
      * 
      */
-     #[\ReturnTypeWillChange]
+    #[\ReturnTypeWillChange]
     public function offsetGet($name)
     {
         if ($name == '__not_found__') {

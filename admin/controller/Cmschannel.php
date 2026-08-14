@@ -198,6 +198,7 @@ class Cmschannel extends Controller
         $form->text('content_path', '内容生成路径')->required()->size(2, 6)->beforSymbol('d/')->afterSymbol('.html')->default('[id]')->help('[id]为内容编号变量');
         $form->text('link', '跳转链接')->help('设置后覆盖栏目生成地址，用于外链或站内跳转');
         $form->selectTree('extend_ids', '附加栏目')->optionsData($list, 'name', 'id', 'parent_id')->help('可选多个附加栏目，此栏目列表页同时显示其他栏目内容');
+        $form->text('extend_table', '附加表')->help('填入一张其他表(不含表前缀)，详情页标签解析不再使用默认的`cms_content`表');
 
         if ($isEdit) {
             $form->hidden('id');
@@ -291,6 +292,7 @@ class Cmschannel extends Controller
             'channel_path',
             'content_path',
             'extend_ids',
+            'extend_table',
             'order_by',
             'keywords',
             'description',
@@ -324,6 +326,10 @@ class Cmschannel extends Controller
 
         if ($id && $data['parent_id'] == $id) {
             $this->error('上级不能是自己');
+        }
+
+        if ($data['extend_table'] == 'cms_content') {
+            $this->error('扩展表名必须是除cms_content之外的');
         }
 
         if (

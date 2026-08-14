@@ -178,6 +178,11 @@ class CmsChannel extends Model
         if (empty($value)) {
             $value = '[id]';
         }
+
+        if ($value == '[id]' && !empty($data['extend_table'])) {
+            $value = str_replace('_', '-', $data['extend_table']);
+        }
+
         return $value;
     }
 
@@ -186,6 +191,11 @@ class CmsChannel extends Model
         if (empty($value)) {
             $value = '[id]';
         }
+
+        if ($value == '[id]' && !empty($data['extend_table'])) {
+            $value = str_replace('_', '-', $data['extend_table']) . '-[id]';
+        }
+
         return $value;
     }
 

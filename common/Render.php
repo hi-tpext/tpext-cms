@@ -115,6 +115,16 @@ class Render
             } else {
                 $channel_ids = $channel['extend_ids'] ? explode(',', $channel['extend_ids']) : [];
 
+                $page_path = $template['prefix'] . Processer::resolveChannelPath($channel) . '-[PAGE].html';
+
+                $get = array_filter(request()->get());
+
+                if (!empty($get)) {
+                    $params = $this->filterParams($get);
+                    unset($get['page']);
+                    $page_path .= '?' . http_build_query($params);
+                }
+
                 $vars = [
                     'page' => $page,
                     'id' => $channel['id'],
@@ -133,9 +143,11 @@ class Render
                     '__page_type__' => 'channel',
                     '__set_pagesize__' => $channel['pagesize'],
                     '__set_order_by__' => 'is_top desc,',
-                    '__set_page_path__' => $template['prefix'] . Processer::resolveChannelPath($channel) . '-[PAGE].html',
+                    '__set_page_path__' => $page_path,
                     '__wconf__' => $this->getWconfig(),
                 ];
+
+                $vars = array_merge($vars, $get);
                 $vars['vars'] = $vars;
                 $config = [
                     'cache_prefix' => $tplHtml['path'],
@@ -165,7 +177,7 @@ class Render
      */
     public function content($template, $content, $is_static = 0)
     {
-        $tplHtml = $this->getHtml($template, 'single', $content['id']); //获取绑定的单页模板
+        $tplHtml = !empty($content['extend_table']) ? null : $this->getHtml($template, 'single', $content['id']); //获取绑定的单页模板
 
         if (!$tplHtml) {
             $tplHtml = $this->getHtml($template, 'content', $content['channel_id']); //获取绑定的内容模板
@@ -189,7 +201,7 @@ class Render
             if ($content['__not_found__'] || $content['is_show'] != 1 || $content['delete_time']) {
                 return ['code' => 0, 'msg' => '内容不存在'];
             } else {
-                $content['click'] = $this->click($content['id']);
+                $content['click'] = $this->click($content['id'], $content['extend_table'] ?? '');
                 $vars = [
                     'id' => $content['id'],
                     'channel_id' => $content['channel_id'],
@@ -199,14 +211,21 @@ class Render
                     'content_id' => $content['id'],
                     'content' => $content,
                     'channel' => $content['channel'],
-                    'page_title' => $content['title'] . '_' . $content['channel']['name'] . '_',
-                    'page_description' => $content['description'] ?: $content['title'],
-                    'page_keywords' => $content['keywords'] ?: $content['title'],
+                    'page_title' => ($content['title'] ?? '') . '_' . $content['channel']['name'] . '_',
+                    'page_description' => $content['description'] ?? ($content['title'] ?? ''),
+                    'page_keywords' => $content['keywords'] ?? ($content['title'] ?? ''),
                     '__site_home__' => $template['prefix'],
                     '__page_type__' => 'content',
                     '__wconf__' => $this->getWconfig(),
                 ];
-                $vars['vars'] = $vars;
+
+                $get = array_filter(request()->get());
+
+                if (!empty($get)) {
+                    $params = $this->filterParams($get);
+                    $vars = array_merge($vars, $params);
+                }
+
                 $config = [
                     'cache_prefix' => $tplHtml['path'],
                     'tpl_replace_string' => ['@static@' => '/theme/' . $template['view_path'] . '/', '@site_home@' => $template['prefix']],
@@ -217,7 +236,7 @@ class Render
                 $out = $view->getContent();
                 $out = $this->replaceStaticPath($template, $out);
 
-                if ($is_static == 1) {
+                if (!empty($content['extend_table']) && $is_static == 1) {
                     $url = $template['prefix'] . 'd/__click__' . $content['id'];
                     $out = str_replace('</body>', '<script type="text/javascript">' . $this->clickScript($url) . "\n" . '</script>' . "\n" . '</body>', $out);
                 }
@@ -227,7 +246,7 @@ class Render
             return ['code' => 1, 'msg' => 'ok', 'data' => $out];
         } catch (\Throwable $e) {
             trace($e->__toString());
-            return ['code' => 0, 'msg' => '[' . $content['title'] . ']内容生成出错，' . str_replace(App::getRootPath(), '', $e->getFile() . '#' . $e->getLine() . '|' . $e->getMessage()) . '。模板文件：' . $tplFile];
+            return ['code' => 0, 'msg' => '[' . ($content['title'] ?? '') . ']内容生成出错，' . str_replace(App::getRootPath(), '', $e->getFile() . '#' . $e->getLine() . '|' . $e->getMessage()) . '。模板文件：' . $tplFile];
         }
     }
 
@@ -235,14 +254,15 @@ class Render
      * 内容点击
      * 
      * @param int $id
+     * @param string $extend_table
      * @return int
      */
-    public function click($id)
+    public function click($id, $extend_table = '')
     {
-        $key = 'cms_content_click_' . $id;
-        $table = 'cms_content';
+        $table = $extend_table ?: 'cms_content';
         $dbNameSpace = Processer::getDbNamespace();
         $contentScope = Table::defaultScope($table);
+        $key = $table . '_click_' . $id;
 
         $click = 0;
         if (Cache::has($key)) {
@@ -253,11 +273,11 @@ class Render
                 ->where($contentScope)
                 ->find();
 
-            $click = $content ? $content['click'] : 0;
+            $click = $content ? ($content['click'] ?? 0) : 0;
         }
 
         $click += 1;
-        Cache::tag('cms_content')->set('cms_content_click_' . $id, $click);
+        Cache::tag($table)->set($key, $click);
 
         $config = Module::getInstance()->config();
         $clickWrite = $config['click_write'] ?? 10;
@@ -265,13 +285,15 @@ class Render
             $clickWrite = 10;
         }
         if ($click % $clickWrite == 0) {
-            $dbNameSpace::name($table)
-                ->where('id', $id)
-                ->where($contentScope)
-                ->update(['click' => $click]);
+            if ($table == 'cms_content') {//content表才更新，其他表不确定有此字段
+                $dbNameSpace::name($table)
+                    ->where('id', $id)
+                    ->where($contentScope)
+                    ->update(['click' => $click]);
+            }
         }
 
-        ExtLoader::trigger('cms_content_click', $id);
+        ExtLoader::trigger($key, $id);
 
         return $click;
     }
@@ -331,11 +353,15 @@ EOT;
 
         try {
             $tplFile = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $tplHtml['path']);
+
             $page_path = '';
-            $get = request()->get();
+
+            $get = array_filter(request()->get());
+
             if (!empty($get)) {
-                unset($get['page']);
-                $page_path = '?' . (empty($get) ? '' : http_build_query($get) . '&') . 'page=[PAGE]';
+                $params = $this->filterParams($get);
+                unset($params['page']);
+                $page_path = '?' . http_build_query($params) . '&page=[PAGE]';
             }
 
             $vars = [
@@ -345,15 +371,8 @@ EOT;
                 '__page_type__' => 'dynamic',
             ];
 
-            $param = request()->param();
-            array_walk($param, function (&$value, $key) {
-                if (is_array($value)) {
-                    $value = implode(',', $value);
-                }
-                $value = $this->sqlGuard($value);
-            });
+            $vars = array_merge($vars, $get);
 
-            $vars = array_merge($vars, $param);
             $vars['vars'] = $vars;
             $config = [
                 'cache_prefix' => $tplHtml['path'],
@@ -369,26 +388,6 @@ EOT;
             trace($e->__toString());
             return ['code' => 0, 'msg' => '[页面]生成出错，' . str_replace(App::getRootPath(), '', $e->getFile() . '#' . $e->getLine() . '|' . $e->getMessage())];
         }
-    }
-
-    /**
-     * sql 注入防御
-     * @param string $val
-     * @return string
-     */
-    protected function sqlGuard($val)
-    {
-        $val = strip_tags($val);
-
-        if (preg_match('/\b(?:select|delete)\b.+?\bfrom\b/is', $val)) {
-            return 'invalid words';
-        }
-
-        if (preg_match('/\bunion\b.+?\bselect\b/is', $val)) {
-            return 'invalid words';
-        }
-
-        return $val;
     }
 
     /**
@@ -641,5 +640,29 @@ EOT;
         $content = preg_replace('/(background\-img\s*:[^>]*?url\([\'\"]?)(?:\.{1,2}\/)?static\/([^\'\"\);]+?\.\w+)([\'\"]?)/is', "$1{$staticDir}$2?v={$v}$3", $content);
 
         return $content;
+    }
+
+    /**
+     * Summary of filterParams
+     * @param array $params
+     * @return array
+     */
+    protected function filterParams($params)
+    {
+        array_walk($params, function (&$value, $key) {
+            if (is_array($value)) {
+                $value = implode(',', $value);
+            }
+            $value = Processer::sqlGuard($value);
+        });
+
+        if (ExtLoader::isWebman() && PHP_VERSION < 8.1) {
+            unset($params['html_id']);
+            unset($params['tpl_id']);
+            unset($params['channel_id']);
+            unset($params['extend_table']);
+        }
+
+        return $params;
     }
 }

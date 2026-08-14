@@ -43,8 +43,20 @@
 </div>
 {/content@list}
 
+<p>where的值整体是一个变量时(如<code>where="$where"</code>)，直接把变量值作为查询条件。变量可以是标准sql条件字符串(不支持gt/eq等语法糖)，也可以是数组，如</p>
+<p>需提前使用assign标签赋值：{<code>assign name="where" value="id > 30 and id <= 40" /</code>}</p>
+{<code>content@list where="$where"</code>}
+
+<p>where的值整也可以是一个全局方法：</p>
+{<code>content@list where="getPageFilter()"</code>}
+<p>或者一个静态方法：</p>
+{<code>content@list where="\xxx\yyy::getPageFilter()"</code>}
+
 <p>限制输出数量，如<code>num="3"</code></p>
 <p>指定排序方式，如<code>order="sort asc"</code></p>
+<p>order的值也支持变量或方法(变量值须为标准sql排序字符串)，如<code>order="$order"</code>、<code>order="getOrder()"</code>或<code>order="\xxx\yyy::getOrder()"</code></p>
+<p>需提前使用assign标签赋值：{<code>assign name="order" value="sort asc" /</code>}</p>
+{<code>content@list order="$order"</code>}
 <p>指定循环变量，如<code>item="hello"</code>，默认为@前面的名称，如content。在某些情况下多列表嵌套时指定不同名称可 能有用。</p>
 <p>指定查询字段，如<code>fields="id,title,description"</code>，默认是所有字段。谨慎使用，有的字段在表间关联时需要。</p>
 <p>使用缓存，如<code>cache="index_news_7,3600"</code></p>
@@ -58,6 +70,7 @@
 {/content@list}
 
 <p>分页列表，使用<code>pagesize</code>参数后，列表会分页显示，如<code>pagesize="5"</code>，每页显示5条记录</p>
+<p>pagesize的值也支持变量或方法(值会自动转为整数)，如<code>pagesize="$pagesize"</code>、<code>pagesize="getPagesize()"</code>或<code>pagesize="\xxx\yyy::getPagesize()"</code></p>
 <p>注意区分<code>num</code>和<code>pagesize</code>，使用<code>num</code>不产生分页链接</p>
 <p>控制分页导航位置，正常情况下，分页连接跟随列表后面，可以使用<code>links="no"</code>让列表下面的分页链接暂不显示，然后在页面其他合适的位置显示。</p>
 <p>然后可以在其他地方输出分页链接</p>
@@ -184,6 +197,22 @@
 <p>单页绑定一篇文章后，文章数据会自动注入，使用{<code>$content.xxx</code>}读取</p>
 <p>如果单页没有绑定文章，则相当于动态页面，自由发挥</p>
 
+
+<h4>模型与扩展表</h4>
+<p>系统支持新增模型以自定义字段</p>
+<p>如果是复杂系统，简单的增加字段无法满足，就可以指定扩展表</p>
+<p>操作方法：</p>
+<p>1、比如新增一个栏目“产品”，在中栏目信息的‘附加表’输入框填写一张其他表，如products</p>
+<p>2、栏目默认路径变成/c/products-[page].html（可以自定义为其他，但不能使用默认的/c/[id]-[page].html）</p>
+<p>3、栏目页使用list标签：<code>{</code>list table="products" xxx="xxx" <code>}</code>，或扩展标签：<code>{</code>products@list
+    xxx="xxx" <code>}</code></p>
+<p>4、详情页无差别</p>
+
+<h4>扩展标签</h4>
+<p>参考<code>common\taglib\Table.php</code>中<code>$tables</code>字段的写法，使用<code>Table::extend($mytables)</code>增加标签</p>
+<p>方式1、监听<code>tpext_cms_get_tables</code>事件，调用扩展方法</p>
+<p>方式2、依赖框架的自动加载机制，在框架启动时调用扩展方法</p>
+
 <h4>助手方法</h4>
 <p>1、字符截取<code>more($str,$len,$more='...更多')</code></p>
 <p>如截取标题长度为36，若长度超过36，则显示<code>...更多</code></p>
@@ -302,7 +331,7 @@ function text666($text){
 
 <h4>结尾</h4>
 <p>
-    thinkphp：<a href="https://doc.thinkphp.cn/v5_1/neizhibiaoqian.html" target="_blank">模板标签使用文档</a>
+    thinkphp：<a href="https://doc.thinkphp.cn/@think-template/mubanjicheng.html" target="_blank">模板标签使用文档</a>
 </p>
 
 <p>演示页面不需要请删除此文件(/theme/xxx/dynamic/demo.html)，重新生成路由（后台菜单-模板管理-生成路由）</p>

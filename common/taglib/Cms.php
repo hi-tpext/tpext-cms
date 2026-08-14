@@ -43,11 +43,12 @@ class Cms extends TagLib
     {
         $table = $tag['table'] ?? '';
         if (!Table::isAllowTable($table)) {
-            return "<!--数据表：{$table}未允许使用标签-->";
+            return "<!--数据表：{$table}未允许使用标签--><?php if(false): ?>" . $content . "<?php endif; ?>";
         }
 
         $take = $tag['num'] ?? 0;
         $pagesize = $tag['pagesize'] ?? 0;
+        $pagesizeExpr = $this->isVarOrMethod($pagesize) ? "intval(" . trim($pagesize, ':') . " ?? 0)" : intval($pagesize);
         $item = !empty($tag['item']) ? $tag['item'] : ($tag['default_item'] ?? 'item');
         $assign = !empty($tag['assign']) ? $tag['assign'] : $table . '_list_' . time() . mt_rand(100, 999);
         $item = ltrim($item, '$');
@@ -56,6 +57,7 @@ class Cms extends TagLib
         $cacheKey = empty($cache[0]) ? 'false' : "'" . trim($cache[0]) . "'";
         $cacheTime = intval($cache[1] ?? 360);
         $tagOrder = !empty($tag['order']) ? $tag['order'] : Table::defaultOrder($table);
+        $orderExpr = $this->parseOrder($tagOrder);
         $fields = $tag['fields'] ?? Table::defaultFields($table);
         $simple = $tag['simple'] ?? 'false';
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
@@ -69,7 +71,7 @@ class Cms extends TagLib
 
         $parseStr .= <<<EOT
         \$__data__ = cms_query_list(
-            '{$table}', \$__where__, \$__where_raw__, \$__where_binds__, '{$scope}', '{$fields}', '{$tagOrder}', {$take}, {$pagesize}, {$cacheKey}, {$cacheTime}, {$simple}, '{$links}', \$vars
+            '{$table}', \$__where__, '{$scope}', '{$fields}', {$orderExpr}, {$take}, {$pagesizeExpr}, {$cacheKey}, {$cacheTime}, {$simple}, '{$links}', \$vars
         );
         extract(\$__data__);
         \${$assign} = \$__list__;
@@ -102,7 +104,7 @@ EOT;
     {
         $table = $tag['table'] ?? '';
         if (!Table::isAllowTable($table)) {
-            return "<!--数据表：{$table}未允许使用标签-->";
+            return "<!--数据表：{$table}未允许使用标签--><?php if(false): ?>" . $content . "<?php endif; ?>";
         }
         $pid_key = $tag['pid_key'] ?? 'parent_id';
         $id_key = $tag['id_key'] ?? 'id';
@@ -167,6 +169,7 @@ EOT;
         $cacheKey = empty($cache[0]) ? 'false' : "'" . trim($cache[0]) . "'";
         $cacheTime = intval($cache[1] ?? 360);
         $order = $tag['order'] ?? '';
+        $orderExpr = $this->parseOrder($order);
         $fields = $tag['fields'] ?? Table::defaultFields($table);
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
         $scope = Table::defaultScope($table);
@@ -175,7 +178,7 @@ EOT;
 
         $parseStr .= <<<EOT
         \$__detail__ = cms_query_detail(
-            '{$table}', \$__where__, \$__where_raw__, \$__where_binds__, '{$scope}', '{$order}', '{$fields}', {$cacheKey}, {$cacheTime}
+            '{$table}', \$__where__, '{$scope}', {$orderExpr}, '{$fields}', {$cacheKey}, {$cacheTime}
         );
         ?>
         {assign name="{$assign}" value="\$__detail__" /}
@@ -210,8 +213,33 @@ EOT;
     }
 
     /**
+     * 判断是否为变量或方法调用(如$where、getWhere()、\xx\yy::getWhere())
+     *
+     * @param string $str
+     * @return bool
+     */
+    protected function isVarOrMethod($str)
+    {
+        return preg_match('/^\s*\$[a-zA-Z_][a-zA-Z_\d]*\s*$/', $str) || preg_match('/^\s*:?[a-zA-Z_\\\\:]+\([^\(\)]*?\)\s*$/', $str);
+    }
+
+    /**
+     * order参数支持变量或方法，如order="$order"、order="getOrder()"
+     *
+     * @param string $order
+     * @return string
+     */
+    protected function parseOrder($order)
+    {
+        if ($this->isVarOrMethod($order)) {
+            $order = ltrim($order, ':');
+        }
+        return "'{$order}'";
+    }
+
+    /**
      * 解析标签中的 cid_key, id_key, where 等参数
-     * 
+     *
      * @param mixed $tag
      * @return string
      */
@@ -274,16 +302,28 @@ EOT;
         }
 
         $binds = '';
+        $whereVar = '[]';
+        $whereRaw = '1=1';
         if ($where && $where != '1=1') {
-            [$where, $binds] = $this->parseWhere($where, $cid_key); //解析变量
+            if ($this->isVarOrMethod($where)) {
+                //where整体是一个变量或方法(如$where)，直接把变量的值作为查询条件(支持字符串或数组)
+                $whereVar = ltrim($where, ':');
+            } else {
+                [$whereRaw, $binds] = $this->parseWhere($where, $cid_key); //解析变量
+            }
         }
 
         $parseStr = <<<EOT
 
         <?php
         \$__where__ = cms_build_where('{$cid_key}', {$cid_val}, '{$id_key}', {$id_val});
-        \$__where_raw__ = "{$where}";
+        \$__where_var__ = {$whereVar};
+        \$__where_var__ = is_string(\$__where_var__) ? sql_guard(\$__where_var__) : \$__where_var__;
+        \$__where_raw__ = "{$whereRaw}";
         \$__where_binds__ = [{$binds}];
+        \$__where__ = function (\$query) use (\$__where__, \$__where_var__, \$__where_raw__, \$__where_binds__) {
+            \$query->where(\$__where__)->where(\$__where_var__)->whereRaw(\$__where_raw__, \$__where_binds__);
+        };
 
 EOT;
 

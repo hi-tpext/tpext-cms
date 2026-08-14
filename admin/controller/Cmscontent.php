@@ -692,6 +692,9 @@ class Cmscontent extends Controller
             if ($channel['type'] == 2) {
                 $this->error('所选栏目[' . $channel['name'] . ']是目录，不允许存放内容，请重新选择');
             }
+            if ($channel['extend_table']) {
+                $this->error('所选栏目[' . $channel['name'] . "]内容类型是[{$channel['extend_table']}]，不允许存放[cms_content]内容，请重新选择");
+            }
             if (!in_array($data['model_id'], explode(',', $channel['model_ids']))) {
                 $model = CmsContentModel::find($data['model_id']);
                 $this->error('所选栏目[' . $channel['name'] . ']不支持存放[' . ($model ? $model['name'] : '未知') . ']内容，请重新选择');

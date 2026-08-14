@@ -40,6 +40,8 @@ class RouteBuilder
                 $contentPathArr[$content_path_key] = [
                     'ids' => [],
                     'path' => $cha['content_path'],
+                    'channel_id' => $cha['id'],
+                    'extend_table' => $cha['extend_table'] ?? '',
                 ];
             }
 
@@ -116,7 +118,10 @@ class RouteBuilder
         foreach ($urlPaths as $url) {
             $path = $url['path'];
             $path = str_replace('[id]', '<id>', $path);
-            $rules[] = "Route::get('__prefix__d/{$path}$', Page::class . '@content')->pattern(['id' => '\d+'])";
+            $channel_id = $url['path'] == '[id]' ? 0 : $url['channel_id'];
+            $extend_table = $url['path'] == '[id]' ? "''" : "'{$url['extend_table']}'";
+            $rules[] = "Route::get('__prefix__d/{$path}$', Page::class . '@content')->pattern(['id' => '\d+'])"
+                . "->append(['channel_id' => {$channel_id}, 'extend_table' => {$extend_table}])";
         }
 
         $rules[] = "Route::get('__prefix__d/__click__<id>$', Page::class . '@click')->pattern(['id' => '\d+'])->ajax()";
@@ -244,7 +249,8 @@ class RouteBuilder
 
             foreach ($dynamicPages as $page) {
                 if ($page['path'] == 'tag') {
-                    $lines[] = "Route::get('{$prefix}/e/tag-<id>$', Page::class . '@dynamic')->pattern(['id' => '\d+'])->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
+                    $lines[] = "Route::get('{$prefix}/e/tag-<id>$', Page::class . '@dynamic')->pattern(['id' => '\d+'])"
+                        . "->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
                 } else {
                     $lines[] = "Route::get('{$prefix}/e/{$page['path']}$', Page::class . '@dynamic')->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";
                 }
@@ -270,6 +276,8 @@ class RouteBuilder
             }
 
             file_put_contents(config_path() . '/route.php', $routeConfig);
+
+            ExtLoader::reloadWebman();
         }
     }
 }

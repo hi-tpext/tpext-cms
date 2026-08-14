@@ -101,10 +101,12 @@ class Page
      * 内容
      * @param int $id
      * @param int $tpl_id
+     * @param int $channel_id
+     * @param string $extend_table
      * @param int $is_static
      * @return string
      */
-    public function content($id, $tpl_id, $is_static = 0)
+    public function content($id, $tpl_id, $channel_id = 0, $extend_table = '', $is_static = 0)
     {
         $template = $this->template->where('id', $tpl_id)
             ->cache('cms_template_' . $tpl_id, $this->cacheTime, 'cms_template')
@@ -114,22 +116,34 @@ class Page
             return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>未能找到them-' . $tpl_id . '</h4></body></html>';
         }
         Processer::setPath($template['prefix']);
-        $table = 'cms_content';
+        $table = $extend_table ?: 'cms_content';
+        if (!Table::isAllowTable($table)) {
+            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>403</title></head><body><h4>禁止访问</h4></body></html>';
+        }
         $dbNameSpace = Processer::getDbNamespace();
         $contentScope = Table::defaultScope($table);
         $content = $dbNameSpace::name($table)
             ->where('id', $id)
             ->where($contentScope)
-            ->cache('cms_content_' . $id, $this->cacheTime, $table)
+            ->cache($extend_table . '_' . $id, $this->cacheTime, $table)
             ->find();
 
         if (!$content) {
             return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>404</title></head><body><h4>内容不存在-' . $id . '</h4></body></html>';
         }
 
-        if ($content['link']) {
+        if (!empty($content['link'])) {
             $redirectUrl = Processer::resolveWebPath($content['link']);
             return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>跳转...</title><meta http-equiv="refresh" content="0;url=' . $redirectUrl . '"></head><body></body></html>';
+        }
+
+        if ($table != 'cms_content') {
+            $content['channel_id'] = $channel_id;
+            $content['extend_table'] = $table;
+            $content['is_show'] = $content['is_show'] ?? 1;
+            $content['delete_time'] = $content['delete_time'] ?? null;
+
+            $table = 'cms_content';
         }
 
         $content = Processer::detail($table, $content);

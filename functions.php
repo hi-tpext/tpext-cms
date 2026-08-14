@@ -95,27 +95,33 @@ function tag_url($item)
     return $item['url'];
 }
 
-function sql_guard($val)
-{
-    $val = strip_tags($val);
+if (!function_exists('sql_guard')) {
 
-    if (preg_match('/\b(?:select|delete)\b.+?\bfrom\b/is', $val)) {
-        return 'invalid words';
+    function sql_guard($val)
+    {
+        return Processer::sqlGuard($val);
     }
-
-    if (preg_match('/\bunion\b.+?\bselect\b/is', $val)) {
-        return 'invalid words';
-    }
-
-    return $val;
 }
 
-function more($str, $len = 100, $more = '...')
-{
-    if (mb_strlen($str, 'utf-8') > $len) {
-        return mb_substr($str, 0, $len, 'utf-8') . $more;
-    } else {
-        return $str;
+if (!function_exists('more')) {
+    function more($str, $len = 100, $more = '...')
+    {
+        if (mb_strlen($str, 'utf-8') > $len) {
+            return mb_substr($str, 0, $len, 'utf-8') . $more;
+        } else {
+            return $str;
+        }
+    }
+
+}
+
+if (!function_exists('url_filter')) {
+    function url_filter($params = [])
+    {
+        $get = request()->get();
+        $params = array_merge($get, $params ?: []);
+        $params = array_filter($params);
+        return '?' . http_build_query($params);
     }
 }
 
@@ -125,7 +131,7 @@ function cms_build_where($cidKey, $cidVal, $idKey, $idVal)
 
     if ($cidKey) {
         $cidVal = $cidVal ?? 0;
-        if ($cidVal !== 0) {
+        if ($cidVal !== 0 && $cidVal !== '') {
             if (is_array($cidVal) || (is_string($cidVal) && strstr($cidVal, ','))) {
                 $whereArr[] = [$cidKey, 'in', $cidVal];
             } else {
@@ -136,7 +142,7 @@ function cms_build_where($cidKey, $cidVal, $idKey, $idVal)
 
     if ($idKey) {
         $idVal = $idVal ?? 0;
-        if ($idVal !== 0) {
+        if ($idVal !== 0 && $idVal !== '') {
             if (is_array($idVal) || (is_string($idVal) && strstr($idVal, ','))) {
                 $whereArr[] = [$idKey, 'in', $idVal];
             } else {
@@ -158,7 +164,7 @@ function cms_get_parents($table, $idVal, $idKey, $pidKey, $vars)
     return Processer::getParents($table, $idVal, $idKey, $pidKey);
 }
 
-function cms_query_list($table, $where, $whereRaw, $whereBinds, $scope, $fields, $tagOrder, $take, $pagesize, $cacheKey, $cacheTime, $simple, $links, $vars)
+function cms_query_list($table, $where, $scope, $fields, $tagOrder, $take, $pagesize, $cacheKey, $cacheTime, $simple, $links, $vars)
 {
     $page = 1;
     $hasPaginator = false;
@@ -181,20 +187,34 @@ function cms_query_list($table, $where, $whereRaw, $whereBinds, $scope, $fields,
     $db = Processer::getDbNamespace();
     $list = $db::name($table)
         ->where($where)
-        ->whereRaw($whereRaw, $whereBinds)
         ->where($scope)
         ->field($fields)
         ->order($orderBy)
         ->limit(($page - 1) * $take, $take)
         ->cache($cacheKey ?: false, $cacheTime, $table)
         ->select();
-    $list = Processer::list($table, $list);
+
+    if ($list instanceof \think\Collection) {
+        $list = $list->toArray();
+    }
+
+    $channel = $vars['channel'] ?? null;
+    $extendTable = $channel ? ($channel['extend_table'] ?? '') : '';
+
+    if ($extendTable) {
+        foreach ($list as &$li) {
+            if (empty($li['channel_id'])) {
+                $li['channel_id'] = $channel['id'];
+            }
+        }
+    }
+
+    $list = Processer::list($extendTable && $extendTable == $table ? 'cms_content' : $table, $list);
 
     $linksHtml = '';
     if ($hasPaginator) {
         $total = $db::name($table)
             ->where($where)
-            ->whereRaw($whereRaw, $whereBinds)
             ->where($scope)
             ->count('id');
 
@@ -215,18 +235,26 @@ function cms_query_list($table, $where, $whereRaw, $whereBinds, $scope, $fields,
     ];
 }
 
-function cms_query_detail($table, $where, $whereRaw, $whereBinds, $scope, $order, $fields, $cacheKey, $cacheTime)
+function cms_query_detail($table, $where, $scope, $order, $fields, $cacheKey, $cacheTime)
 {
     $db = Processer::getDbNamespace();
 
     $detail = $db::name($table)
         ->where($where)
-        ->whereRaw($whereRaw, $whereBinds)
         ->where($scope)
         ->order($order)
         ->field($fields)
         ->cache($cacheKey ?: false, $cacheTime, $table)
         ->find();
+
+    $channel = $vars['channel'] ?? null;
+    $extendTable = $channel ? ($channel['extend_table'] ?? '') : '';
+
+    if ($detail && $extendTable && $extendTable != 'cms_content') {
+        $detail['channel_id'] = $channel['id'];
+        $detail['extend_table'] = $table;
+        $table = 'cms_content';
+    }
 
     return Processer::detail($table, $detail);
 }
