@@ -18,8 +18,9 @@ use tpext\cms\common\Module;
 class Table
 {
     /**
-     * 表标签映射
+     * 表标签映射（表名称不需要前缀）
      * ---------
+     * desc 表描述
      * tag_name：标签名称
      * id_key：主键名
      * cid_key：分类键名
@@ -32,6 +33,7 @@ class Table
      */
     protected static $tables = [
         'cms_channel' => [
+            'desc' => '频道',
             'tag_name' => 'channel',
             'id_key' => 'id',
             'cid_key' => 'parent_id',
@@ -41,6 +43,7 @@ class Table
             'pid_key' => 'parent_id',
         ],
         'cms_content' => [
+            'desc' => '内容',
             'tag_name' => 'content',
             'id_key' => 'id',
             'cid_key' => 'channel_id',
@@ -50,6 +53,7 @@ class Table
             'pid_key' => '',
         ],
         'cms_banner' => [
+            'desc' => '滚动/广告',
             'tag_name' => 'banner',
             'id_key' => 'id',
             'cid_key' => 'position_id',
@@ -59,6 +63,7 @@ class Table
             'pid_key' => '',
         ],
         'cms_position' => [
+            'desc' => '广告位',
             'tag_name' => 'position',
             'id_key' => 'id',
             'cid_key' => '',
@@ -68,6 +73,7 @@ class Table
             'pid_key' => '',
         ],
         'cms_tag' => [
+            'desc' => '合集',
             'tag_name' => 'tag',
             'id_key' => 'id',
             'cid_key' => '',

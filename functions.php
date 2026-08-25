@@ -1,8 +1,10 @@
 <?php
 
+use think\paginator\driver\Bootstrap;
+use tpext\builder\logic\ImageHandler;
 use tpext\cms\common\taglib\Processer;
 use tpext\cms\common\taglib\Table;
-use think\paginator\driver\Bootstrap;
+use tpext\think\App;
 
 function get_channel($id)
 {
@@ -112,7 +114,63 @@ if (!function_exists('more')) {
             return $str;
         }
     }
+}
 
+if (!function_exists('thumb')) {
+    function thumb($file, $width = 0, $height = 0)
+    {
+        if (empty($width) && empty($height)) {
+            return $file;
+        }
+
+        $handler = new ImageHandler;
+
+        $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+
+        if (!in_array($ext, ['jpg', 'jpeg', 'gif', 'png', 'bmp', 'webp'])) {
+            return $file;
+        }
+
+        $thumbFile = '/thumb/' . md5($file) . '-' . $width . 'x' . $height . '.' . $ext;
+
+        if (is_file(App::getPublicPath() . $thumbFile)) {
+            return $thumbFile;
+        }
+
+        if (strstr($file, 'http')) {
+            $data = @file_get_contents($file);
+            if (!$data) {
+                trace('download error 0');
+                return $file;
+            }
+            if (!@file_put_contents(App::getPublicPath() . $thumbFile, $data)) {
+                return $file;
+            }
+            $file = $thumbFile;
+        } else if (!is_file(App::getPublicPath() . $file)) {
+            return $file;
+        }
+
+        if (!is_dir(App::getPublicPath() . '/thumb/')) {
+            mkdir(App::getPublicPath() . '/thumb/', 0777, true);
+        }
+
+        $options = [
+            'width' => $width ? $width : null,
+            'height' => $height ? $width : null,
+            'to_path' => App::getPublicPath() . $thumbFile,
+        ];
+
+        try {
+            return $handler->resize($file, $options);
+        } catch (\Exception $e) {
+            trace('thumb error:' . $e->getMessage());
+            if (is_file(App::getPublicPath() . $thumbFile)) {
+                @unlink(App::getPublicPath() . $thumbFile);
+            }
+            return $file;
+        }
+    }
 }
 
 if (!function_exists('url_filter')) {
@@ -169,6 +227,7 @@ function cms_query_list($table, $where, $scope, $fields, $tagOrder, $take, $page
     $page = 1;
     $hasPaginator = false;
     $pagesize = $pagesize ?: ($vars['__set_pagesize__'] ?? 0);
+    $mainList = false;
     if ($take == 0) {
         if ($pagesize > 0) {
             $page = isset($vars['page']) && intval($vars['page']) > 0 ? intval($vars['page']) : 1;
@@ -177,10 +236,11 @@ function cms_query_list($table, $where, $scope, $fields, $tagOrder, $take, $page
         } else {
             $take = 10;
         }
+        $mainList = true;
     }
 
     $orderBy = $tagOrder;
-    if ($table == 'cms_content' && !empty($vars['__set_order_by__'])) {
+    if ($mainList && $table == 'cms_content' && !empty($vars['__set_order_by__'])) {
         $orderBy = $vars['__set_order_by__'] . $tagOrder;
     }
 

@@ -154,6 +154,6 @@ class CmsTemplate extends Model
         $text = preg_replace('/\r\n|\r/', "\n", $text);
         $text = preg_replace('/\n{2,}/s', "\n", $text);
         $lines = explode("\n", $text);
-        return implode(PHP_EOL . (Module::getInstance()->config('use_layout', 1) == 1 ? '    ' : '        '), $lines);
+        return implode(PHP_EOL . (Module::getInstance()->config('use_layout', 0) == 1 ? '    ' : '        '), $lines);
     }
 }

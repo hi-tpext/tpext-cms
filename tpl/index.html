@@ -8,7 +8,7 @@
             <ul>
                 {banner@list cid="1" num="5"}
                 <li>
-                    <a href="{$banner.url}"><img src="{$banner.image}" alt="{$banner.title}" /></a>
+                    <a href="{$banner.url}"><img src="{$banner.image|thumb=400,200}" alt="{$banner.title}" /></a>
                 </li>
                 {/banner@list}
             </ul>
@@ -43,7 +43,7 @@
     <div class="index-item">
         <div class="inner">
             <div class="channel-title">
-                <img src="{$channel.logo}" class="logo" alt="{$channel.name}" />
+                <img src="{$channel.logo|thumb=200,200}" class="logo" alt="{$channel.name}" />
                 <a href="{$channel.url}">{$channel.name}</a>
             </div>
             {content@list cid="$channel.id"}

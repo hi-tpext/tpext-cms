@@ -8,7 +8,7 @@ return [
     'click_make_static' => 123,
     'click_write' => 10,
     'editor' => 'wangEditor',
-    'use_layout' => 1,
+    'use_layout' => 0,
     'make_static' => 0,
     'allow_tables' => '',
     //配置描述

@@ -22,7 +22,7 @@ use tpext\cms\common\model\CmsTemplateHtml;
 
 class Module extends baseModule
 {
-    protected $version = '2.2.1';
+    protected $version = '2.2.2';
 
     protected $name = 'tpext.cms';
 
@@ -104,8 +104,14 @@ class Module extends baseModule
                     'icon' => 'mdi mdi-playlist-plus'
                 ],
                 [
-                    'title' => '设置',
+                    'title' => '标签使用',
                     'sort' => 8,
+                    'url' => '/admin/cmsusetag/index',
+                    'icon' => 'mdi mdi-code-tags-check'
+                ],
+                [
+                    'title' => '设置',
+                    'sort' => 9,
                     'url' => '/admin/config/edit?key=tpext-cms-common-Module',
                     'icon' => 'mdi mdi-settings'
                 ]
@@ -126,6 +132,7 @@ class Module extends baseModule
             'cmstemplatemake',
             'cmscontentmodel',
             'cmscontentfield',
+            'cmsusetag',
         ],
     ];
 
