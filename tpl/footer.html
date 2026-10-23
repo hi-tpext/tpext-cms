@@ -1,22 +1,56 @@
-<div class="footer">
+<footer class="footer">
     <div class="main-container">
-        <ul class="friend-links">
-            <li><a>合集：</a></li>
-            {tag@list num="20"}
-            <li><a href="{$tag.url}" target="_blank">{$tag.name}</a></li>
-            {/tag@list}
-        </ul>
-        <ul class="friend-links">
-            <li><a>友情链接：</a></li>
-            {banner@list cid="2" num="20"}
-            <li><a href="{$banner.url}" target="_blank">{$banner.title}</a></li>
-            {/banner@list}
-        </ul>
-        <div class="copyright">
+        <div class="footer-top">
+            <div class="footer-brand">
+                <div class="brand-row">
+                    <span class="logo-mark">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-13z" stroke="currentColor" stroke-width="1.8" />
+                            <path d="M7.5 8.5h6M7.5 12h9M7.5 15.5h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                            <path d="M16.5 8.5h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+                        </svg>
+                    </span>
+                    <span class="brand-name">{$__wconf__.name}</span>
+                </div>
+                <p class="brand-desc">{$__wconf__.description|default=''}</p>
+            </div>
+            <div class="footer-col">
+                <h4>栏目导航</h4>
+                <ul class="footer-links">
+                    {channel@list pid="0" where="is_navi=1" num="12" cache="footer_channel,600"}
+                    <li><a href="{$channel.url}">{$channel.name}</a></li>
+                    {/channel@list}
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>合集</h4>
+                <ul class="footer-links">
+                    {tag@list num="20"}
+                    <li><a href="{$tag.url}" target="_blank">{$tag.name}</a></li>
+                    {/tag@list}
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>友情链接</h4>
+                <ul class="footer-links">
+                    {banner@list cid="2" num="20"}
+                    <li><a href="{$banner.url}" target="_blank">{$banner.title}</a></li>
+                    {/banner@list}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <div class="main-container">
             {$__wconf__.copyright|raw}
         </div>
     </div>
-</div>
+</footer>
+<button class="back-top" title="返回顶部">
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 19V6M12 6l-5.5 5.5M12 6l5.5 5.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+</button>
 <script type="text/javascript">window.__site_home__ = '@site_home@';</script>
 <script type="text/javascript" src="../static/js/jquery.min.js" charset="utf-8"></script>
 <script type="text/javascript" src="../static/js/site.js" charset="utf-8"></script>

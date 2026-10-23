@@ -118,11 +118,12 @@ class Render
                 $page_path = $template['prefix'] . Processer::resolveChannelPath($channel) . '-[PAGE].html';
 
                 $get = array_filter(request()->get());
+                $params = [];
 
                 if (!empty($get)) {
                     $params = $this->filterParams($get);
-                    unset($get['page']);
                     $page_path .= '?' . http_build_query($params);
+                    unset($params['page']); //分页页码不作为模板变量
                 }
 
                 $vars = [
@@ -147,7 +148,7 @@ class Render
                     '__wconf__' => $this->getWconfig(),
                 ];
 
-                $vars = array_merge($vars, $get);
+                $vars = array_merge($vars, $params);
                 $vars['vars'] = $vars;
                 $config = [
                     'cache_prefix' => $tplHtml['path'],
@@ -222,8 +223,7 @@ class Render
                 $get = array_filter(request()->get());
 
                 if (!empty($get)) {
-                    $params = $this->filterParams($get);
-                    $vars = array_merge($vars, $params);
+                    $vars = array_merge($vars, $this->filterParams($get));
                 }
 
                 $config = [
@@ -337,9 +337,10 @@ EOT;
      * 生成动态页面
      * @param array|CmsTemplate $template
      * @param int $tplHtmlId
+     * @param int $id
      * @return array
      */
-    public function dynamic($template, $tplHtmlId)
+    public function dynamic($template, $tplHtmlId, $id = 0)
     {
         $tplHtml = $this->htmlModel->where('id', $tplHtmlId)
             ->where('template_id', $template['id'])
@@ -357,21 +358,23 @@ EOT;
             $page_path = '';
 
             $get = array_filter(request()->get());
+            $params = $this->filterParams($get, false);
 
             if (!empty($get)) {
-                $params = $this->filterParams($get);
-                unset($params['page']);
-                $page_path = '?' . http_build_query($params) . '&page=[PAGE]';
+                $page_path = '?' . http_build_query(array_diff_key($params, ['page' => 1]));
+                $page_path .= $page_path == '?' ? '' : '&';
+                $page_path .= 'page=[PAGE]';
             }
 
             $vars = [
+                'id' => $id,
                 '__site_home__' => $template['prefix'],
                 '__wconf__' => $this->getWconfig(),
                 '__set_page_path__' => $page_path,
                 '__page_type__' => 'dynamic',
             ];
 
-            $vars = array_merge($vars, $get);
+            $vars = array_merge($vars, $params);
 
             $vars['vars'] = $vars;
             $config = [
@@ -644,10 +647,17 @@ EOT;
 
     /**
      * Summary of filterParams
+     * 过滤get参数：
+     * 1.数组值转为逗号串，值经sql_guard防御；
+     * 2.剔除__前缀的框架内部变量(如__set_page_path__会进入分页链接href，被覆盖可注入javascript:协议)；
+     * 3.$strict为true(栏目/内容页)时同时剔除页面身份变量(只应来自页面数据注入，不应来自url覆盖)；
+     * 动态页传入false，保留业务参数的灵活性
+     *
      * @param array $params
+     * @param bool $strict
      * @return array
      */
-    protected function filterParams($params)
+    protected function filterParams($params, $strict = true)
     {
         array_walk($params, function (&$value, $key) {
             if (is_array($value)) {
@@ -655,6 +665,21 @@ EOT;
             }
             $value = Processer::sqlGuard($value);
         });
+
+        $reserved = ['page_title', 'page_description', 'page_keywords'];
+
+        if ($strict) {
+            $reserved = array_merge($reserved, [
+                'id', 'content', 'content_id', 'channel', 'channel_id', 'cid',
+                'channel_ids', 'children_ids', 'extend_ids', 'parent_id', 'pid',
+            ]);
+        }
+
+        foreach ($params as $key => $val) {
+            if (strpos($key, '__') === 0 || in_array($key, $reserved)) {
+                unset($params[$key]);
+            }
+        }
 
         if (ExtLoader::isWebman() && PHP_VERSION < 8.1) {
             unset($params['html_id']);

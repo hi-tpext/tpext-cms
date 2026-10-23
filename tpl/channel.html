@@ -1,30 +1,34 @@
 <!--文章列表:按栏目(示例)-->
 <div class="breadcrumb">
-    当前位置：<a href="@site_home@">首页</a>
+    <span class="breadcrumb-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 11l8-7 8 7v8a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19v-8z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+        </svg>
+    </span>
+    <a href="@site_home@">首页</a>
     {channel@parents}
-    &gt;<a>{$channel.name}</a>
+    <span class="sep">›</span><a href="{$channel.url}">{$channel.name}</a>
     {/channel@parents}
 </div>
 <!--当前栏目：{$channel.name}-->
 <div class="list">
     {content@list}
-    <dl class="list-item">
-        <dd class="title">
-            <span class="left">
+    <article class="list-item">
+        <div class="item-head">
+            <h3 class="item-title">
                 <a target="_blank" href="{$content.url}">{$content.title}</a>
                 {if $content.is_top==1}
-                <b style="color: red;">[置顶]</b>
+                <b class="badge badge-top">置顶</b>
                 {/if}
                 {if $content.is_hot==1}
-                <b style="color: red;">[热门]</b>
+                <b class="badge badge-hot">热</b>
                 {/if}
-            </span>
-            <span class="date">{$content.date}</span>
-            <!-- <span class="date">{$content.yy}年{$content.mm}月{$content.dd}日</span> -->
-        </dd>
-        <dt class="info">
-            {$content.description}
-        </dt>
-    </dl>
+            </h3>
+            <span class="item-date">{$content.date}</span>
+        </div>
+        {if $content.description}
+        <p class="item-desc">{$content.description}</p>
+        {/if}
+    </article>
     {/content@list}
 </div>

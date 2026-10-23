@@ -47,15 +47,15 @@ function get_banner($id)
     return Processer::detail($table, $item);
 }
 
-function get_tags($id)
+function get_tag($id)
 {
-    $table = 'cms_tags';
+    $table = 'cms_tag';
     $dbNameSpace = Processer::getDbNamespace();
     $scope = Table::defaultScope($table);
     $item = $dbNameSpace::name($table)
         ->where('id', $id)
         ->where($scope)
-        ->cache('cms_tags_' . $id, 3600 * 24 * 7, $table)
+        ->cache('cms_tag_' . $id, 3600 * 24 * 7, $table)
         ->find();
 
     return Processer::detail($table, $item);
@@ -91,7 +91,7 @@ function banner_url($item)
 function tag_url($item)
 {
     if (is_numeric($item)) {
-        $item = get_tags($item);
+        $item = get_tag($item);
     }
 
     return $item['url'];
@@ -157,12 +157,12 @@ if (!function_exists('thumb')) {
 
         $options = [
             'width' => $width ? $width : null,
-            'height' => $height ? $width : null,
+            'height' => $height ? $height : null,
             'to_path' => App::getPublicPath() . $thumbFile,
         ];
 
         try {
-            return $handler->resize($file, $options);
+            $handler->resize($file, $options);
         } catch (\Exception $e) {
             trace('thumb error:' . $e->getMessage());
             if (is_file(App::getPublicPath() . $thumbFile)) {
@@ -170,6 +170,13 @@ if (!function_exists('thumb')) {
             }
             return $file;
         }
+
+        //resize返回的是源文件路径，缩略图生成成功后统一返回缩略图路径(与缓存命中时一致)
+        if (is_file(App::getPublicPath() . $thumbFile)) {
+            return $thumbFile;
+        }
+
+        return $file;
     }
 }
 
@@ -273,9 +280,11 @@ function cms_query_list($table, $where, $scope, $fields, $tagOrder, $take, $page
 
     $linksHtml = '';
     if ($hasPaginator) {
+        //count与列表同缓存(键名加_count后缀、同tag)，避免每次分页都打库
         $total = $db::name($table)
             ->where($where)
             ->where($scope)
+            ->cache($cacheKey ? $cacheKey . '_count' : false, $cacheTime, $table)
             ->count('id');
 
         $simple = $simple ? true : false;
@@ -295,7 +304,7 @@ function cms_query_list($table, $where, $scope, $fields, $tagOrder, $take, $page
     ];
 }
 
-function cms_query_detail($table, $where, $scope, $order, $fields, $cacheKey, $cacheTime)
+function cms_query_detail($table, $where, $scope, $order, $fields, $cacheKey, $cacheTime, $vars = [])
 {
     $db = Processer::getDbNamespace();
 
@@ -310,7 +319,7 @@ function cms_query_detail($table, $where, $scope, $order, $fields, $cacheKey, $c
     $channel = $vars['channel'] ?? null;
     $extendTable = $channel ? ($channel['extend_table'] ?? '') : '';
 
-    if ($detail && $extendTable && $extendTable != 'cms_content') {
+    if ($detail && $extendTable && $extendTable == $table && $extendTable != 'cms_content') {
         $detail['channel_id'] = $channel['id'];
         $detail['extend_table'] = $table;
         $table = 'cms_content';

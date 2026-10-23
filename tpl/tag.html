@@ -1,19 +1,31 @@
 <!--文章列表:按合集(示例)-->
 {tag@get}<!--读取当前合集-->
 <div class="breadcrumb">
-    当前位置：<a href="@site_home@">首页</a>
-    &gt;<a>合集【{$tag.name}】</a>
+    <span class="breadcrumb-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 4h9.5A1.5 1.5 0 0 1 19 5.5v13a1.5 1.5 0 0 1-1.5 1.5H8" stroke="currentColor" stroke-width="1.8" />
+            <path d="M8 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H8" stroke="currentColor" stroke-width="1.8" />
+            <path d="M10.5 9.5h6M10.5 13h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+    </span>
+    <a href="@site_home@">首页</a>
+    <span class="sep">›</span><a>合集【{$tag.name}】</a>
 </div>
 <div class="list">
     {content@list where="FIND_IN_SET($id,tags)" pagesize="10"}
-    <dl class="list-item">
-        <dd class="title">
-            <a target="_blank" href="{$content.url}">{$content.title}——[{$content.channel.name}]</a>
-        </dd>
-        <dd class="info">
-            <p>{$content.description}</p>
+    <article class="list-item">
+        <div class="item-head">
+            <h3 class="item-title">
+                <a target="_blank" href="{$content.url}">{$content.title}</a>
+            </h3>
+            <span class="item-date">[{$content.channel.name}]</span>
+        </div>
+        {if $content.description}
+        <p class="item-desc">{$content.description}</p>
+        {/if}
+        <div class="item-meta">
             <p>{$content.date}</p>
-        </dd>
-    </dl>
+        </div>
+    </article>
     {/content@list}
 </div>

@@ -98,8 +98,9 @@ class Processer
             return 'invalid words';
         }
 
-        //2. 注释符与堆叠语句（截断原语句、追加新语句，绝大多数载荷会用到）
-        if (preg_match('/--|#|\/\*|\*\/|;/is', $plain)) {
+        //2. 注释符与堆叠语句（截断原语句、追加新语句，绝大多数载荷会用到）；
+        //   #常见于正常关键词(如C#)，且堆叠/截断已有;和--拦截，放行
+        if (preg_match('/--|\/\*|\*\/|;/is', $plain)) {
             return 'invalid words';
         }
 

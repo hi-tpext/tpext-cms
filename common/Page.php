@@ -85,7 +85,7 @@ class Page
 
         if ($channel['link']) {
             $redirectUrl = Processer::resolveWebPath($channel['link']);
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>跳转...</title><meta http-equiv="refresh" content="0;url=' . $redirectUrl . '"></head><body></body></html>';
+            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>跳转...</title><meta http-equiv="refresh" content="0;url=' . htmlspecialchars($redirectUrl, ENT_QUOTES) . '"></head><body></body></html>';
         }
 
         $channel = Processer::detail($table, $channel);
@@ -134,7 +134,7 @@ class Page
 
         if (!empty($content['link'])) {
             $redirectUrl = Processer::resolveWebPath($content['link']);
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>跳转...</title><meta http-equiv="refresh" content="0;url=' . $redirectUrl . '"></head><body></body></html>';
+            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>跳转...</title><meta http-equiv="refresh" content="0;url=' . htmlspecialchars($redirectUrl, ENT_QUOTES) . '"></head><body></body></html>';
         }
 
         if ($table != 'cms_content') {
@@ -192,9 +192,10 @@ class Page
      * 动态页面
      * @param int $html_id
      * @param int $tpl_id
+     * @param int $id
      * @return string
      */
-    public function dynamic($html_id, $tpl_id)
+    public function dynamic($html_id, $tpl_id, $id = 0)
     {
         $template = $this->template->where('id', $tpl_id)
             ->cache('cms_template_' . $tpl_id, $this->cacheTime, 'cms_template')
@@ -205,7 +206,7 @@ class Page
         }
         Processer::setPath($template['prefix']);
         $render = new Render();
-        $res = $render->dynamic($template, $html_id);
+        $res = $render->dynamic($template, $html_id, $id);
         if ($res['code'] == 0) {
             return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>' . $res['msg'] . '</h4></body></html>';
         }

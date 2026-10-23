@@ -1,126 +1,249 @@
-/* 滚动图片css */
+/* =========================================================
+   首页焦点区样式（基于 SuperSlide 的 .slideBox / .slideTxtBox）
+   ========================================================= */
+@charset "UTF-8";
+
+/* ---------- 图片轮播 ---------- */
 .slideBox {
-  width: 450px;
-  height: 230px;
-  overflow: hidden;
   position: relative;
-  border: 1px solid #ddd;
-  float: left;
-}
-.slideBox .hd {
-  height: 15px;
+  height: 348px;
   overflow: hidden;
-  position: absolute;
-  right: 5px;
-  bottom: 5px;
-  z-index: 1;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  background: var(--navy-800);
 }
-.slideBox .hd ul {
-  overflow: hidden;
-  zoom: 1;
-  float: left;
-}
-.slideBox .hd ul li {
-  float: left;
-  margin-right: 2px;
-  width: 15px;
-  height: 15px;
-  line-height: 14px;
-  text-align: center;
-  background: #fff;
-  cursor: pointer;
-  list-style: none;
-}
-.slideBox .hd ul li.on {
-  background: #f00;
-  color: #fff;
-}
+
 .slideBox .bd {
   position: relative;
   height: 100%;
   z-index: 0;
 }
+
 .slideBox .bd li {
-  zoom: 1;
   vertical-align: middle;
-  list-style: none;
-}
-.slideBox .bd img {
-  width: 450px;
-  height: 230px;
-  display: block;
+  zoom: 1;
 }
 
-/**滚动文章**/
+.slideBox .bd img {
+  display: block;
+  width: 100%;
+  height: 348px;
+  object-fit: cover;
+}
+
+.slideBox .bd li a {
+  display: block;
+  height: 100%;
+}
+
+/* 底部指示条 */
+.slideBox .hd {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  z-index: 1;
+  height: auto;
+  overflow: hidden;
+}
+
+.slideBox .hd ul {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  zoom: 1;
+}
+
+.slideBox .hd ul li {
+  width: 18px;
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  text-indent: -9999px;
+  transition: all var(--speed);
+}
+
+.slideBox .hd ul li.on {
+  width: 30px;
+  background: #fff;
+}
+
+/* 左右说明遮罩（图片渐变底部，衬托指示条） */
+.slideBox::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 64px;
+  background: linear-gradient(180deg, transparent, rgba(14, 26, 48, 0.55));
+  pointer-events: none;
+}
+
+/* ---------- 要闻选项卡 ---------- */
 .slideTxtBox {
-  width: 720px;
-  border: 1px solid #ddd;
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
   text-align: left;
-  float: right;
+  overflow: hidden;
 }
 
 .slideTxtBox .hd {
-  height: 30px;
-  line-height: 30px;
-  background: #f4f4f4;
-  padding: 0 10px 0 20px;
-  border-bottom: 1px solid #ddd;
   position: relative;
-}
-.slideTxtBox .hd ul {
-  float: left;
-  position: absolute;
-  left: 20px;
-  top: -1px;
-  height: 32px;
-}
-.slideTxtBox .hd ul li {
-  float: left;
-  padding: 0 15px;
-  cursor: pointer;
-}
-.slideTxtBox .hd ul li.on {
-  height: 30px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-bottom: 2px solid #fff;
-}
-.slideTxtBox .bd ul {
-  padding: 15px;
-  zoom: 1;
-}
-.slideTxtBox .bd li {
-  height: 24px;
-  line-height: 24px;
-}
-.slideTxtBox .bd li .date {
-  float: right;
-  color: #999;
+  display: flex;
+  align-items: center;
+  height: 50px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
 }
 
-/* 下面是前/后按钮代码，如果不需要删除即可 */
+.slideTxtBox .hd ul {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.slideTxtBox .hd ul li {
+  position: relative;
+  padding: 0 16px;
+  line-height: 48px;
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--speed);
+}
+
+.slideTxtBox .hd ul li::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--primary);
+  transform: translateX(-50%);
+  transition: width var(--speed);
+}
+
+.slideTxtBox .hd ul li.on {
+  color: var(--primary);
+}
+
+.slideTxtBox .hd ul li.on::after {
+  width: calc(100% - 20px);
+}
+
+.slideTxtBox .bd ul {
+  padding: 8px 20px 12px;
+  zoom: 1;
+}
+
+.slideTxtBox .bd li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  height: 35px;
+  line-height: 35px;
+  border-bottom: 1px dashed var(--line);
+}
+
+.slideTxtBox .bd li:last-child {
+  border-bottom: 0;
+}
+
+.slideTxtBox .bd li a {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-1);
+  font-size: 14px;
+  transition: color var(--speed);
+}
+
+.slideTxtBox .bd li a:hover {
+  color: var(--primary);
+}
+
+.slideTxtBox .bd li .date {
+  flex-shrink: 0;
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-family: Consolas, Monaco, monospace;
+}
+
+/* 前/后按钮（纯CSS箭头，不依赖图片） */
 .slideTxtBox .arrow {
   position: absolute;
-  right: 10px;
+  right: 14px;
   top: 0;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
+
 .slideTxtBox .arrow a {
+  position: static;
   display: block;
-  width: 5px;
+  width: 9px;
   height: 9px;
-  float: right;
-  margin-right: 5px;
-  margin-top: 10px;
-  overflow: hidden;
+  border-top: 2px solid var(--text-3);
+  border-right: 2px solid var(--text-3);
   cursor: pointer;
-  background: url("../images/arrow.png") 0 0 no-repeat;
+  transition: border-color var(--speed);
+  background: none;
+  margin: 0;
 }
+
+.slideTxtBox .arrow .prev {
+  transform: rotate(-135deg);
+}
+
 .slideTxtBox .arrow .next {
-  background-position: 0 -50px;
+  transform: rotate(45deg);
 }
-.slideTxtBox .arrow .prevStop {
-  background-position: -60px 0;
+
+.slideTxtBox .arrow a:hover {
+  border-color: var(--primary);
 }
+
+.slideTxtBox .arrow .prevStop,
 .slideTxtBox .arrow .nextStop {
-  background-position: -60px -50px;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* ---------- 响应式 ---------- */
+@media (max-width: 992px) {
+  .slideBox {
+    height: 300px;
+  }
+
+  .slideBox .bd img {
+    height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .slideBox {
+    height: 210px;
+  }
+
+  .slideBox .bd img {
+    height: 210px;
+  }
+
+  .slideTxtBox .bd li {
+    height: 32px;
+    line-height: 32px;
+  }
 }

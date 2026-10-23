@@ -53,9 +53,7 @@ class Cms extends TagLib
         $assign = !empty($tag['assign']) ? $tag['assign'] : $table . '_list_' . time() . mt_rand(100, 999);
         $item = ltrim($item, '$');
         $assign = ltrim($assign, '$');
-        $cache = explode(',', $tag['cache'] ?? '');
-        $cacheKey = empty($cache[0]) ? 'false' : "'" . trim($cache[0]) . "'";
-        $cacheTime = intval($cache[1] ?? 360);
+        [$cacheKey, $cacheTime] = $this->parseCache($tag['cache'] ?? '');
         $tagOrder = !empty($tag['order']) ? $tag['order'] : Table::defaultOrder($table);
         $orderExpr = $this->parseOrder($tagOrder);
         $fields = $tag['fields'] ?? Table::defaultFields($table);
@@ -67,7 +65,7 @@ class Cms extends TagLib
             $links = false;
         }
 
-        $parseStr = $this->bindKeyValWhere($tag);
+        $parseStr = $this->bindKeyValWhere($tag, 'list');
 
         $parseStr .= <<<EOT
         \$__data__ = cms_query_list(
@@ -126,7 +124,7 @@ EOT;
                 $id_val = "{$id_val}";
             }
         } else {
-            $id_val = "\${$id_key}";
+            $id_val = "\${$id_key} ?? 0"; //未指定id时自动尝试使用注入的id变量
         }
 
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
@@ -165,20 +163,18 @@ EOT;
         }
         $assign = !empty($tag['assign']) ? $tag['assign'] : ($tag['default_assign'] ?? 'data');
         $assign = ltrim($assign, '$');
-        $cache = explode(',', $tag['cache'] ?? '');
-        $cacheKey = empty($cache[0]) ? 'false' : "'" . trim($cache[0]) . "'";
-        $cacheTime = intval($cache[1] ?? 360);
+        [$cacheKey, $cacheTime] = $this->parseCache($tag['cache'] ?? '');
         $order = $tag['order'] ?? '';
         $orderExpr = $this->parseOrder($order);
         $fields = $tag['fields'] ?? Table::defaultFields($table);
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
         $scope = Table::defaultScope($table);
 
-        $parseStr = $this->bindKeyValWhere($tag);
+        $parseStr = $this->bindKeyValWhere($tag, 'get');
 
         $parseStr .= <<<EOT
         \$__detail__ = cms_query_detail(
-            '{$table}', \$__where__, '{$scope}', {$orderExpr}, '{$fields}', {$cacheKey}, {$cacheTime}
+            '{$table}', \$__where__, '{$scope}', {$orderExpr}, '{$fields}', {$cacheKey}, {$cacheTime}, \$vars
         );
         ?>
         {assign name="{$assign}" value="\$__detail__" /}
@@ -214,13 +210,29 @@ EOT;
 
     /**
      * 判断是否为变量或方法调用(如$where、getWhere()、\xx\yy::getWhere())
+     * 约定：全大写的"函数名(...)"视为MySQL函数而非php方法，如FIND_IN_SET(...)、DATE_FORMAT(...)，
+     *      返回false，将作为sql条件解析(变量转为绑定参数)后经whereRaw执行；
+     *      小写或驼峰的"函数名(...)"视为php方法调用，如getWhere()、getPageFilter()。
      *
      * @param string $str
      * @return bool
      */
     protected function isVarOrMethod($str)
     {
-        return preg_match('/^\s*\$[a-zA-Z_][a-zA-Z_\d]*\s*$/', $str) || preg_match('/^\s*:?[a-zA-Z_\\\\:]+\([^\(\)]*?\)\s*$/', $str);
+        if (preg_match('/^\s*\$[a-zA-Z_][a-zA-Z_\d]*\s*$/', $str)) {
+            return true;
+        }
+
+        if (preg_match('/^\s*:?[a-zA-Z_\\\\:]+\([^\(\)]*?\)\s*$/', $str)) {
+            //全大写函数名按MySQL函数处理；其余(含命名空间\xx\yy::zz())按php方法处理
+            if (preg_match('/^\s*:?[A-Z][A-Z_\d]*\(/', $str)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -238,12 +250,53 @@ EOT;
     }
 
     /**
+     * 解析cache属性：cache="key,秒数"。
+     * key支持内嵌简单变量，运行时把变量值拼进缓存键，如cache="key$a"、cache="list_$id_p$page"，
+     * 用于where/分页依赖模板变量的标签，让不同参数各自缓存；不支持{$a}大括号写法和方法调用；
+     * 无变量时行为与原先一致。
+     *
+     * @param string $cache
+     * @return array [$cacheKey, $cacheTime] $cacheKey为编译后的php表达式字符串或false
+     */
+    protected function parseCache($cache)
+    {
+        $cache = explode(',', $cache ?? '');
+        $cacheTime = intval($cache[1] ?? 360);
+        $raw = trim($cache[0] ?? '');
+
+        if ($raw === '') {
+            return ['false', $cacheTime];
+        }
+
+        if (!preg_match('/\$[a-zA-Z]/', $raw)) {
+            return ["'" . addslashes($raw) . "'", $cacheTime];
+        }
+
+        //key内嵌变量：拆分为 字面量 与 ($var ?? '') 的拼接表达式；变量名不允许下划线开头(排除$_GET等超全局)
+        $parts = preg_split('/(\$[a-zA-Z][a-zA-Z_\d]*)/', $raw, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $expr = '';
+        foreach ($parts as $part) {
+            if ($part === '') {
+                continue;
+            }
+            if ($part[0] == '$') {
+                $expr .= " . (" . $part . " ?? '')";
+            } else {
+                $expr .= " . '" . addslashes($part) . "'";
+            }
+        }
+
+        return [substr($expr, 3), $cacheTime];
+    }
+
+    /**
      * 解析标签中的 cid_key, id_key, where 等参数
      *
      * @param mixed $tag
+     * @param string $type
      * @return string
      */
-    protected function bindKeyValWhere($tag)
+    protected function bindKeyValWhere($tag, $type)
     {
         $cid_key = $tag['cid_key'] ?? '';
         $id_key = $tag['id_key'] ?? 'id';
@@ -272,7 +325,7 @@ EOT;
                     $cid_val = '0';
                 }
             }
-        } else if ($cid_key) {
+        } else if ($cid_key && $type == 'list') {
             $cid_val = "(!empty(\${$cid_key}s) ? \${$cid_key}s : (\${$cid_key} ?? 0))";
         } else {
             $cid_val = '0';
@@ -296,7 +349,11 @@ EOT;
                     $id_val = '0';
                 }
             }
-            $cid_val = '0';
+            if ($type == 'list') {
+                $cid_val = '0';
+            }
+        } else if ($type == 'get' && $cid_val === '0' && ($where == '1=1' || empty($where))) {
+            $id_val = "\${$id_key} ?? 0";
         } else {
             $id_val = '0';
         }
@@ -344,10 +401,14 @@ EOT;
         $binds = [];
 
         $where = preg_replace_callback(
-            '/([\'\"])?\%?(\$[a-zA-Z_][a-zA-Z_\.\[\]\'\"]*)\%?\1?/',
+            '/([\'\"])?(\%?)(\$[a-zA-Z_][a-zA-Z_\.\[\]\'\"]*)(\%?)\1?/',
             function ($m) use (&$binds) {
-                $match = $m[2];
-                $full = $m[0];
+                $match = $m[3];
+                $last = substr($match, -1);
+                if ($last == "'" || $last == '"') {
+                    //变量模式包含引号字符，结尾的闭合引号会被误吞(如'$kwd')，剥离
+                    $match = substr($match, 0, -1);
+                }
                 $varName = preg_replace('/\W/is', '_', $match) . count($binds);
 
                 if (strpos($match, '.') !== false) {
@@ -356,10 +417,11 @@ EOT;
                     $bind = $match;
                 }
 
-                if ($full[0] == '%') {
+                //紧贴变量的百分号(含引号内的'%$var%'写法)拼接为模糊匹配
+                if ($m[2] == '%') {
                     $bind = "'%' . {$bind}";
                 }
-                if (substr($full, -1) == '%') {
+                if ($m[4] == '%') {
                     $bind = "{$bind} . '%'";
                 }
 
@@ -430,13 +492,22 @@ EOT;
             $where = preg_replace('/(\bpid\s+)(gt|eq|lt|egt|elt|neq|not\s*in|like|not\s*like|between|not\s*between)\b/is', $cid_key . '$2', $where);
             $where = preg_replace('/(\bpid\s*)(\<|\>|=|!=)/is', $cid_key . '$2', $where);
         }
-        //替换表达式
-        if (preg_match('/egt|elt|neq|!=|not(?:between|in|like)|\b(?:gt|eq|lt)\b/i', $where)) {
-            $where = str_ireplace(
-                ['egt', 'elt', 'neq', 'notbetween', 'notin', 'notlike', 'gt', 'eq', 'lt', '!='],
-                ['>=', '<=', '<>', 'not between', 'not in', 'not like', '>', '=', '<', '<>'],
-                $where
-            );
+        //替换表达式：引号内的值不替换，引号外仅替换带词边界的语法糖词，
+        //避免误伤字段名或值中恰好包含的子串(如seq字段、'%neq%'值)
+        if (preg_match('/\b(?:egt|elt|neq|notbetween|notin|notlike|gt|eq|lt)\b|!=/i', $where)) {
+            $parts = preg_split('/([\'"][^\'"]*[\'"])/', $where, -1, PREG_SPLIT_DELIM_CAPTURE);
+            foreach ($parts as $i => $part) {
+                if ($i % 2 == 1 || $part === '') {
+                    continue; //引号内的部分
+                }
+                $part = preg_replace(
+                    ['/\begt\b/i', '/\belt\b/i', '/\bneq\b/i', '/\bnotbetween\b/i', '/\bnotin\b/i', '/\bnotlike\b/i', '/\bgt\b/i', '/\beq\b/i', '/\blt\b/i'],
+                    ['>=', '<=', '<>', 'not between', 'not in', 'not like', '>', '=', '<'],
+                    $part
+                );
+                $parts[$i] = str_replace('!=', '<>', $part);
+            }
+            $where = implode('', $parts);
         }
 
         return $where;
@@ -490,30 +561,47 @@ EOT;
 
         $id = $tag[$tag['id_key']] ?? '$id';
         $order = $tag['order'] ?? Table::defaultOrder($table);
-        $orders = explode(',', $order);
-        $first = preg_replace('/\s*(?:desc|asc)/i', '', $orders[0]);
-        $sort = $tag['sort'] ?? "\${$tagArr[0]}." . trim($first);
-        $isDesc = preg_match('/\s+desc\s*$/i', $orders[0]);
 
-        if ($isPrev) {
-            $cmp = $isDesc ? '>' : '<';
-            $fields = [];
-            foreach ($orders as $sod) {
-                if (preg_match('/\s+desc\s*$/i', $sod)) {
-                    $fields[] = preg_replace('/\s+desc\s*$/i', ' asc', trim($sod));
-                } else if (preg_match('/\s+asc\s*$/i', $sod)) {
-                    $fields[] = preg_replace('/\s+asc\s*$/i', ' desc', trim($sod));
-                } else {
-                    $fields[] = trim($sod) . ' desc';
-                }
+        //解析排序列：列名 => 是否倒序
+        $cols = [];
+        foreach (explode(',', $order) as $sod) {
+            $sod = trim($sod);
+            if ($sod === '') {
+                continue;
             }
-            $tag['order'] = implode(',', $fields);
-        } else {
-            $cmp = $isDesc ? '<' : '>';
-            $tag['order'] = $order;
+            $desc = preg_match('/\s+desc\s*$/i', $sod) ? true : false;
+            $name = trim(preg_replace('/\s+(?:desc|asc)$/i', '', $sod));
+            if ($name !== '' && !isset($cols[$name])) {
+                $cols[$name] = $desc;
+            }
         }
 
-        $tag['where'] = "{$tag['id_key']} != {$id} and {$first} {$cmp} {$sort} and " . $where;
+        //末尾补充id列兜底，保证排序唯一，排序列值并列时前后篇仍能正确导航
+        if (!isset($cols[$tag['id_key']])) {
+            $cols[$tag['id_key']] = true;
+        }
+
+        //查询排序：上一篇反转各列方向
+        $fields = [];
+        foreach ($cols as $name => $desc) {
+            $fields[] = $name . (($isPrev xor !$desc) ? ' asc' : ' desc');
+        }
+        $tag['order'] = implode(',', $fields);
+
+        //按全部排序列构建元组比较：col1比较 or (col1相等 and col2比较) or ...
+        $alias = "\${$tagArr[0]}";
+        $i = 0;
+        $tuple = [];
+        $eqChain = '';
+        foreach ($cols as $name => $desc) {
+            $val = ($i == 0 && isset($tag['sort'])) ? $tag['sort'] : $alias . '.' . $name;
+            $cmp = ($isPrev == $desc) ? '>' : '<'; //desc列上一篇取更大值/下一篇取更小值，asc列相反
+            $tuple[] = $eqChain . "{$name} {$cmp} {$val}";
+            $eqChain .= "{$name} = {$val} and ";
+            $i++;
+        }
+
+        $tag['where'] = "{$tag['id_key']} != {$id} and (" . implode(' or ', $tuple) . ") and " . $where;
         $tag[$tag['id_key']] = '';
         return $this->tagGet($tag, $content);
     }
