@@ -126,6 +126,10 @@ class CmsTemplate extends Model
                     file_put_contents($view_path . '/contact.html', str_replace('<!--__content__-->', $text, $newTpl));
                 }
             }
+            if (!is_file($view_path . '/error.html')) {
+                $text = self::getTemplatePart('tpl/error.html');
+                file_put_contents($view_path . '/error.html', str_replace('<!--__content__-->', $text, $newTpl));
+            }
         } catch (\Throwable $e) {
             trace('initPath error:' . $e->__tostring(), 'error');
         }

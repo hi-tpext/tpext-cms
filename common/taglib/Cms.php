@@ -48,7 +48,9 @@ class Cms extends TagLib
 
         $take = $tag['num'] ?? 0;
         $pagesize = $tag['pagesize'] ?? 0;
+        //num/pagesize/simple 同模式：变量或方法编译为运行时取值+类型兜底，字面量编译期定型
         $pagesizeExpr = $this->isVarOrMethod($pagesize) ? "intval(" . trim($pagesize, ':') . " ?? 0)" : intval($pagesize);
+        $takeExpr = $this->isVarOrMethod($take) ? "intval(" . trim($take, ':') . " ?? 0)" : intval($take);
         $item = !empty($tag['item']) ? $tag['item'] : ($tag['default_item'] ?? 'item');
         $assign = !empty($tag['assign']) ? $tag['assign'] : $table . '_list_' . time() . mt_rand(100, 999);
         $item = ltrim($item, '$');
@@ -58,6 +60,9 @@ class Cms extends TagLib
         $orderExpr = $this->parseOrder($tagOrder);
         $fields = $tag['fields'] ?? Table::defaultFields($table);
         $simple = $tag['simple'] ?? 'false';
+        $simpleExpr = $this->isVarOrMethod($simple)
+            ? "(bool)(" . trim($simple, ':') . " ?? false)"
+            : (in_array(strtolower($simple), ['1', 'true'], true) ? 'true' : 'false');
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
         $scope = Table::defaultScope($table);
         $links = true;
@@ -69,7 +74,7 @@ class Cms extends TagLib
 
         $parseStr .= <<<EOT
         \$__data__ = cms_query_list(
-            '{$table}', \$__where__, '{$scope}', '{$fields}', {$orderExpr}, {$take}, {$pagesizeExpr}, {$cacheKey}, {$cacheTime}, {$simple}, '{$links}', \$vars
+            '{$table}', \$__where__, '{$scope}', '{$fields}', {$orderExpr}, {$takeExpr}, {$pagesizeExpr}, {$cacheKey}, {$cacheTime}, {$simpleExpr}, '{$links}', \$vars
         );
         extract(\$__data__);
         \${$assign} = \$__list__;
@@ -269,6 +274,8 @@ EOT;
         }
 
         if (!preg_match('/\$[a-zA-Z]/', $raw)) {
+            //true/false 不做特判，按普通字面量键名处理：框架自动键(Query::cache(true))在闭包where上
+            //不可用，插件自研自动键又难以准确界定哪些上下文影响查询——统一强制显式键名(可内嵌变量)
             return ["'" . addslashes($raw) . "'", $cacheTime];
         }
 
@@ -392,7 +399,7 @@ EOT;
      *
      * @param string $where
      * @param string $cid_key
-     * 
+     *
      * @return array
      */
     protected function parseWhere($where, $cid_key)
@@ -483,13 +490,13 @@ EOT;
      */
     protected function whereExp($where, $cid_key)
     {
-        //替换where中的cid语法糖为真实字段
+        //替换where中的cid语法糖为真实字段(词操作符后补空格，避免粘成 channel_idgt)
         if ($cid_key && stripos($where, 'cid') !== false) {
-            $where = preg_replace('/(\bcid\s+)(gt|eq|lt|egt|elt|neq|not\s*in|like|not\s*like|between|not\s*between)\b/is', $cid_key . '$2', $where);
+            $where = preg_replace('/(\bcid\s+)(gt|eq|lt|egt|elt|neq|not\s*in|like|not\s*like|between|not\s*between)\b/is', $cid_key . ' $2', $where);
             $where = preg_replace('/(\bcid\s*)(\<|\>|=|!=)/is', $cid_key . '$2', $where);
         }
         if ($cid_key == 'parent_id' && stripos($where, 'pid') !== false) {
-            $where = preg_replace('/(\bpid\s+)(gt|eq|lt|egt|elt|neq|not\s*in|like|not\s*like|between|not\s*between)\b/is', $cid_key . '$2', $where);
+            $where = preg_replace('/(\bpid\s+)(gt|eq|lt|egt|elt|neq|not\s*in|like|not\s*like|between|not\s*between)\b/is', $cid_key . ' $2', $where);
             $where = preg_replace('/(\bpid\s*)(\<|\>|=|!=)/is', $cid_key . '$2', $where);
         }
         //替换表达式：引号内的值不替换，引号外仅替换带词边界的语法糖词，

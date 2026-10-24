@@ -212,6 +212,11 @@ class Module extends baseModule
             $maker->watch();
         }
 
+        if (self::config('local_remote_assets', 0)) {
+            $localizer = new event\LocalizeAssets;
+            $localizer->watch();
+        }
+
         $maker = new event\MakeRoute;
         $maker->watch();
 

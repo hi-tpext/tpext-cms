@@ -22,7 +22,37 @@ class Page
      */
     protected $template = null;
 
+    /**
+     * cacheTime
+     * @var int
+     */
     protected $cacheTime = 3600 * 24 * 7;
+
+    /**
+     * 错误页：主题存在error.html时渲染主题模板(带站点导航)，否则回退内置样式
+     *
+     * @param array|CmsTemplate|null $template
+     * @param int $code 404|403|500
+     * @param string $msg
+     * @return string
+     */
+    protected function errorPage($template, $code, $msg)
+    {
+        if ($template) {
+            $render = new Render();
+            $html = $render->errorPage($template, $code, $msg);
+            if (null !== $html) {
+                return $html;
+            }
+        }
+
+        $title = $code == 404 ? '页面不存在' : ($code == 403 ? '禁止访问' : '服务器错误');
+
+        //5xx标记供TemplaBuilder::fileWrite识别：瞬时错误(模板改坏/数据异常)不写入静态文件；
+        //404/403允许静态化——隐藏/删除内容的URL直链得到静态404，无需每次动态渲染
+        $marker = $code >= 500 ? '<!--__error_5xx__-->' : '';
+        return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/>' . $marker . '<title>' . $code . ' ' . $title . '</title></head><body style="text-align:center;padding-top:80px;font-family:sans-serif;"><h1>' . $code . '</h1><h4>' . htmlspecialchars($msg, ENT_QUOTES) . '</h4><p><a href="/">返回首页</a></p></body></html>';
+    }
 
     public function __construct()
     {
@@ -41,14 +71,14 @@ class Page
             ->find();
 
         if (!$template) {
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>未能找到them-' . $tpl_id . '</h4></body></html>';
+            return $this->errorPage(null, 500, '未能找到主题-' . $tpl_id);
         }
 
         Processer::setPath($template['prefix']);
         $render = new Render();
         $res = $render->index($template);
         if ($res['code'] == 0) {
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>' . $res['msg'] . '</h4></body></html>';
+            return $this->errorPage($template, 500, $res['msg']);
         }
         return $res['data'];
     }
@@ -67,7 +97,7 @@ class Page
             ->find();
 
         if (!$template) {
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>未能找到them-' . $tpl_id . '</h4></body></html>';
+            return $this->errorPage(null, 500, '未能找到主题-' . $tpl_id);
         }
 
         Processer::setPath($template['prefix']);
@@ -80,7 +110,7 @@ class Page
             ->find();
 
         if (!$channel) {
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>404</title></head><body><h4>栏目不存在-' . $id . '</h4></body></html>';
+            return $this->errorPage($template, 404, '栏目不存在-' . $id);
         }
 
         if ($channel['link']) {
@@ -92,7 +122,7 @@ class Page
         $render = new Render();
         $res = $render->channel($template, $channel, $page);
         if ($res['code'] == 0) {
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>' . $res['msg'] . '</h4></body></html>';
+            return $this->errorPage($template, 500, $res['msg']);
         }
         return $res['data'];
     }
@@ -113,12 +143,12 @@ class Page
             ->find();
 
         if (!$template) {
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>未能找到them-' . $tpl_id . '</h4></body></html>';
+            return $this->errorPage(null, 500, '未能找到主题-' . $tpl_id);
         }
         Processer::setPath($template['prefix']);
         $table = $extend_table ?: 'cms_content';
         if (!Table::isAllowTable($table)) {
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>403</title></head><body><h4>禁止访问</h4></body></html>';
+            return $this->errorPage($template, 403, '禁止访问');
         }
         $dbNameSpace = Processer::getDbNamespace();
         $contentScope = Table::defaultScope($table);
@@ -129,7 +159,7 @@ class Page
             ->find();
 
         if (!$content) {
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>404</title></head><body><h4>内容不存在-' . $id . '</h4></body></html>';
+            return $this->errorPage($template, 404, '内容不存在-' . $id);
         }
 
         if (!empty($content['link'])) {
@@ -150,7 +180,7 @@ class Page
         $render = new Render();
         $res = $render->content($template, $content, $is_static);
         if ($res['code'] == 0) {
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>' . $res['msg'] . '</h4></body></html>';
+            return $this->errorPage($template, 500, $res['msg']);
         }
         return $res['data'];
     }
@@ -202,13 +232,13 @@ class Page
             ->find();
 
         if (!$template) {
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>未能找到them-' . $tpl_id . '</h4></body></html>';
+            return $this->errorPage(null, 500, '未能找到主题-' . $tpl_id);
         }
         Processer::setPath($template['prefix']);
         $render = new Render();
         $res = $render->dynamic($template, $html_id, $id);
         if ($res['code'] == 0) {
-            return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/><title>500</title></head><body><h4>' . $res['msg'] . '</h4></body></html>';
+            return $this->errorPage($template, 500, $res['msg']);
         }
         return $res['data'];
     }

@@ -131,7 +131,8 @@ if (!function_exists('thumb')) {
             return $file;
         }
 
-        $thumbFile = '/thumb/' . md5($file) . '-' . $width . 'x' . $height . '.' . $ext;
+        // gif 可能是动图，保留原格式；其余缩放后统一输出 webp（Intervention 按目标后缀自动选编码，v2/v3 行为一致）
+        $thumbFile = '/thumb/' . md5($file) . '-' . $width . 'x' . $height . '.' . ($ext == 'gif' ? 'gif' : 'webp');
 
         if (is_file(App::getPublicPath() . $thumbFile)) {
             return $thumbFile;
@@ -229,10 +230,18 @@ function cms_get_parents($table, $idVal, $idKey, $pidKey, $vars)
     return Processer::getParents($table, $idVal, $idKey, $pidKey);
 }
 
+/**
+ * 自动缓存键已否决删除(2026-10-24)：框架Query::cache(true)在闭包where上不可用，插件自研自动键
+ * 又难以准确界定哪些上下文影响查询(细节遗漏会导致键不稳定或互相串缓存)——统一强制显式键名，
+ * key支持内嵌变量(如cache="list_$id$page,600")由模板作者控制哪些参数影响缓存。
+ */
+
 function cms_query_list($table, $where, $scope, $fields, $tagOrder, $take, $pagesize, $cacheKey, $cacheTime, $simple, $links, $vars)
 {
     $page = 1;
     $hasPaginator = false;
+    $take = max(0, intval($take));
+    $pagesize = max(0, intval($pagesize));
     $pagesize = $pagesize ?: ($vars['__set_pagesize__'] ?? 0);
     $mainList = false;
     if ($take == 0) {
@@ -252,6 +261,7 @@ function cms_query_list($table, $where, $scope, $fields, $tagOrder, $take, $page
     }
 
     $db = Processer::getDbNamespace();
+
     $list = $db::name($table)
         ->where($where)
         ->where($scope)
@@ -281,10 +291,11 @@ function cms_query_list($table, $where, $scope, $fields, $tagOrder, $take, $page
     $linksHtml = '';
     if ($hasPaginator) {
         //count与列表同缓存(键名加_count后缀、同tag)，避免每次分页都打库
+        $countCacheKey = $cacheKey ? $cacheKey . '_count' : false;
         $total = $db::name($table)
             ->where($where)
             ->where($scope)
-            ->cache($cacheKey ? $cacheKey . '_count' : false, $cacheTime, $table)
+            ->cache($countCacheKey, $cacheTime, $table)
             ->count('id');
 
         $simple = $simple ? true : false;

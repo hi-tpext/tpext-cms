@@ -47,11 +47,11 @@ class Cmstemplatemake extends Controller
             CmsTemplateHtml::scanPageFiles($template_id, App::getRootPath() . 'theme/' . $template['view_path']);
             $form = $builder->form();
             $form->checkbox('types', '生成类型')
-                ->options(['static' => '发布静态资源', 'channel' => '栏目静态', 'content' => '内容静态', 'index' => '首页静态'])
+                ->options(['static' => '发布静态资源', 'channel' => '栏目静态', 'content' => '内容静态', 'index' => '首页静态', 'sitemap' => 'sitemap生成'])
                 ->inline(false)
                 ->checkallBtn()
                 ->required()
-                ->default(['channel', 'content', 'index', 'route']);
+                ->default(['channel', 'content', 'index']);
 
             $form->ajax(false);
             $form->bottomButtons(false);
@@ -71,6 +71,13 @@ class Cmstemplatemake extends Controller
                 });
             } else {
                 $msgArr[] = '[静态资源]未选择发布';
+            }
+
+            if (empty($types)) {
+                //只选了发布静态资源：不再进入make()（空types会被判为参数错误），直接展示结果
+                $res = ['msg' => '<div><label class="label-default">' . implode('</label></div><div><label class="label-default">', $msgArr) . '</label></div>'];
+                $builder->content()->display('{$msg|raw}', $res);
+                return $builder;
             }
 
             $res = $templateBuilder->make(
@@ -115,14 +122,21 @@ class Cmstemplatemake extends Controller
      */
     public function makeChannel()
     {
-        $ids = explode(',', input('ids'));
+        $ids = array_filter(explode(',', (string) input('ids')));
         $channel_id = input('channel_id/d');
 
         if (!$channel_id) {
-            $channel_id = array_shift($ids);
+            $channel_id = intval(array_shift($ids));
+        }
+
+        if ($channel_id <= 0) {
+            return $this->builder()->layer()->closeRefresh(0, '参数错误：未指定栏目');
         }
 
         $channel = CmsChannel::where('id', $channel_id)->find();
+        if (!$channel) {
+            return $this->builder()->layer()->closeRefresh(0, '栏目不存在-id:' . $channel_id);
+        }
         $types = input('types', '');
         if (empty($types)) {
             $builder = $this->builder('页面生成', '栏目：' . $channel['name']);

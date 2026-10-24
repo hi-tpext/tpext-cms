@@ -10,6 +10,7 @@ return [
     'editor' => 'wangEditor',
     'use_layout' => 0,
     'make_static' => 0,
+    'local_remote_assets' => 0,
     'allow_tables' => '',
     //配置描述
     '__config__' => [
@@ -22,6 +23,7 @@ return [
         'editor' => ['type' => 'radio', 'label' => '编辑器', 'options' => ['wangEditor' => 'wangEditor', 'ueditor' => 'UEditor', 'ckeditor' => 'CKEditor', 'mdeditor' => 'MDEditor', 'tinymce' => 'Tinymce']],
         'use_layout' => ['type' => 'radio', 'label' => '使用继承布局', 'options' => ['0' => '否', '1' => '是'], 'help' => '若开启，新建模板页面使用`layout`继承模式。'],
         'make_static' => ['type' => 'radio', 'label' => '生成静态', 'options' => ['0' => '否', '1' => '是'], 'help' => '若开启，文章或栏目修改后，自动生成静态页面。如果不想使用静态生成，请设置为否，然后手动删除已生成的静态文件。'],
+        'local_remote_assets' => ['type' => 'radio', 'label' => '远程资源本地化', 'options' => ['0' => '否', '1' => '是'], 'help' => '若开启，文章保存时自动把内容中的远程图片/文件下载到本地（uploads/images、uploads/files）并替换地址；下载失败或本站地址不处理。注意：远程资源较多时会延长保存耗时。'],
         'allow_tables' => ['type' => 'textarea', 'label' => '允许表名', 'help' => '除cms默认的表外，允许使用cms标签的表名（不包含表前缀），多个表名之间用英文逗号分隔'],
     ],
 ];

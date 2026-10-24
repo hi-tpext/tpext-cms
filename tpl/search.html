@@ -11,7 +11,7 @@
 </div>
 {if !empty($kwd)}
 <div class="list">
-    {content@list where="title like %$kwd% or description like %$kwd% or keywords like %$kwd%" pagesize="10"
+    {content@list where="title like '%$kwd%' or description like '%$kwd%' or keywords like '%$kwd%'" pagesize="10"
     assign="slist"}
     <article class="list-item">
         <div class="item-head">

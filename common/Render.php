@@ -202,7 +202,8 @@ class Render
             if ($content['__not_found__'] || $content['is_show'] != 1 || $content['delete_time']) {
                 return ['code' => 0, 'msg' => '内容不存在'];
             } else {
-                $content['click'] = $this->click($content['id'], $content['extend_table'] ?? '');
+                //is_static=1（静态生成）时点击数只读，不把发布流量计入；动态访问照常累计
+                $content['click'] = $this->click($content['id'], $content['extend_table'] ?? '', !$is_static);
                 $vars = [
                     'id' => $content['id'],
                     'channel_id' => $content['channel_id'],
@@ -252,12 +253,13 @@ class Render
 
     /**
      * 内容点击
-     * 
+     *
      * @param int $id
      * @param string $extend_table
+     * @param bool $increment 静态生成上下文传false：只读当前值，不累计、不写缓存
      * @return int
      */
-    public function click($id, $extend_table = '')
+    public function click($id, $extend_table = '', $increment = true)
     {
         $table = $extend_table ?: 'cms_content';
         $dbNameSpace = Processer::getDbNamespace();
@@ -274,6 +276,10 @@ class Render
                 ->find();
 
             $click = $content ? ($content['click'] ?? 0) : 0;
+        }
+
+        if (!$increment) {
+            return (int) $click;
         }
 
         $click += 1;
@@ -643,6 +649,52 @@ EOT;
         $content = preg_replace('/(background\-img\s*:[^>]*?url\([\'\"]?)(?:\.{1,2}\/)?static\/([^\'\"\);]+?\.\w+)([\'\"]?)/is', "$1{$staticDir}$2?v={$v}$3", $content);
 
         return $content;
+    }
+
+    /**
+     * 渲染主题错误页：主题根目录存在error.html时使用（内置 error_code、error_msg、page_title 等变量，
+     * 可正常使用标签与公共部件如navi/footer），否则返回null由调用方回退内置样式
+     *
+     * @param array|CmsTemplate $template
+     * @param int $code 404|403|500
+     * @param string $msg
+     * @return string|null
+     */
+    public function errorPage($template, $code, $msg)
+    {
+        $file = App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR . 'error.html';
+
+        if (!is_file($file)) {
+            return null;
+        }
+
+        try {
+            $vars = [
+                'error_code' => $code,
+                'error_msg' => $msg,
+                'page_title' => $code . '_' . ($template['name'] ?? ''),
+                'page_description' => $template['name'] ?? '',
+                'page_keywords' => $template['name'] ?? '',
+                '__site_home__' => $template['prefix'],
+                '__wconf__' => $this->getWconfig(),
+                '__page_type__' => 'error',
+            ];
+
+            $vars['vars'] = $vars;
+            $config = [
+                'cache_prefix' => 'error',
+                'tpl_replace_string' => ['@static@' => '/theme/' . $template['view_path'] . '/', '@site_home@' => $template['prefix']],
+                'view_path' => App::getRootPath() . 'theme' . DIRECTORY_SEPARATOR . $template['view_path'] . DIRECTORY_SEPARATOR,
+                'tpl_cache' => true,
+            ];
+            $view = new View($file, $vars, $config);
+            $out = $view->getContent();
+            $out = $this->replaceStaticPath($template, $out);
+            return $out;
+        } catch (\Throwable $e) {
+            trace('[错误页]渲染出错，' . str_replace(App::getRootPath(), '', $e->getFile() . '#' . $e->getLine() . '|' . $e->getMessage()));
+            return null;
+        }
     }
 
     /**

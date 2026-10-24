@@ -27,6 +27,9 @@ class RouteBuilder
         $contentPathArr = [];
 
         foreach ($channels as $cha) {
+            //channel_path/content_path/extend_table的合法性在后台表单保存时校验（含引号会拼坏路由文件），
+            //此处不再重复验证；safePath仍用于单页/动态页名（来自主题文件名扫描，无表单输入点）
+
             $channel_path_key = md5($cha['channel_path']);
             $content_path_key = md5($cha['content_path']);
 
@@ -59,6 +62,17 @@ class RouteBuilder
             trace('write route error:' . $e->__tostring(), 'error');
             return;
         }
+    }
+
+    /**
+     * 路由路径白名单：字母数字(含中文)、-、_、/、.、[id]占位符
+     *
+     * @param string $path
+     * @return bool
+     */
+    protected function safePath($path)
+    {
+        return is_string($path) && $path !== '' && preg_match('/^[\w\-\/\[\]\.]+$/u', $path);
     }
 
     /**
@@ -240,6 +254,9 @@ class RouteBuilder
             }
 
             foreach ($singlePages as $page) {
+                if (!$this->safePath($page['path'])) {
+                    continue;
+                }
                 if ($page['to_id'] > 0) {
                     $lines[] = "Route::get('{$prefix}/{$page['path']}$', Page::class . '@content')->append(['id' => {$page['to_id']}, 'tpl_id' => {$tmpl['id']}]);";
                 } else {
@@ -248,6 +265,9 @@ class RouteBuilder
             }
 
             foreach ($dynamicPages as $page) {
+                if (!$this->safePath($page['path'])) {
+                    continue;
+                }
                 if ($page['path'] == 'tag') {
                     $lines[] = "Route::get('{$prefix}/e/tag-<id>$', Page::class . '@dynamic')->pattern(['id' => '\d+'])"
                         . "->append(['html_id' => {$page['id']}, 'tpl_id' => {$tmpl['id']}]);";

@@ -88,7 +88,19 @@ class Processer
             return $val;
         }
 
-        $val = strip_tags($val);
+        //不做strip_tags：合法SQL常含`<`比较符（如 id <= 510），会被当成未闭合标签吞掉后半段，
+        //残留片段(如 id > 500 and id )是恒真式，反而使条件失效
+        $val = trim($val);
+
+        //XSS载荷清洗：主题模板由用户自写，可能用 {$var|raw} / {:...} 原样输出GET参数（反射型XSS），
+        //在入口移除明确的脚本类标签、事件属性、脚本协议；普通文本(a < b、AT&T)与合法SQL(id <= 510)不受影响
+        $val = preg_replace([
+            '/<\s*\/?\s*(?:script|iframe|object|embed|link|meta|base|form|img|svg|video|audio|source|track|input|button|textarea|select|option|body|style|applet|frame|frameset|marquee)\b[^>]*>/is',
+            '/\bon(?:error|load|unload|beforeunload|click|dblclick|auxclick|contextmenu|mouse\w+|pointer\w+|focus|blur|change|submit|reset|input|invalid|key\w+|drag\w+|drop|animation\w+|transition\w+|wheel|scroll|copy|cut|paste|play|pause|ended|canplay|progress|abort|select|toggle|show|search|message|storage|hashchange|popstate|pagehide|pageshow|offline)\s*=/is',
+            '/javascript\s*:/is',
+            '/vbscript\s*:/is',
+            '/data\s*:\s*text\s*\/\s*html/i',
+        ], '', $val);
 
         //先去注释类混淆，如 sel/**/ect
         $plain = preg_replace('/\/\*.*?\*\//s', '', $val);

@@ -324,12 +324,24 @@ class Cmschannel extends Controller
         $data['channel_path'] = str_replace('\\', '/', $data['channel_path']);
         $data['content_path'] = str_replace('\\', '/', $data['content_path']);
 
+        //路径会拼进路由PHP字符串和静态文件路径，白名单校验字符（含引号等会拼坏路由文件）
+        if ($data['channel_path'] != '#' && !preg_match('/^[\w\-\/\[\]\.]+$/u', $data['channel_path'])) {
+            $this->error('栏目生成路径只能包含字母、数字、中文、-、_、/、.和[id]变量，不生成请填#');
+        }
+        if (!preg_match('/^[\w\-\/\[\]\.]+$/u', $data['content_path'])) {
+            $this->error('内容生成路径只能包含字母、数字、中文、-、_、/、.和[id]变量');
+        }
+
         if ($id && $data['parent_id'] == $id) {
             $this->error('上级不能是自己');
         }
 
         if ($data['extend_table'] == 'cms_content') {
             $this->error('扩展表名必须是除cms_content之外的');
+        }
+
+        if (!empty($data['extend_table']) && !preg_match('/^\w+$/', $data['extend_table'])) {
+            $this->error('附加表名只能包含字母、数字、下划线（不含表前缀）');
         }
 
         if (

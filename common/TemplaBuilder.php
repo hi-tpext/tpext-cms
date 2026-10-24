@@ -22,6 +22,12 @@ use tpext\cms\common\model\CmsTemplateHtml;
 class TemplaBuilder
 {
     /**
+     * single绑定缓存 [template_id => [to_id => CmsTemplateHtml]]
+     * @var array
+     */
+    protected $singleHtmlMap = [];
+
+    /**
      * 根据模板id生成所有内容
      *
      * @param int $templateId
@@ -41,11 +47,12 @@ class TemplaBuilder
             return ['code' => 0, 'msg' => '未能找到模板信息:' . $templateId, 'over' => 1];
         }
         if (empty($types)) {
-            return ['code' => 0, 'msg' => '生成类型[栏目/内容/首页/静态资源]至少指定其中一种', 'over' => 1];
+            return ['code' => 0, 'msg' => '生成类型[栏目/内容/首页/sitemap/静态资源]至少指定其中一种', 'over' => 1];
         }
 
         Processer::setPath($template['prefix']);
 
+        $msgArr = [];
         if (in_array('channel', $types) || in_array('content', $types)) {
             $channelSize = 3;
             $contentSize = 50;
@@ -57,17 +64,17 @@ class TemplaBuilder
                 $channelList = CmsChannel::where('id', '>', $fromChannelId)->limit($channelSize)->order('id asc')->select();
                 $channelCount = CmsChannel::count();
                 if (in_array('content', $types)) {
-                    $contentTotal = CmsContent::count();
+                    //只数可见：contentDone只累计可见内容，总数含隐藏会导致"全部：x/y"永远到不了y
+                    $contentTotal = CmsContent::where('is_show', 1)->count();
                 }
             } else {
                 $channelList = CmsChannel::where('id', 'in', $channelIds)->where('id', '>', $fromChannelId)->limit($channelSize)->order('id asc')->select();
                 $channelCount = CmsChannel::where('id', 'in', $channelIds)->count();
                 if (in_array('content', $types)) {
-                    $contentTotal = CmsContent::where('channel_id', 'in', $channelIds)->count();
+                    $contentTotal = CmsContent::where('is_show', 1)->where('channel_id', 'in', $channelIds)->count();
                 }
             }
 
-            $msgArr = [];
             $isChannelOver = count($channelList) < $channelSize;
             $isContentOver = false;
 
@@ -82,20 +89,26 @@ class TemplaBuilder
                 if (in_array('content', $types)) {
                     $contentList = CmsContent::where('channel_id', $channel['id'])->where('id', '>', $fromContentId)->limit($contentSize)->order('id asc')->select();
 
-                    foreach ($contentList as $content) {
-                        $resB = $this->makeContent($template, $channel, $content);
-                        if ($content['is_show'] == 0 || $content['delete_time']) {
-                            continue;
-                        }
-                        $contentDone += 1;
-                        $msgArr[] = '[内容详情进度](当前栏目：' . CmsContent::where('channel_id', $channel['id'])->where('id', '<=', $content['id'])->count() . '/' . $contentCount . ') | (全部：' . $contentDone . '/' . $contentTotal . ')';
+                    //进度基数每栏目每轮只查一次，循环内位置内存累加（原逐篇count(id<=当前id)是一篇一查）
+                    $doneInChannel = CmsContent::where('channel_id', $channel['id'])->where('id', '<=', $fromContentId)->count();
 
-                        $fromContentId = $content['id'];
-                        $msgArr[] = $resB['msg'];
-                        if ($contentDone % $contentSize == 0) {
-                            break;
-                        }
+                foreach ($contentList as $content) {
+                    //隐藏(is_show=0)内容也渲染：其URL写出静态404页，直链访问得到404而非旧内容；
+                    //软删除内容默认查询查不到，此判断仅为兜底。游标对每条都推进，避免分批时隐藏内容被反复重渲染
+                    $fromContentId = $content['id'];
+                    $resB = $this->makeContent($template, $channel, $content);
+                    $doneInChannel += 1;
+                    if ($content['is_show'] == 0 || $content['delete_time']) {
+                        continue;
                     }
+                    $contentDone += 1;
+                    $msgArr[] = '[内容详情进度](当前栏目：' . $doneInChannel . '/' . $contentCount . ') | (全部：' . $contentDone . '/' . $contentTotal . ')';
+
+                    $msgArr[] = $resB['msg'];
+                    if ($contentDone % $contentSize == 0) {
+                        break;
+                    }
+                }
                     $isContentOver = count($contentList) < $contentSize;
                 } else {
                     $isContentOver = true;
@@ -130,9 +143,22 @@ class TemplaBuilder
                 $msgArr[] = '[首页]未选择生成';
             }
 
-            $routeBuilder = new RouteBuilder;
-            $routeBuilder->builder(true);
-            $msgArr[] = '[路由]生成成功';
+            if (in_array('sitemap', $types)) {
+                $resS = $this->makeSitemap($template);
+                $msgArr[] = $resS['msg'];
+            } else {
+                $msgArr[] = '[sitemap]未选择生成';
+            }
+
+            if (empty($channelIds)) {
+                $routeBuilder = new RouteBuilder;
+                $routeBuilder->builder(true);
+                $msgArr[] = '[路由]生成成功';
+            } else {
+                //单栏目生成不重建路由：栏目路径增删改已有保存事件(MakeRoute)兜底，
+                //此处强写会在批量逐栏目生成时反复重写整个路由文件
+                $msgArr[] = '[路由]跳过（单栏目生成不重建）';
+            }
 
             if (in_array('channel', $types) && empty($channelIds)) {
                 $htmlPath = Processer::getOutPath() . 'c/';
@@ -202,14 +228,15 @@ class TemplaBuilder
     public function makeContent($template, $channel, $content)
     {
         $page = new Page();
-        $output = $page->content($content['id'], $template['id'], 1);
+        //第5参$is_static=1：静态生成上下文（Render层点击数只读、静态专属脚本注入）。
+        //历史上此处只传3个参，1错位落在channel_id上，is_static从未生效
+        $output = $page->content($content['id'], $template['id'], 0, '', 1);
 
         $outPath = Processer::getOutPath();
         $contentPath = Processer::resolveContentPath($content, $channel) . '.html';
         $this->fileWrite($outPath . $contentPath, $output);
 
-        $singleHtml = CmsTemplateHtml::where(['type' => 'single', 'template_id' => $template['id'], 'to_id' => $content['id']])
-            ->find();
+        $singleHtml = $this->getSingleHtml($template['id'], $content['id']);
 
         if ($singleHtml) {
             $singleOutPath = App::getPublicPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $template['prefix']);
@@ -218,6 +245,34 @@ class TemplaBuilder
         }
 
         return ['code' => 1, 'msg' => '[' . $content['title'] . ']内容生成成功，路径：' . $contentPath];
+    }
+
+    /**
+     * single绑定：每模板只查一次库取全量映射（发布一轮几十上百篇，逐篇find是无缓存点查）。
+     * 实例生命周期=单次发布请求，无常驻进程陈旧问题
+     *
+     * @param int $templateId
+     * @param int $toId
+     * @return CmsTemplateHtml|null
+     */
+    protected function getSingleHtml($templateId, $toId)
+    {
+        if (!array_key_exists($templateId, $this->singleHtmlMap)) {
+            $map = [];
+            $rows = CmsTemplateHtml::where(['type' => 'single', 'template_id' => $templateId])
+                ->field('id,to_id,path')
+                ->order('id asc')
+                ->select();
+            foreach ($rows as $row) {
+                if (!isset($map[$row['to_id']])) {
+                    //同to_id重复绑定时取id最小的一条，与原逐篇find()的默认排序一致
+                    $map[$row['to_id']] = $row;
+                }
+            }
+            $this->singleHtmlMap[$templateId] = $map;
+        }
+
+        return $this->singleHtmlMap[$templateId][$toId] ?? null;
     }
 
     /**
@@ -241,6 +296,79 @@ class TemplaBuilder
     }
 
     /**
+     * 生成sitemap.xml
+     *
+     * @param array|CmsTemplate $template
+     * @return array
+     */
+    public function makeSitemap($template)
+    {
+        $https = (isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) == 'on')
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) == 'https');
+        $prefix = rtrim(str_replace(['\\', '/'], '/', $template['prefix']), '/');
+        $baseUrl = ($https ? 'https://' : 'http://') . request()->host() . $prefix . '/';
+
+        $channels = CmsChannel::where('is_show', 1)
+            ->where('channel_path', '<>', '')
+            ->where('channel_path', '<>', '#')
+            ->column('id,channel_path,content_path,update_time', 'id');
+
+        $xml = '<?xml version="1.0" encoding="utf-8"?>' . "\n";
+        $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+
+        $count = 1;
+        $xml .= $this->sitemapUrl($baseUrl, time());
+        $count += count($channels);
+        foreach ($channels as $channel) {
+            $xml .= $this->sitemapUrl($baseUrl . Processer::resolveChannelPath($channel) . '.html', $channel['update_time']);
+        }
+
+        if (count($channels) > 0) {
+            CmsContent::where('is_show', 1)
+                ->where('channel_id', 'in', array_keys($channels))
+                ->field('id,channel_id,update_time')
+                ->chunk(200, function ($contents) use (&$xml, &$count, $baseUrl, $channels) {
+                    foreach ($contents as $content) {
+                        $channel = $channels[$content['channel_id']] ?? null;
+                        if (empty($channel) || empty($channel['content_path'])) {
+                            continue;
+                        }
+                        $xml .= $this->sitemapUrl($baseUrl . Processer::resolveContentPath($content, $channel) . '.html', $content['update_time']);
+                        $count += 1;
+                    }
+                });
+        }
+
+        $xml .= '</urlset>';
+
+        $outPath = App::getPublicPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $template['prefix']);
+        if (!is_dir($outPath)) {
+            mkdir($outPath, 0755, true);
+        }
+        $this->fileWrite($outPath . 'sitemap.xml', $xml);
+
+        return ['code' => 1, 'msg' => '[sitemap]生成成功，共' . $count . '个链接'];
+    }
+
+    /**
+     * sitemap url节点
+     * @param string $loc
+     * @param int|string $lastmod 时间戳或日期字符串
+     * @return string
+     */
+    protected function sitemapUrl($loc, $lastmod = 0)
+    {
+        $xml = '  <url>' . "\n";
+        $xml .= '    <loc>' . htmlspecialchars($loc, ENT_QUOTES) . '</loc>' . "\n";
+        if ($lastmod) {
+            $lastmod = is_numeric($lastmod) ? date('Y-m-d', (int) $lastmod) : substr($lastmod, 0, 10);
+            $xml .= '    <lastmod>' . $lastmod . '</lastmod>' . "\n";
+        }
+        $xml .= "  </url>\n";
+        return $xml;
+    }
+
+    /**
      * 写入静态文件
      * @param string $path
      * @param string $content
@@ -248,8 +376,14 @@ class TemplaBuilder
      */
     protected function fileWrite($path, $content)
     {
-        //生成出错就不写入文件了
-        if (strstr($content, '<title>500</title></head>')) {
+        //路径防呆：静态路径由栏目path等配置拼出，含..时可能越出输出目录写文件
+        if (strpos($path, '..') !== false) {
+            return false;
+        }
+        //只拦5xx瞬时错误(模板改坏/数据异常)，不让其写死在静态URL上；
+        //404/403允许静态化——隐藏/删除内容的URL直链得到静态404，无需每次动态渲染(历史设计，保留)。
+        //错误页模板化后title格式多变，旧嗅探'500'永不命中，改用__error_5xx__标记(旧嗅探保留兼容)
+        if (strstr($content, '__error_5xx__') || strstr($content, '<title>500</title></head>')) {
             return false;
         }
 

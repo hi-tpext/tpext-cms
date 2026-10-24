@@ -1,4 +1,9 @@
 .idea
 .vscode
 .DS_Store
+.zcode
 *.zip
+改进计划.md
+AGENTS.md
+runtime/
+tests/
