@@ -104,6 +104,8 @@ class CmsContent extends Model
             Cache::delete('content_count_' . $data['channel_id']);
         }
 
+        Cache::deleteTag('cms_content_list');
+
         ExtLoader::trigger('cms_content_on_after_insert', $data);
     }
 
@@ -116,6 +118,7 @@ class CmsContent extends Model
         Cache::delete('cms_content_' . $data['id']);
         Cache::delete('cms_content_click_' . $data['id']);
         Cache::delete('cms_content_detail_' . $data['id']);
+        Cache::deleteTag('cms_content_list');
 
         $detail = CmsContentDetail::where('main_id', $data['id'])->find();
         if (!$detail) {
@@ -172,6 +175,7 @@ class CmsContent extends Model
         if (!empty($data['channel_id'])) {
             Cache::delete('content_count_' . $data['channel_id']);
         }
+        Cache::deleteTag('cms_content_list');
 
         ExtLoader::trigger('cms_content_on_after_delete', $data);
     }

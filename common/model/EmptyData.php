@@ -76,7 +76,7 @@ class EmptyData implements \JsonSerializable, \ArrayAccess
         if ($name == 'url' || $name == 'link') {
             return '#';
         }
-        if ($name = 'channel') {
+        if ($this->table == 'content' && $name == 'channel') {
             return $this;
         }
         if ($name == 'id' || $name == 'parent_id') {

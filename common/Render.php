@@ -284,7 +284,7 @@ class Render
         }
 
         $click += 1;
-        Cache::tag($table)->set($key, $click);
+        Cache::tag($table . '_click')->set($key, $click);
 
         $config = Module::getInstance()->config();
         $clickWrite = $config['click_write'] ?? 10;
@@ -712,13 +712,6 @@ EOT;
      */
     protected function filterParams($params, $strict = true)
     {
-        array_walk($params, function (&$value, $key) {
-            if (is_array($value)) {
-                $value = implode(',', $value);
-            }
-            $value = Processer::sqlGuard($value);
-        });
-
         $reserved = ['page_title', 'page_description', 'page_keywords'];
 
         if ($strict) {
@@ -733,6 +726,14 @@ EOT;
                 unset($params[$key]);
             }
         }
+
+        //仅对保留下来的参数做注入/XSS过滤（保留键只应来自页面数据注入，不走过滤）
+        array_walk($params, function (&$value, $key) {
+            if (is_array($value)) {
+                $value = implode(',', $value);
+            }
+            $value = Processer::sqlGuard($value);
+        });
 
         if (ExtLoader::isWebman() && PHP_VERSION < 8.1) {
             unset($params['html_id']);

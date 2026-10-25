@@ -40,6 +40,7 @@ class CmsChannel extends Model
         }
 
         Cache::deleteTag('cms_channel');
+        Cache::deleteTag('cms_channel_list');
 
         ExtLoader::trigger('cms_channel_on_after_insert', $data);
     }
@@ -56,6 +57,7 @@ class CmsChannel extends Model
         }
 
         Cache::deleteTag('cms_channel');
+        Cache::deleteTag('cms_channel_list');
 
         ExtLoader::trigger('cms_channel_on_after_update', $data);
 
@@ -98,6 +100,7 @@ class CmsChannel extends Model
         Cache::delete('cms_channel_children_ids_' . $data['parent_id']);
 
         Cache::deleteTag('cms_channel');
+        Cache::deleteTag('cms_channel_list');
 
         ExtLoader::trigger('cms_channel_on_after_delete', $data);
     }
@@ -111,7 +114,7 @@ class CmsChannel extends Model
     public function getContentCountAttr($value, $data)
     {
         return CmsContent::where('channel_id', $data['id'])
-            ->cache('content_count_' . $data['id'], 60 * 60 * 24, 'cms_content')
+            ->cache('content_count_' . $data['id'], 60 * 60 * 24, 'cms_content_list')
             ->count();
     }
 

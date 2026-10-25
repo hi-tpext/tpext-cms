@@ -58,7 +58,6 @@ class CmsContentField extends Model
 
     public static function onAfterWrite($data)
     {
-        //字段改名时同步模型字段映射行的字段名（Query级update不触发映射模型事件，缓存在此一并失效）
         $origin = $data->getOrigin('name');
         if ($origin && $origin != $data['name']) {
             CmsContentModelField::where('name', $origin)->update(['name' => $data['name']]);

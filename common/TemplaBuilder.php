@@ -94,8 +94,6 @@ class TemplaBuilder
                     $doneInChannel = CmsContent::where('channel_id', $channel['id'])->where('id', '<=', $fromContentId)->count();
 
                 foreach ($contentList as $content) {
-                    //隐藏(is_show=0)内容也渲染：其URL写出静态404页，直链访问得到404而非旧内容；
-                    //软删除内容默认查询查不到，此判断仅为兜底。游标对每条都推进，避免分批时隐藏内容被反复重渲染
                     $fromContentId = $content['id'];
                     $resB = $this->makeContent($template, $channel, $content);
                     $doneInChannel += 1;
@@ -213,8 +211,11 @@ class TemplaBuilder
         }
 
         $outPath = Processer::getOutPath();
-        $this->fileWrite($outPath . Processer::resolveChannelPath($channel) . '.html', $output);
-        $this->fileWrite($outPath . Processer::resolveChannelPath($channel) . '-1.html', $output);
+        $res1 = $this->fileWrite($outPath . Processer::resolveChannelPath($channel) . '.html', $output);
+        $res2 = $this->fileWrite($outPath . Processer::resolveChannelPath($channel) . '-1.html', $output);
+        if ($res1 === false || $res2 === false) {
+            return ['code' => 0, 'msg' => '[' . $channel['name'] . ']栏目第一页写入失败，路径：' . Processer::resolveChannelPath($channel)];
+        }
         return ['code' => 1, 'msg' => '[' . $channel['name'] . ']栏目第一页生成成功，路径：' . Processer::resolveChannelPath($channel)];
     }
 
@@ -229,23 +230,26 @@ class TemplaBuilder
     public function makeContent($template, $channel, $content)
     {
         $page = new Page();
-        //第5参$is_static=1：静态生成上下文（Render层点击数只读、静态专属脚本注入）。
-        //历史上此处只传3个参，1错位落在channel_id上，is_static从未生效
         $output = $page->content($content['id'], $template['id'], 0, '', 1);
 
         $outPath = Processer::getOutPath();
         $contentPath = Processer::resolveContentPath($content, $channel) . '.html';
-        $this->fileWrite($outPath . $contentPath, $output);
+        if ($this->fileWrite($outPath . $contentPath, $output) === false) {
+            return ['code' => 0, 'msg' => '[' . $content['title'] . ']内容写入失败，路径：' . $contentPath];
+        }
 
         $singleHtml = $this->getSingleHtml($template['id'], $content['id']);
 
+        $singleMsg = '';
         if ($singleHtml) {
             $singleOutPath = App::getPublicPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $template['prefix']);
             $singleName = preg_replace('/theme\/[\w\-]+?\/([\w\-]+?.html)$/i', '$1', $singleHtml['path']);
-            $this->fileWrite($singleOutPath . $singleName, $output);
+            if ($this->fileWrite($singleOutPath . $singleName, $output) === false) {
+                $singleMsg = '，绑定单页写入失败：' . $singleName;
+            }
         }
 
-        return ['code' => 1, 'msg' => '[' . $content['title'] . ']内容生成成功，路径：' . $contentPath];
+        return ['code' => 1, 'msg' => '[' . $content['title'] . ']内容生成成功，路径：' . $contentPath . $singleMsg];
     }
 
     /**
@@ -381,14 +385,17 @@ class TemplaBuilder
         if (strpos($path, '..') !== false) {
             return false;
         }
-        //只拦5xx瞬时错误(模板改坏/数据异常)，不让其写死在静态URL上；
-        //404/403允许静态化——隐藏/删除内容的URL直链得到静态404，无需每次动态渲染(历史设计，保留)。
         //错误页模板化后title格式多变，旧嗅探'500'永不命中，改用__error_5xx__标记(旧嗅探保留兼容)
         if (strstr($content, '__error_5xx__') || strstr($content, '<title>500</title></head>')) {
             return false;
         }
 
         $content = str_replace('</head>', '<!--静态页面由cms程序生成，不要手动修改此html文件 ' . date('Y-m-d H:i:s') . '-->' . "\n" . '</head>', $content);
+
+        $dir = dirname($path);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
 
         return @file_put_contents($path, $content);
     }

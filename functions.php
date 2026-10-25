@@ -105,6 +105,21 @@ if (!function_exists('sql_guard')) {
     }
 }
 
+if (!function_exists('cms_order_expr')) {
+
+    //order中全大写MySQL函数的透传载体：TP5.1/think-orm为Expression，webman新版为Raw，均无则原样返回
+    function cms_order_expr($expr)
+    {
+        if (class_exists('\think\db\Expression')) {
+            return new \think\db\Expression($expr);
+        }
+        if (class_exists('\think\db\Raw')) {
+            return new \think\db\Raw($expr);
+        }
+        return $expr;
+    }
+}
+
 if (!function_exists('more')) {
     function more($str, $len = 100, $more = '...')
     {
@@ -223,18 +238,14 @@ function cms_build_where($cidKey, $cidVal, $idKey, $idVal)
 function cms_get_parents($table, $idVal, $idKey, $pidKey, $vars)
 {
     $idVal = $idVal ?? 0;
-    $pageType = $vars['__page_type__'] ?? '';
-    if ($pageType == 'channel' || $pageType == 'content') {
-        $idVal = $vars['channel_id'] ?? 0;
+    if (empty($idVal)) {
+        $pageType = $vars['__page_type__'] ?? '';
+        if ($pageType == 'channel' || $pageType == 'content') {
+            $idVal = $vars['channel_id'] ?? 0;
+        }
     }
     return Processer::getParents($table, $idVal, $idKey, $pidKey);
 }
-
-/**
- * 自动缓存键已否决删除(2026-10-24)：框架Query::cache(true)在闭包where上不可用，插件自研自动键
- * 又难以准确界定哪些上下文影响查询(细节遗漏会导致键不稳定或互相串缓存)——统一强制显式键名，
- * key支持内嵌变量(如cache="list_$id$page,600")由模板作者控制哪些参数影响缓存。
- */
 
 function cms_query_list($table, $where, $scope, $fields, $tagOrder, $take, $pagesize, $cacheKey, $cacheTime, $simple, $links, $vars)
 {
@@ -268,7 +279,7 @@ function cms_query_list($table, $where, $scope, $fields, $tagOrder, $take, $page
         ->field($fields)
         ->order($orderBy)
         ->limit(($page - 1) * $take, $take)
-        ->cache($cacheKey ?: false, $cacheTime, $table)
+        ->cache($cacheKey ?: false, $cacheTime, $table . '_list')
         ->select();
 
     if ($list instanceof \think\Collection) {
@@ -295,7 +306,7 @@ function cms_query_list($table, $where, $scope, $fields, $tagOrder, $take, $page
         $total = $db::name($table)
             ->where($where)
             ->where($scope)
-            ->cache($countCacheKey, $cacheTime, $table)
+            ->cache($countCacheKey, $cacheTime, $table . '_list')
             ->count('id');
 
         $simple = $simple ? true : false;
@@ -324,7 +335,7 @@ function cms_query_detail($table, $where, $scope, $order, $fields, $cacheKey, $c
         ->where($scope)
         ->order($order)
         ->field($fields)
-        ->cache($cacheKey ?: false, $cacheTime, $table)
+        ->cache($cacheKey ?: false, $cacheTime, $table . '_list')
         ->find();
 
     $channel = $vars['channel'] ?? null;

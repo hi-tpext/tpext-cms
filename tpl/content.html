@@ -67,16 +67,12 @@
 <div class="next-prev">
     <div class="prev">
         {content@prev}
-        {if !empty($prev)}
         <span class="label">上一篇</span>
         <a href="{$prev.url}">{$prev.title}</a>
-        {/if}
     </div>
     <div class="next">
         {content@next}
-        {if !empty($next)}
         <span class="label">下一篇</span>
         <a href="{$next.url}">{$next.title}</a>
-        {/if}
     </div>
 </div>

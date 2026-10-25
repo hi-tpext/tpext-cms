@@ -56,6 +56,8 @@ class RouteBuilder
                     'ids' => [],
                     'path' => $cha['channel_path'],
                 ];
+            } else if ($cha['channel_path'] != '#' && stripos($cha['channel_path'], '[id]') === false) {
+                trace('路由冲突：栏目[id=' . $cha['id'] . ']与栏目[id=' . implode(',', $channelPathArr[$channel_path_key]['ids']) . ']channel_path相同：' . $cha['channel_path'] . '，仅首个栏目路由生效', 'error');
             }
             if (!isset($contentPathArr[$content_path_key])) {
                 $contentPathArr[$content_path_key] = [
@@ -64,6 +66,8 @@ class RouteBuilder
                     'channel_id' => (int) $cha['id'],
                     'extend_table' => $cha['extend_table'] ?? '',
                 ];
+            } else if (($cha['extend_table'] ?? '') != $contentPathArr[$content_path_key]['extend_table']) {
+                trace('路由冲突：栏目[id=' . $cha['id'] . ']与栏目[id=' . implode(',', $contentPathArr[$content_path_key]['ids']) . ']content_path相同：' . $cha['content_path'] . '，但extend_table不同（' . (($cha['extend_table'] ?? '') ?: '无') . ' / ' . ($contentPathArr[$content_path_key]['extend_table'] ?: '无') . '），详情按首个栏目解析', 'error');
             }
 
             $channelPathArr[$channel_path_key]['ids'][] = (int) $cha['id'];

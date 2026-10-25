@@ -615,7 +615,6 @@ class Cmscontent extends Controller
      */
     protected function getFieldsInfo($model_id)
     {
-        //查询缓存统一挂 cms_content_model_field tag：字段/模型/映射的增删改（含改名、软删）按tag整体失效
         $modelFields = model\CmsContentModelField::where('model_id', $model_id)->cache('cms_content_model_fields_' . $model_id, null, 'cms_content_model_field')->select()->toArray();
         $modelFieldNames = array_column($modelFields, 'name');
         $modelMainLeftFieldNames = model\CmsContentModelField::where(['model_id' => $model_id, 'position' => 'main_left'])->cache('cms_content_model_fields_main_left_' . $model_id, null, 'cms_content_model_field')->column('name');

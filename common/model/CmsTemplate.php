@@ -58,8 +58,15 @@ class CmsTemplate extends Model
 
         ExtLoader::trigger('cms_template_on_after_delete', $data);
 
-        CmsTemplateHtml::where(['template_id' => $data['id']])->delete();
-        CmsContentPage::where(['template_id' => $data['id']])->delete();
+        $htmls = CmsTemplateHtml::where(['template_id' => $data['id']])->select();
+        foreach ($htmls as $html) {
+            $html->delete();
+        }
+        //html_id已悬空的绑定行
+        $pages = CmsContentPage::where(['template_id' => $data['id']])->select();
+        foreach ($pages as $page) {
+            $page->delete();
+        }
     }
 
     public function getPagesCountAttr($value, $data)

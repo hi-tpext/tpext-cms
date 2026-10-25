@@ -75,7 +75,6 @@ class MakeStatic
         foreach ($templates as $template) {
             trace('处理模板：' . $template['name'], 'info');
             Processer::setPath($template['prefix']);
-            //隐藏/删除的内容同样makeContent：其URL渲染出404并写为静态页，直链访问得到404而非旧内容
             $res = $buiilder->makeContent($template, $channel, $data);
             trace('[' . $data['title'] . ']生成静态文件：' . $res['msg'], 'info');
             $res = $buiilder->makeChannel($template, $channel);
@@ -97,7 +96,6 @@ class MakeStatic
         foreach ($templates as $template) {
             trace('处理模板：' . $template['name'], 'info');
             Processer::setPath($template['prefix']);
-            //删除/隐藏栏目同样makeChannel：其URL渲染出404并写为静态页(channel_path为空/#的由makeChannel内部跳过)
             $res = $buiilder->makeChannel($template, $data);
             trace('[' . $data['name'] . ']列表第一页生成静态文件：' . $res['msg'], 'info');
             $res = $buiilder->makeIndex($template);

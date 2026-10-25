@@ -35,10 +35,6 @@ class CmsTemplateHtml extends Model
             Cache::delete('cms_html_' . $data['id']);
         }
 
-        if (isset($data['to_id'])) {
-            Cache::delete('cms_html_to_' . $data['id']);
-        }
-
         if (isset($data['is_default']) && isset($data['type']) && isset($data['template_id'])) {
             if ($data['type'] == 'content' && $data['is_default'] == 1) {
                 Cache::delete('cms_html_content_default_' . $data['template_id']);
@@ -69,13 +65,12 @@ class CmsTemplateHtml extends Model
             Cache::delete('cms_html_' . $data['id']);
         }
 
-        if (isset($data['to_id'])) {
-            Cache::delete('cms_html_to_' . $data['id']);
-        }
-
         Cache::deleteTag('cms_html');
 
-        CmsContentPage::where(['html_id' => $data['id']])->delete();
+        $pages = CmsContentPage::where(['html_id' => $data['id']])->select();
+        foreach ($pages as $page) {
+            $page->delete();
+        }
 
         ExtLoader::trigger('cms_template_html_on_after_delete', $data);
     }

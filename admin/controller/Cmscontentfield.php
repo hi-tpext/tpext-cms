@@ -491,7 +491,6 @@ class Cmscontentfield extends Controller
         foreach ($ids as $id) {
             if ($this->dbLogic->dropField($this->tableName, $id)) {
                 $res += 1;
-                //实例删除触发 onAfterDelete：清模型映射行+缓存tag（Query级delete不触发模型事件）
                 $metaField = CmsContentFieldModel::where('name', $id)->find();
                 if ($metaField) {
                     $metaField->delete();
@@ -530,7 +529,6 @@ class Cmscontentfield extends Controller
         }
 
         if ($res) {
-            //上面两处是Query级操作不触发模型事件，缓存tag在此显式失效
             Cache::deleteTag('cms_content_model_field');
             $this->success(__blang('builder_delete_{:num}_records_succeeded', ['num' => $res]));
         } else {

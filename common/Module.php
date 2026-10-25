@@ -159,6 +159,7 @@ class Module extends baseModule
 
                 foreach ($tags as $tag) {
                     Cache::deleteTag($tag);
+                    Cache::deleteTag($tag . '_list');
                 }
 
             } catch (\Throwable $e) {

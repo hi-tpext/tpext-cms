@@ -48,8 +48,6 @@ class Page
 
         $title = $code == 404 ? '页面不存在' : ($code == 403 ? '禁止访问' : '服务器错误');
 
-        //5xx标记供TemplaBuilder::fileWrite识别：瞬时错误(模板改坏/数据异常)不写入静态文件；
-        //404/403允许静态化——隐藏/删除内容的URL直链得到静态404，无需每次动态渲染
         $marker = $code >= 500 ? '<!--__error_5xx__-->' : '';
         return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/>' . $marker . '<title>' . $code . ' ' . $title . '</title></head><body style="text-align:center;padding-top:80px;font-family:sans-serif;"><h1>' . $code . '</h1><h4>' . htmlspecialchars($msg, ENT_QUOTES) . '</h4><p><a href="/">返回首页</a></p></body></html>';
     }
@@ -155,7 +153,7 @@ class Page
         $content = $dbNameSpace::name($table)
             ->where('id', $id)
             ->where($contentScope)
-            ->cache($extend_table . '_' . $id, $this->cacheTime, $table)
+            ->cache($table . '_' . $id, $this->cacheTime, $table)
             ->find();
 
         if (!$content) {

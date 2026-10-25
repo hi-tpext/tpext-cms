@@ -11,6 +11,7 @@
 
 namespace tpext\cms\common\taglib;
 
+use tpext\cms\common\Cache;
 use tpext\cms\common\model\CmsChannel;
 use tpext\cms\common\model\EmptyData;
 use tpext\think\App;
@@ -77,10 +78,13 @@ class Processer
     }
 
     /**
-     * sql 注入防御
+     * sql 注入防御：命中注入特征返回 'invalid words' 占位串并 trace 留痕，未命中返回原值。
+     * 调用方多在访客输入链路上，命中不应整页报错；占位串是普通字面量，不构成注入载荷。
+     * 检查与执行同源：规则全部针对原串，不再生成去注释副本——"检查副本、执行原值"
+     * 会让版本注释藏关键字、注释替代空格等混淆手法绕过黑名单，故注释语法本身即拦截。
      *
-     * @param string $val
-     * @return string
+     * @param mixed $val
+     * @return mixed
      */
     public static function sqlGuard($val)
     {
@@ -102,56 +106,63 @@ class Processer
             '/data\s*:\s*text\s*\/\s*html/i',
         ], '', $val);
 
-        //先去注释类混淆，如 sel/**/ect
-        $plain = preg_replace('/\/\*.*?\*\//s', '', $val);
-
-        //1. 经典恒真式（最常见、门槛最低）：or/and 后跟数字或引号字符串且带等号，如 or 1=1、or '1'='1'、1"or"1"="1
-        if (preg_match('/\b(?:or|and)\s*(?:\d+\s*=|[\'"]\s*\w+\s*[\'"]\s*=)/is', $plain)) {
-            return 'invalid words';
+        //1. 经典恒真式（最常见、门槛最低）：or/and 后跟 数字比较数字 或 引号串比较引号串，
+        //   比较符覆盖 = < > <> >= <=（仅 or 2>1 这类常量对常量，常量对字段如 and 0<status 不误伤）
+        if (preg_match('/\b(?:or|and)\s*(?:\d+\s*(?:<>|>=|<=|=|>|<)\s*\d+|[\'"]\s*\w+\s*[\'"]\s*(?:<>|>=|<=|=|>|<)\s*[\'"]\s*\w+\s*[\'"])/is', $val)) {
+            return self::guardReject('tautology', $val);
         }
 
-        //2. 注释符与堆叠语句（截断原语句、追加新语句，绝大多数载荷会用到）；
-        //   #常见于正常关键词(如C#)，且堆叠/截断已有;和--拦截，放行
-        if (preg_match('/--|\/\*|\*\/|;/is', $plain)) {
-            return 'invalid words';
+        //2. 注释符与堆叠语句（截断原语句、追加新语句、注释替代空格藏关键字，绝大多数载荷会用到）。
+        //   #常见于正常关键词(如C#)单独放行，但与括号同现时（如 1)) # 先闭合括号再截断后续拼接条件）拦截
+        if (preg_match('/--|\/\*|\*\/|;/is', $val)) {
+            return self::guardReject('comment/stack', $val);
+        }
+        if (strpos($val, '#') !== false && preg_match('/[()]/', $val)) {
+            return self::guardReject('#', $val);
         }
 
         //3. union 联合查询注入（窃取数据最常用手法）
-        if (preg_match('/\bunion\b.+?\bselect\b/is', $plain)) {
-            return 'invalid words';
+        if (preg_match('/\bunion\b.+?\bselect\b/is', $val)) {
+            return self::guardReject('union', $val);
         }
 
         //4. select 子查询注入
-        if (preg_match('/\bselect\b.+?\bfrom\b/is', $plain)) {
-            return 'invalid words';
+        if (preg_match('/\bselect\b.+?\bfrom\b/is', $val)) {
+            return self::guardReject('subquery', $val);
         }
 
         //5. 时间盲注函数（sqlmap、脚本常用）
-        if (preg_match('/\b(?:sleep|benchmark)\s*\(/is', $plain)) {
-            return 'invalid words';
+        if (preg_match('/\b(?:sleep|benchmark)\s*\(/is', $val)) {
+            return self::guardReject('blind', $val);
         }
 
         //6. 写操作与 DDL（危害大，一般需配合堆叠语句，兜底）：delete...from、update...set、insert/replace...into、drop/truncate/alter/create...table
-        if (preg_match('/\bdelete\b.+?\bfrom\b|\bupdate\b.+?\bset\b|\binsert\b.+?\binto\b|\breplace\b.+?\binto\b|\bdrop\b.+?\btable\b|\btruncate\b.+?\btable\b|\balter\b.+?\btable\b|\bcreate\b.+?\btable\b/is', $plain)) {
-            return 'invalid words';
+        if (preg_match('/\bdelete\b.+?\bfrom\b|\bupdate\b.+?\bset\b|\binsert\b.+?\binto\b|\breplace\b.+?\binto\b|\bdrop\b.+?\btable\b|\btruncate\b.+?\btable\b|\balter\b.+?\btable\b|\bcreate\b.+?\btable\b/is', $val)) {
+            return self::guardReject('write', $val);
         }
 
         //7. 文件操作与信息泄露（高危但少见）
-        if (preg_match('/\binto\s+(?:outfile|dumpfile)\b|\bload_file\s*\(|\binformation_schema\b/is', $plain)) {
-            return 'invalid words';
+        if (preg_match('/\binto\s+(?:outfile|dumpfile)\b|\bload_file\s*\(|\binformation_schema\b/is', $val)) {
+            return self::guardReject('file', $val);
         }
 
         //8. 编码混淆（用于绕过关键词检测）
-        if (preg_match('/0x[0-9a-f]+|char\s*\(/is', $plain)) {
-            return 'invalid words';
+        if (preg_match('/0x[0-9a-f]+|char\s*\(/is', $val)) {
+            return self::guardReject('encode', $val);
         }
 
         //9. MSSQL 专有（本项目环境少见，兜底）
-        if (preg_match('/\bwaitfor\s+delay\b|\bxp_cmdshell\b/is', $plain)) {
-            return 'invalid words';
+        if (preg_match('/\bwaitfor\s*delay\b|\bxp_cmdshell\b/is', $val)) {
+            return self::guardReject('mssql', $val);
         }
 
         return $val;
+    }
+
+    protected static function guardReject($type, $val)
+    {
+        trace('sql_guard: invalid words (' . $type . '): ' . mb_substr($val, 0, 100), 'error');
+        return 'invalid words';
     }
 
     /**
@@ -447,35 +458,41 @@ class Processer
 
     public static function getParents($table, $id, $idKey = 'id', $pidKey = 'parent_id')
     {
-        $list = [];
-        $data = static::getData($table, $idKey, $id);
-        if ($data) {
-            $list = static::getUpperNodes($table, $idKey, $pidKey, $data, $list);
+        //缓存原始行：item()会按当前模板path拼url，装饰后的结果不能进共享缓存
+        $cacheKey = $table . '_parents_' . $idKey . '_' . $pidKey . '_' . $id;
+        $list = Cache::get($cacheKey);
+        if (!is_array($list)) {
+            $list = [];
+            $data = static::getData($table, $idKey, $id);
+            if ($data) {
+                $list = static::getUpperNodes($table, $idKey, $pidKey, $data, $list);
+            }
+            $list = array_reverse($list);
+            Cache::tag($table)->set($cacheKey, $list, 3600);
         }
         foreach ($list as &$li) {
             $li = static::item($table, $li);
         }
-        return array_reverse($list);
+        return $list;
     }
 
     public static function getUpperNodes($table, $idKey, $pidKey, $node, $list = [], $limit = 9)
     {
+        $visited = [];
         foreach ($list as $li) {
-            if ($li[$idKey] == $node[$idKey]) {
-                trace("死循环:" . json_encode($node));
-                return $list;
+            $visited[$li[$idKey]] = true;
+        }
+        while ($node && count($list) < $limit) {
+            if (isset($visited[$node[$idKey]])) {
+                trace('parents死循环:' . json_encode($node));
+                break;
             }
-        }
-        if (count($list) >= $limit) {
-            return $list;
-        }
-        $list[] = $node;
-        if ($node[$pidKey] == 0 || $node[$pidKey] == $node[$pidKey]) {
-            return $list;
-        }
-        $up = static::getData($table, $idKey, $node[$pidKey]);
-        if ($up) {
-            $list = static::getUpperNodes($table, $idKey, $pidKey, $up, $list, $limit);
+            $visited[$node[$idKey]] = true;
+            $list[] = $node;
+            if (empty($node[$pidKey]) || $node[$pidKey] == $node[$idKey]) {
+                break;
+            }
+            $node = static::getData($table, $idKey, $node[$pidKey]);
         }
         return $list;
     }
@@ -494,7 +511,7 @@ class Processer
 
         return $dbNameSpace::name($table)
             ->where($idKey, $id)
-            ->cache($table . '_' . $id, static::isAdmin() ? 120 : 3600, $table)
+            ->cache($table . '_' . $id . '_any', static::isAdmin() ? 120 : 3600, $table)
             ->find();
     }
 }

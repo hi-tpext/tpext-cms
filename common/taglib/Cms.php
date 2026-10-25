@@ -26,6 +26,8 @@ class Cms extends TagLib
 
     protected $usedTags = [];
 
+    const IN_VAR_PAT = '/^in\s*\(?\s*(\$[a-zA-Z_][a-zA-Z_\d]*(?:\.[a-zA-Z_][a-zA-Z_\d]*)*)\s*\)?$/is';
+
     public function __construct($template)
     {
         $this->tags = Table::getTagsList();
@@ -115,7 +117,6 @@ EOT;
         $assign = !empty($tag['assign']) ? $tag['assign'] : $table . '_list_' . time() . mt_rand(100, 999);
         $item = ltrim($item, '$');
         $assign = ltrim($assign, '$');
-        $fields = $tag['fields'] ?? Table::defaultFields($table);
 
         $id_val = '';
         if ($id_key && isset($tag[$id_key]) && $tag[$id_key] !== '') {
@@ -129,10 +130,8 @@ EOT;
                 $id_val = "{$id_val}";
             }
         } else {
-            $id_val = "\${$id_key} ?? 0"; //未指定id时自动尝试使用注入的id变量
+            $id_val = '0';
         }
-
-        $fields = is_array($fields) ? implode(',', $fields) : $fields;
 
         $parseStr = <<<EOT
         <?php
@@ -248,10 +247,31 @@ EOT;
      */
     protected function parseOrder($order)
     {
+        $order = trim($order);
         if ($this->isVarOrMethod($order)) {
             $order = ltrim($order, ':');
+            if ($order[0] == '$') {
+                $order = '(' . $order . " ?? '')";
+            }
+            return $order;
         }
-        return "'{$order}'";
+        if (preg_match('/^[A-Z][A-Z_\d]*\s*\([^\(\)]*\)$/', $order)) {
+            //全大写MySQL函数(如FIELD(sort,1,2,3))：经Expression透传，内嵌变量值经sql_guard过滤后拼接
+            $parts = preg_split('/(\$[a-zA-Z_][a-zA-Z_\d]*(?:\.[a-zA-Z_][a-zA-Z_\d]*)?)/', $order, -1, PREG_SPLIT_DELIM_CAPTURE);
+            $expr = '';
+            foreach ($parts as $part) {
+                if ($part === '') {
+                    continue;
+                }
+                if ($part[0] == '$') {
+                    $expr .= ' . sql_guard((string)(' . $this->autoBuildVar($part) . " ?? '')) . ";
+                } else {
+                    $expr .= " . '" . addslashes($part) . "'";
+                }
+            }
+            return 'cms_order_expr(' . substr($expr, 3) . ')';
+        }
+        return "'" . addslashes($order) . "'";
     }
 
     /**
@@ -274,8 +294,6 @@ EOT;
         }
 
         if (!preg_match('/\$[a-zA-Z]/', $raw)) {
-            //true/false 不做特判，按普通字面量键名处理：框架自动键(Query::cache(true))在闭包where上
-            //不可用，插件自研自动键又难以准确界定哪些上下文影响查询——统一强制显式键名(可内嵌变量)
             return ["'" . addslashes($raw) . "'", $cacheTime];
         }
 
@@ -325,9 +343,14 @@ EOT;
                 $cid_val = "{$cid_val}";
             } else if (preg_match('/^[\d,]+$/', $cid_val)) {
                 $cid_val = "'{$cid_val}'";
+            } else if (preg_match(self::IN_VAR_PAT, $cid_val, $mch)) {
+                $cid_val = $this->autoBuildVar($mch[1]);
             } else {
                 $whereExp = $this->parseIdVal($cid_key, $cid_val);
                 if ($whereExp) {
+                    if ($where != '1=1' && $where !== '') {
+                        $where = '(' . $where . ')';
+                    }
                     $where .= $whereExp;
                     $cid_val = '0';
                 }
@@ -349,9 +372,14 @@ EOT;
                 $id_val = "{$id_val}";
             } else if (preg_match('/^[\d,]+$/', $id_val)) {
                 $id_val = "'{$id_val}'";
+            } else if (preg_match(self::IN_VAR_PAT, $id_val, $mch)) {
+                $id_val = $this->autoBuildVar($mch[1]);
             } else {
                 $whereExp = $this->parseIdVal($id_key, $id_val);
                 if ($whereExp) {
+                    if ($where != '1=1' && $where !== '') {
+                        $where = '(' . $where . ')';
+                    }
                     $where .= $whereExp;
                     $id_val = '0';
                 }
