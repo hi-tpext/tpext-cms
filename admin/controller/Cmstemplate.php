@@ -23,7 +23,8 @@ class Cmstemplate extends Controller
     use actions\HasEdit;
     use actions\HasView;
     use actions\HasDelete;
-    use actions\HasAutopost;
+    //无autoPost字段，不引入HasAutopost：其autopost端点提供无白名单的任意字段写入
+    //（prefix/view_path经它污染会越界删public目录）
 
     /**
      * Undocumented variable
@@ -129,12 +130,31 @@ class Cmstemplate extends Controller
     public function makeRoute()
     {
         $routeBuilder = new RouteBuilder;
-        $routeBuilder->builder(true);
-        return $this->builder()->layer()->closeRefresh(1, '已生成路由route/tpex-tcms.php');
+        $res = $routeBuilder->builder(true);
+        if ($res === false) {
+            return $this->builder()->layer()->closeRefresh(0, '路由生成失败：存在非法的栏目路径/附加表/模板前缀，已保留上一版路由，详情见日志');
+        }
+        return $this->builder()->layer()->closeRefresh(1, '已生成路由route/tpext-cms.php');
     }
 
+    /**
+     * @title 清除页面缓存
+     * @return mixed
+     */
     public function clearTemp()
     {
+        if (request()->isGet()) {
+            //GET渲染确认页，执行须POST+token（防跨站诱导清空全站静态页）
+            $builder = $this->builder($this->pageTitle, '清除页面缓存');
+            $form = $builder->form();
+            $form->show('tips', ' ')->showLabel(false)->value('将清除数据缓存、模板编译缓存（runtime/temp/theme）及所有模板已生成的静态页面（不含uploads），确认继续？');
+            $form->btnSubmit('确认清除');
+            $form->method('post');
+            return $builder->render();
+        }
+
+        $this->checkToken();
+
         $tags = ['cms_html', 'cms_page', 'cms_template', 'cms_channel', 'cms_content', 'cms_position', 'cms_banner', 'cms_tag'];
 
         $msgs = ['已清除数据缓存'];
@@ -144,7 +164,7 @@ class Cmstemplate extends Controller
 
         Tool::deleteDir(App::getRootPath() . 'runtime' . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'theme');
 
-        $msgs[] = '已清模板除缓存目录runtime/temp/theme';
+        $msgs[] = '已清除缓存目录runtime/temp/theme';
 
         $builder = new TemplaBuilder;
         $templates = $this->dataModel->select();

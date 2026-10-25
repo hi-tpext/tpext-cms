@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__cms_template` (
   `name` varchar(55) NOT NULL DEFAULT '' COMMENT '模板名称',
   `platform` varchar(25) NOT NULL DEFAULT '' COMMENT '平台类型',
   `view_path` varchar(25) NOT NULL DEFAULT '' COMMENT '模板基础路径',
-  `prefix` varchar(25) NOT NULL DEFAULT '' COMMENT '生成路径前缀',
+  `prefix` varchar(25) NOT NULL DEFAULT '/' COMMENT '生成路径前缀（空值会被clearHtml等路径操作拒绝）',
   `description` varchar(255) NOT NULL DEFAULT '' COMMENT '描述',
   `sort` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '排序',
   `is_open` tinyint(1) unsigned NOT NULL DEFAULT 1 COMMENT '是否启用',

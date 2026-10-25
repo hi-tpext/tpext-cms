@@ -36,6 +36,7 @@ class Cmschannel extends Controller
     protected function initialize()
     {
         $this->dataModel = new ChannelModel;
+        $this->postAllowFields = ['name', 'is_navi', 'is_show', 'sort', 'pagesize'];
 
         $this->pageTitle = '栏目管理';
         $this->sortOrder = 'id desc';
@@ -261,7 +262,8 @@ class Cmschannel extends Controller
             $this->error(__blang('builder_parameter_error'));
         }
 
-        if (!empty($this->postAllowFields) && !in_array($name, $this->postAllowFields)) {
+        //失败关闭：白名单为空同样拒绝（vendor原版empty时跳过校验）
+        if (!in_array($name, $this->postAllowFields) || !is_scalar($value)) {
             $this->error(__blang('builder_field_not_allowed'));
         }
 

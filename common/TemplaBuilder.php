@@ -13,6 +13,7 @@ namespace tpext\cms\common;
 
 use tpext\think\App;
 use tpext\common\Tool;
+use tpext\cms\common\PathGuard;
 use tpext\cms\common\model\CmsChannel;
 use tpext\cms\common\model\CmsContent;
 use tpext\cms\common\taglib\Processer;
@@ -104,7 +105,7 @@ class TemplaBuilder
                     $contentDone += 1;
                     $msgArr[] = '[内容详情进度](当前栏目：' . $doneInChannel . '/' . $contentCount . ') | (全部：' . $contentDone . '/' . $contentTotal . ')';
 
-                    $msgArr[] = $resB['msg'];
+                    $msgArr[] = $resB['msg'] . (isset($resB['detail']) ? '（' . $resB['detail'] . '）' : '');
                     if ($contentDone % $contentSize == 0) {
                         break;
                     }
@@ -120,7 +121,7 @@ class TemplaBuilder
                 //生成栏目
                 if (in_array('channel', $types)) {
                     $resA = $this->makeChannel($template, $channel);
-                    $msgArr[] = $resA['msg'];
+                    $msgArr[] = $resA['msg'] . (isset($resA['detail']) ? '（' . $resA['detail'] . '）' : '');
                 }
 
                 $fromChannelId = $channel['id'];
@@ -138,14 +139,14 @@ class TemplaBuilder
         if ($isChannelOver && $isContentOver) {
             if (in_array('index', $types)) {
                 $resC = $this->makeIndex($template);
-                $msgArr[] = $resC['msg'];
+                $msgArr[] = $resC['msg'] . (isset($resC['detail']) ? '（' . $resC['detail'] . '）' : '');
             } else {
                 $msgArr[] = '[首页]未选择生成';
             }
 
             if (in_array('sitemap', $types)) {
                 $resS = $this->makeSitemap($template);
-                $msgArr[] = $resS['msg'];
+                $msgArr[] = $resS['msg'] . (isset($resS['detail']) ? '（' . $resS['detail'] . '）' : '');
             } else {
                 $msgArr[] = '[sitemap]未选择生成';
             }
@@ -413,9 +414,22 @@ class TemplaBuilder
      */
     public function clearHtml($template)
     {
+        //空串/非法prefix（如../）会拼出public本身或越界路径，删除整站文件，一律拒绝
+        if (!PathGuard::safePrefix($template['prefix'])) {
+            trace('跳过清除：模板[id=' . $template['id'] . ']prefix非法：' . var_export($template['prefix'], true), 'error');
+            return;
+        }
+
         $outPath = App::getPublicPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $template['prefix']);
 
         if ($template['prefix'] != '/') {
+            //realpath解析须严格位于public内（防软链越界），目录不存在则跳过
+            $publicReal = realpath(App::getPublicPath());
+            $outReal = is_dir($outPath) ? realpath($outPath) : false;
+            if ($outReal === false || $outReal === $publicReal || strpos($outReal, $publicReal . DIRECTORY_SEPARATOR) !== 0) {
+                trace('跳过清除：模板[id=' . $template['id'] . ']路径越界或不存在：' . $template['prefix'], 'error');
+                return;
+            }
             Tool::deleteDir($outPath);
             return;
         }

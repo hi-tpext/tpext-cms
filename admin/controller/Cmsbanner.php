@@ -32,6 +32,7 @@ class Cmsbanner extends Controller
     protected function initialize()
     {
         $this->dataModel = new BannerModel;
+        $this->postAllowFields = ['title', 'is_show'];
         $this->pageTitle = '广告管理';
         $this->enableField = 'is_show';
         $this->pagesize = 6;

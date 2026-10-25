@@ -5,6 +5,7 @@ namespace tpext\cms\admin\controller;
 use tpext\think\App;
 use think\Controller;
 use tpext\cms\common\Render;
+use tpext\cms\common\PathGuard;
 use tpext\builder\traits\actions;
 use tpext\cms\common\model\CmsTemplate;
 use tpext\cms\common\model\CmsTemplateHtml;
@@ -162,6 +163,11 @@ class Cmstemplatestatic extends Controller
 
         if (request()->isGet()) {
 
+            $view_path = PathGuard::staticFile(str_replace(['\\', '/', '--ds--'], '/', $path));
+            if ($view_path === false || !in_array($ext, PathGuard::$staticExts)) {
+                $this->error('路径不合法');
+            }
+
             $builder = $this->builder($this->pageTitle, '编辑' . $ext, 'edit');
 
             $form = $builder->form();
@@ -169,8 +175,6 @@ class Cmstemplatestatic extends Controller
             $this->isEdit = 1;
 
             $path = str_replace(['\\', '/', '--ds--'], DIRECTORY_SEPARATOR, $path);
-
-            $view_path = App::getRootPath() . $path;
 
             $form->show('path', ' ')->showLabel(false)->size(12, 12)->value('路径：' . $path);
             $form->aceEditor('content', ' ')->setMode($ext == 'css' ? 'css' : 'javascript')->showLabel(false)->size(12, 12)->value(htmlentities(file_get_contents($view_path)));
@@ -225,7 +229,10 @@ class Cmstemplatestatic extends Controller
         }
         $res = 0;
         foreach ($ids as $id) {
-            $file = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $id);
+            $file = PathGuard::staticFile($id);
+            if ($file === false) {
+                continue;
+            }
 
             if (is_file($file)) {
                 @copy($file, $file .  date('YmdHis') . '.del');
@@ -266,6 +273,10 @@ class Cmstemplatestatic extends Controller
 
         if (isset($data['template_id'])) //新键页面
         {
+            if (!in_array($data['type'], PathGuard::$staticExts) || !PathGuard::safeName($data['name'])) {
+                $this->error('文件类型或名称不合法');
+            }
+
             $data['name'] = str_replace(['.js', '.css'], '', $data['name']);
 
             $template = CmsTemplate::where('id', $data['template_id'])->find();
@@ -276,13 +287,16 @@ class Cmstemplatestatic extends Controller
 
             $path = 'theme/' . $templatePath . '/static/' . $dir . $data['name'] . '.' . $data['type'];
 
+            $newFilePath = PathGuard::staticFile($path);
+            if ($newFilePath === false) {
+                $this->error('路径不合法');
+            }
+
             if ($data['type'] == 'css') {
                 $newTpl = '/*网站样式*/' . PHP_EOL . '@charset "UTF-8";' . PHP_EOL;
             } else {
                 $newTpl = '/*网站js*/' . PHP_EOL;
             }
-
-            $newFilePath = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $path);
 
             if (!is_file($newFilePath)) {
                 $newRes = file_put_contents($newFilePath, $newTpl);
@@ -294,7 +308,10 @@ class Cmstemplatestatic extends Controller
             return $this->builder()->layer()->closeRefresh();
         }
 
-        $file_path = App::getRootPath() . str_replace(['\\', '/', '--ds--'], DIRECTORY_SEPARATOR, $path);
+        $file_path = PathGuard::staticFile(str_replace(['\\', '/', '--ds--'], '/', $path));
+        if ($file_path === false) {
+            $this->error('路径不合法');
+        }
 
         $res = file_put_contents($file_path, $data['content']);
 

@@ -6,6 +6,7 @@ use tpext\think\App;
 use think\Controller;
 use tpext\builder\common\Builder;
 use tpext\builder\traits\actions;
+use tpext\cms\common\PathGuard;
 use tpext\cms\common\model\CmsChannel;
 use tpext\cms\common\model\CmsContent;
 use tpext\cms\common\model\CmsTemplate;
@@ -37,6 +38,7 @@ class Cmstemplatehtml extends Controller
     protected function initialize()
     {
         $this->dataModel = new TemplateHtmlModel;
+        $this->postAllowFields = ['description'];
         $this->pageTitle = '模板页面管理';
         $this->pagesize = 6;
         $this->sortOrder = 'type,path';
@@ -248,7 +250,10 @@ class Cmstemplatehtml extends Controller
 
         if ($isEdit) {
             $form->hidden('id');
-            $view_path = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $data['path']);
+            $view_path = PathGuard::htmlFile($data['path']);
+            if ($view_path === false) {
+                $this->error('页面路径不合法');
+            }
             $form->show('path', ' ')->showLabel(false)->size(12, 12)->to('路径：{val}');
             $form->aceEditor('content', ' ')->setMode('html')->showLabel(false)->size(12, 12)->value(htmlentities(file_get_contents($view_path)));
 
@@ -421,6 +426,10 @@ class Cmstemplatehtml extends Controller
 
         if (isset($data['template_id'])) //新键页面
         {
+            if (!in_array($data['type'], array_keys($this->pageTypes)) || !PathGuard::safeName($data['name'])) {
+                $this->error('页面类型或名称不合法');
+            }
+
             $data['name'] = str_replace('.html', '', $data['name']);
 
             $template = CmsTemplate::where('id', $data['template_id'])->find();
@@ -448,7 +457,10 @@ class Cmstemplatehtml extends Controller
                 $text = CmsTemplate::getTemplatePart('tpl/dynamic.html');
             }
 
-            $newFilePath = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $path);
+            $newFilePath = PathGuard::htmlFile($path);
+            if ($newFilePath === false) {
+                $this->error('路径不合法');
+            }
 
             if (!is_file($newFilePath)) {
                 $newRes = @file_put_contents($newFilePath, str_replace('<!--__content__-->', $text, $newTpl));
@@ -477,7 +489,10 @@ class Cmstemplatehtml extends Controller
             $this->error('保存失败，页面不存在！');
         }
 
-        $file_path = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $page['path']);
+        $file_path = PathGuard::htmlFile($page['path']);
+        if ($file_path === false) {
+            $this->error('页面路径不合法');
+        }
 
         $res = @file_put_contents($file_path, $data['content']);
 

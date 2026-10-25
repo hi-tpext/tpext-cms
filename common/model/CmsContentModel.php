@@ -32,18 +32,13 @@ class CmsContentModel extends Model
         if (!isset($data['id'])) {
             return;
         }
-        Cache::delete('cms_content_model_fields_' . $data['id']);
-        Cache::delete('cms_content_model_fields_main_left_' . $data['id']);
-        Cache::delete('cms_content_model_fields_main_right_' . $data['id']);
-        Cache::delete('cms_content_model_fields_extend_' . $data['id']);
+        //模型配置变化必然伴随映射行写入，统一走tag清理（覆盖 cms_content_model_fields_* 全部键）
+        Cache::deleteTag('cms_content_model_field');
     }
 
     public static function onAfterDelete($data)
     {
-        Cache::delete('cms_content_model_fields_' . $data['id']);
-        Cache::delete('cms_content_model_fields_main_left_' . $data['id']);
-        Cache::delete('cms_content_model_fields_main_right_' . $data['id']);
-        Cache::delete('cms_content_model_fields_extend_' . $data['id']);
+        Cache::deleteTag('cms_content_model_field');
     }
 
     public function setFieldsAttr($value)

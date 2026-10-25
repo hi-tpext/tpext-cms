@@ -31,6 +31,7 @@ class Cmsposition extends Controller
     protected function initialize()
     {
         $this->dataModel = new Position;
+        $this->postAllowFields = ['is_show'];
 
         $this->pageTitle = '广告位置';
         $this->sortOrder = 'id desc';

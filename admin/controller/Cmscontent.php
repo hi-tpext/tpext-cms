@@ -43,6 +43,8 @@ class Cmscontent extends Controller
     protected function initialize()
     {
         $this->dataModel = new ContentModel;
+        //attr经editAttr单独入口提交，不列入autopost白名单
+        $this->postAllowFields = ['is_show', 'sort'];
         $this->channelModel = new CmsChannel;
         $this->pageTitle = '内容管理';
         $this->enableField = 'is_show';
@@ -279,6 +281,9 @@ class Cmscontent extends Controller
         $newData['channel_id'] = $channel_id;
         unset($newData['id']);
 
+        //与新增/编辑同一套栏目校验（目录栏目、extend_table栏目、模型不匹配的拒绝复制）
+        $this->checkChannelAllowed($channel_id, $newData['model_id']);
+
         if ($copy_type == 'copy') {
             $newData['content'] = $content['content'];
         } else {
@@ -316,6 +321,22 @@ class Cmscontent extends Controller
 
         $fieldsInfo = $this->getFieldsInfo($model_id);
 
+        //下拉/单选类自定义字段的options批量预载（原逐字段查询是N+1）
+        $customNames = [];
+        foreach ($fieldsInfo['fields'] as $field) {
+            if ($field['is_custom'] == 1 && in_array($field['displayer_type'], ['radio', 'checkbox', 'tree', 'selecttree', 'transfer', 'select', 'multipleSelect'])) {
+                $customNames[] = $field['name'];
+            }
+        }
+
+        $ctx = [
+            'isEdit' => $isEdit,
+            'isReference' => $isReference,
+            'data' => $data,
+            'config' => $config,
+            'customOptions' => $customNames ? model\CmsContentField::where('name', 'in', $customNames)->column('options', 'name') : [],
+        ];
+
         $form->defaultDisplayerSize(12, 12);
         $form->hidden('id');
         $form->hidden('reference_id');
@@ -326,234 +347,220 @@ class Cmscontent extends Controller
         }
 
         $form->left(count($fieldsInfo['main_right_fields']) > 0 ? 7 : 12)->with(
-            function () use ($form, $config, $data, $isReference, $fieldsInfo) {
+            function () use ($form, $fieldsInfo, $ctx) {
                 $form->text('title', '标题')->required()->maxlength(125);
                 $form->selectTree('channel_id', '栏目', 6)->multiple(false)->optionsData($this->channelModel->order('sort')->select(), 'name', 'id', 'parent_id', '')->required();
 
-                $fields = $fieldsInfo['fields'];
-                if (in_array('tags', $fieldsInfo['field_names'])) {
-                    $form->multipleSelect('tags', $fields['tags']['comment'] ?: '合集', 6)
-                        ->dataUrl(url('/admin/cmstag/selectPage'))
-                        ->help($fields['tags']['help'])
-                        ->required(strstr($fields['tags']['rules'], 'required'));
-                }
-                if (in_array('keywords', $fieldsInfo['field_names'])) {
-                    $form->text('keywords', $fields['keywords']['comment'] ?: '关键字')
-                        ->readonly($isReference)
-                        ->maxlength(255)
-                        ->help($fields['keywords']['help'] ?: '多个关键字请用英文逗号隔开')
-                        ->required(strstr($fields['keywords']['rules'], 'required'));
-                }
-                if (in_array('description', $fieldsInfo['field_names'])) {
-                    $form->textarea('description', $fields['description']['comment'] ?: '摘要')
-                        ->readonly($isReference)
-                        ->maxlength(255)
-                        ->help($fields['description']['help'] ?: '留空则自动从内容中提取')
-                        ->required(strstr($fields['description']['rules'], 'required'));
-                }
-
-                foreach ($fields as $field) {
-                    if ($field['is_custom'] == 1 && $field['position'] == 'main_left') {
-                        $this->customField($form, $field, $isReference);
-                    }
-                }
-
-                unset($field);
-
-                if (in_array('attachments', $fieldsInfo['field_names']) && in_array('attachments', $fieldsInfo['main_left_fields'])) {
-                    $displayer = $fields['attachments']['displayer_type'];
-                    $f = $form->$displayer('attachments', $fields['attachments']['comment'] ?: '附件')
-                        ->readonly($isReference)
-                        ->help($fields['attachments']['help'])
-                        ->required(strstr($fields['attachments']['rules'], 'required'));
-
-                    if (in_array($displayer, ['files', 'images'])) {
-                        $f->limit(20);
-                    }
-                    if (in_array($displayer, ['image', 'images'])) {
-                        $f->bigSize();
-                    }
-                }
-                if (in_array('content', $fieldsInfo['field_names'])) {
-                    $editor = 'editor';
-                    if ($fields['content']['displayer_type'] == 'editor') {
-                        if (!empty($config['editor'])) {
-                            $editor = $config['editor'];
-                        }
-                    } else {
-                        $editor = $fields['content']['displayer_type'];
-                    }
-                    if ($isReference) {
-                        $form->raw('content_html', '引用内容')->to('<div>复制于<label class="label label-default">@{reference_id}</label>，内容只读，去<a title="点击去编辑" href="' . url('edit', ['id' => $data['reference_id']]) . '">[编辑]</a></div>' . $data['content']);
-                        $form->hidden('content')->value('@' . $data['reference_id']);
-                    } else {
-                        $e = $form->$editor('content', $fields['content']['comment'] ?: '内容')
-                            ->help($fields['content']['help'])
-                            ->required(strstr($fields['content']['rules'], 'required'));
-                        if ($editor == 'textarea') {
-                            $e->rows(10);
-                        }
-                    }
-                }
+                $this->renderRegion('main_left', $form, $fieldsInfo, $ctx);
             }
         );
 
-        $form->right(count($fieldsInfo['main_right_fields']) > 0 ? 5 : 12)->with(function () use ($form, $isEdit, $isReference, $fieldsInfo) {
-            $admin = !$isEdit ? (session('admin_user') ?: []) : null;
-
-            $fields = $fieldsInfo['fields'];
-
-            if (in_array('logo', $fieldsInfo['field_names'])) {
-                $form->image('logo', $fields['logo']['comment'] ?: '封面图')
-                    ->mediumSize()
-                    ->readonly($isReference)
-                    ->help($fields['logo']['help'])
-                    ->required(strstr($fields['logo']['rules'], 'required'));
-            }
-            if (in_array('author', $fieldsInfo['field_names'])) {
-                $form->text('author', $fields['author']['comment'] ?: '作者', 6)
-                    ->readonly($isReference)
-                    ->help($fields['author']['help'])
-                    ->maxlength(32)
-                    ->default($admin ? $admin['name'] : '')
-                    ->required(strstr($fields['author']['rules'], 'required'));
-            }
-            if (in_array('source', $fieldsInfo['field_names'])) {
-                $form->text('source', $fields['source']['comment'] ?: '来源', 6)
-                    ->maxlength(32)
-                    ->readonly($isReference)
-                    ->help($fields['source']['help'])
-                    ->default($admin ? AdminGroup::where(['id' => $admin['group_id']])->value('name') : '')
-                    ->required(strstr($fields['source']['rules'], 'required'));
-            }
-            $form->html('');
-            foreach ($fields as $field) {
-                if ($field['is_custom'] == 1 && $field['position'] == 'main_right') {
-                    $this->customField($form, $field, $isReference);
-                }
-            }
-
-            unset($field);
-
-            if (in_array('attachments', $fieldsInfo['field_names']) && in_array('attachments', $fieldsInfo['main_right_fields'])) {
-                $displayer = $fields['attachments']['displayer_type'];
-                $f = $form->$displayer('attachments', $fields['attachments']['comment'] ?: '附件')
-                    ->readonly($isReference)
-                    ->help($fields['attachments']['help'])
-                    ->required(strstr($fields['attachments']['rules'], 'required'));
-
-                if (in_array($displayer, ['files', 'images'])) {
-                    $f->limit(20);
-                }
-                if (in_array($displayer, ['image', 'images'])) {
-                    $f->bigSize();
-                }
-            }
-            if (in_array('is_show', $fieldsInfo['field_names'])) {
-                $form->radio('is_show', $fields['is_show']['comment'] ?: '显示', 4)
-                    ->help($fields['is_show']['help'])
-                    ->options([1 => '是', 0 => '否'])
-                    ->default(0)
-                    ->blockStyle();
-            }
-            if (in_array('click', $fieldsInfo['field_names'])) {
-                $form->number('click', $fields['click']['comment'] ?: '点击量', 4)
-                    ->help($fields['click']['help'])
-                    ->default(0)
-                    ->required(strstr($fields['click']['rules'], 'required'));
-            }
-            if (in_array('sort', $fieldsInfo['field_names'])) {
-                $form->number('sort', $fields['sort']['comment'] ?: '排序', 4)
-                    ->help($fields['sort']['help'])
-                    ->default(0)
-                    ->required(strstr($fields['sort']['rules'], 'required'));
-            }
-
-            $form->html('');
-
-            if (
-                in_array('is_recommend', $fieldsInfo['field_names'])
-                || in_array('is_top', $fieldsInfo['field_names'])
-                || in_array('is_hot', $fieldsInfo['field_names'])
-            ) {
-                $attr = [];
-                if (in_array('is_recommend', $fieldsInfo['field_names'])) {
-                    $attr['is_recommend'] = $fields['is_recommend']['comment'] ?: '推荐';
-                }
-                if (in_array('is_top', $fieldsInfo['field_names'])) {
-                    $attr['is_top'] = $fields['is_top']['comment'] ?: '置顶';
-                }
-                if (in_array('is_hot', $fieldsInfo['field_names'])) {
-                    $attr['is_hot'] = $fields['is_hot']['comment'] ?: '热门';
-                }
-                $form->checkbox('attr', '属性')->options($attr)
-                    ->blockStyle()
-                    ->help('推荐：优先在首页显示；置顶：栏目页优先显示；热门：排序无影响，可以在样式上突出显示。');
-            }
-
-            if (in_array('publish_time', $fieldsInfo['field_names'])) {
-                $form->datetime('publish_time', $fields['publish_time']['comment'] ?: '发布时间', 4)
-                    ->help($fields['publish_time']['help'])
-                    ->required()
-                    ->default(date('Y-m-d H:i:s'));
-            }
-            if ($isEdit) {
-                $form->show('create_time', '添加时间', 4);
-                $form->show('update_time', '修改时间', 4);
-            }
+        $form->right(count($fieldsInfo['main_right_fields']) > 0 ? 5 : 12)->with(function () use ($form, $fieldsInfo, $ctx) {
+            $this->renderRegion('main_right', $form, $fieldsInfo, $ctx);
         });
 
         if (count($fieldsInfo['extend_fields']) > 0) {
             $form->tab('扩展信息');
-            $fields = $fieldsInfo['fields'];
-
-            if (in_array('link', $fieldsInfo['field_names'])) {
-                $form->text('link', $fields['link']['comment'] ?: '跳转链接')
-                    ->help($fields['link']['help'] ?? '设置后覆盖默认的页面地址')
-                    ->readonly($isReference);
-            }
-            if (in_array('mention_ids', $fieldsInfo['field_names'])) {
-                $form->multipleSelect('mention_ids', $fields['mention_ids']['comment'] ?: '关联内容')
-                    ->dataUrl(url('/admin/cmscontent/selectPage'), '[{id}]{title}({channel.name})')
-                    ->help($fields['mention_ids']['help'])
-                    ->required(strstr($fields['mention_ids']['rules'], 'required'));
-            }
-            foreach ($fields as $field) {
-                if ($field['is_custom'] == 1 && $field['position'] == 'extend') {
-                    $this->customField($form, $field, $isReference);
-                }
-            }
-
-            unset($field);
-            if (
-                in_array('attachments', $fieldsInfo['field_names'])
-                && !in_array('attachments', $fieldsInfo['main_left_fields'])
-                && !in_array('attachments', $fieldsInfo['main_right_fields'])
-            ) {
-                $displayer = $fields['attachments']['displayer_type'];
-                $f = $form->$displayer('attachments', $fields['attachments']['comment'] ?: '附件')
-                    ->readonly($isReference)
-                    ->help($fields['attachments']['help'])
-                    ->required(strstr($fields['attachments']['rules'], 'required'));
-
-                if (in_array($displayer, ['files', 'images'])) {
-                    $f->limit(20);
-                }
-                if (in_array($displayer, ['image', 'images'])) {
-                    $f->bigSize();
-                }
-            }
+            $this->renderRegion('extend', $form, $fieldsInfo, $ctx);
         }
     }
 
     /**
-     * Summary of customField
-     * @param mixed $form
-     * @param array $modelField
-     * @param bool $isReference
-     * @return void
+     * 区域字段序列（渲染顺序）：字段名对应 builtinFieldSpecs 的键；
+     * content/attachments/attr 为特殊字段，@custom 为该区域自定义字段插入点，
+     * @html 为分隔符，@times 为编辑时展示的添加/修改时间
      */
-    protected function customField($form, $modelField, $isReference)
+    protected function regionSpecs($region)
+    {
+        $specs = [
+            'main_left' => ['tags', 'keywords', 'description', '@custom', 'attachments', 'content'],
+            'main_right' => ['logo', 'author', 'source', '@html', '@custom', 'attachments', 'is_show', 'click', 'sort', '@html', 'attr', 'publish_time', '@times'],
+            'extend' => ['link', 'mention_ids', '@custom', 'attachments'],
+        ];
+
+        return $specs[$region] ?? [];
+    }
+
+    //内置字段规格；公共链（label/help/required取值规则）见 renderSpecField，default为回调时运行时求值，extra为字段专属链式调用
+    protected function builtinFieldSpecs()
+    {
+        return [
+            'tags' => ['displayer' => 'multipleSelect', 'label' => '合集', 'colSize' => 6, 'extra' => function ($f) {
+                $f->dataUrl(url('/admin/cmstag/selectPage'));
+            }],
+            'keywords' => ['displayer' => 'text', 'label' => '关键字', 'readonly' => true, 'maxlength' => 255, 'helpDefault' => '多个关键字请用英文逗号隔开'],
+            'description' => ['displayer' => 'textarea', 'label' => '摘要', 'readonly' => true, 'maxlength' => 255, 'helpDefault' => '留空则自动从内容中提取'],
+            'logo' => ['displayer' => 'image', 'label' => '封面图', 'readonly' => true, 'extra' => function ($f) {
+                $f->mediumSize();
+            }],
+            'author' => ['displayer' => 'text', 'label' => '作者', 'colSize' => 6, 'readonly' => true, 'maxlength' => 32, 'default' => function ($ctx) {
+                $admin = !$ctx['isEdit'] ? (session('admin_user') ?: []) : null;
+                return $admin ? $admin['name'] : '';
+            }],
+            'source' => ['displayer' => 'text', 'label' => '来源', 'colSize' => 6, 'readonly' => true, 'maxlength' => 32, 'default' => function ($ctx) {
+                $admin = !$ctx['isEdit'] ? (session('admin_user') ?: []) : null;
+                return $admin ? AdminGroup::where(['id' => $admin['group_id']])->value('name') : '';
+            }],
+            'is_show' => ['displayer' => 'radio', 'label' => '显示', 'colSize' => 4, 'options' => [1 => '是', 0 => '否'], 'default' => 0, 'skipRequired' => true, 'extra' => function ($f) {
+                $f->blockStyle();
+            }],
+            'click' => ['displayer' => 'number', 'label' => '点击量', 'colSize' => 4, 'default' => 0],
+            'sort' => ['displayer' => 'number', 'label' => '排序', 'colSize' => 4, 'default' => 0],
+            'publish_time' => ['displayer' => 'datetime', 'label' => '发布时间', 'colSize' => 4, 'alwaysRequired' => true, 'default' => date('Y-m-d H:i:s')],
+            'link' => ['displayer' => 'text', 'label' => '跳转链接', 'readonly' => true, 'skipRequired' => true, 'helpOnNull' => '设置后覆盖默认的页面地址'],
+            'mention_ids' => ['displayer' => 'multipleSelect', 'label' => '关联内容', 'extra' => function ($f) {
+                $f->dataUrl(url('/admin/cmscontent/selectPage'), '[{id}]{title}({channel.name})');
+            }],
+        ];
+    }
+
+    protected function renderRegion($region, $form, $fieldsInfo, $ctx)
+    {
+        $fields = $fieldsInfo['fields'];
+        $specs = $this->builtinFieldSpecs();
+
+        foreach ($this->regionSpecs($region) as $key) {
+            if ($key == '@custom') {
+                foreach ($fields as $field) {
+                    if ($field['is_custom'] == 1 && $field['position'] == $region) {
+                        $this->customField($form, $field, $ctx['isReference'], $ctx['customOptions']);
+                    }
+                }
+                continue;
+            }
+            if ($key == '@html') {
+                $form->html('');
+                continue;
+            }
+            if ($key == '@times') {
+                if ($ctx['isEdit']) {
+                    $form->show('create_time', '添加时间', 4);
+                    $form->show('update_time', '修改时间', 4);
+                }
+                continue;
+            }
+            if ($key == 'content') {
+                if (in_array('content', $fieldsInfo['field_names'])) {
+                    $this->renderContentField($form, $fields['content'], $ctx);
+                }
+                continue;
+            }
+            if ($key == 'attr') {
+                $this->renderAttrField($form, $fieldsInfo);
+                continue;
+            }
+            if ($key == 'attachments') {
+                //附件唯一，归属区域优先级：main_left > main_right > extend
+                $owner = in_array('attachments', $fieldsInfo['main_left_fields']) ? 'main_left'
+                    : (in_array('attachments', $fieldsInfo['main_right_fields']) ? 'main_right' : 'extend');
+                if ($owner == $region && in_array('attachments', $fieldsInfo['field_names'])) {
+                    $this->renderAttachmentsField($form, $fields['attachments'], $ctx['isReference']);
+                }
+                continue;
+            }
+            if (!in_array($key, $fieldsInfo['field_names']) || !isset($specs[$key])) {
+                continue;
+            }
+            $this->renderSpecField($form, $key, $specs[$key], $fields[$key], $ctx);
+        }
+    }
+
+    protected function renderSpecField($form, $name, $spec, $meta, $ctx)
+    {
+        $args = [$name, $meta['comment'] ?: $spec['label']];
+        if (!empty($spec['colSize'])) {
+            $args[] = $spec['colSize'];
+        }
+        $f = $form->{$spec['displayer']}(...$args);
+
+        if (!empty($spec['readonly'])) {
+            $f->readonly($ctx['isReference']);
+        }
+        if (!empty($spec['maxlength'])) {
+            $f->maxlength($spec['maxlength']);
+        }
+        if (isset($spec['options'])) {
+            $f->options($spec['options']);
+        }
+        if (array_key_exists('default', $spec)) {
+            $default = $spec['default'];
+            $f->default(is_callable($default) ? $default($ctx) : $default);
+        }
+        if (isset($spec['helpOnNull'])) {
+            $f->help($meta['help'] ?? $spec['helpOnNull']);
+        } else {
+            $help = $meta['help'];
+            if ($help === '' || is_null($help)) {
+                $help = $spec['helpDefault'] ?? '';
+            }
+            $f->help($help);
+        }
+        if (empty($spec['skipRequired'])) {
+            $f->required(!empty($spec['alwaysRequired']) || strstr($meta['rules'], 'required'));
+        }
+        if (!empty($spec['extra'])) {
+            $spec['extra']($f, $ctx);
+        }
+    }
+
+    protected function renderAttachmentsField($form, $meta, $isReference)
+    {
+        $displayer = $meta['displayer_type'];
+        $f = $form->$displayer('attachments', $meta['comment'] ?: '附件')
+            ->readonly($isReference)
+            ->help($meta['help'])
+            ->required(strstr($meta['rules'], 'required'));
+
+        if (in_array($displayer, ['files', 'images'])) {
+            $f->limit(20);
+        }
+        if (in_array($displayer, ['image', 'images'])) {
+            $f->bigSize();
+        }
+    }
+
+    //正文：编辑器类型取模型字段配置（editor时回退站点配置默认），引用内容只读
+    protected function renderContentField($form, $meta, $ctx)
+    {
+        $editor = 'editor';
+        if ($meta['displayer_type'] == 'editor') {
+            if (!empty($ctx['config']['editor'])) {
+                $editor = $ctx['config']['editor'];
+            }
+        } else {
+            $editor = $meta['displayer_type'];
+        }
+        if ($ctx['isReference']) {
+            $form->raw('content_html', '引用内容')->to('<div>复制于<label class="label label-default">@{reference_id}</label>，内容只读，去<a title="点击去编辑" href="' . url('edit', ['id' => $ctx['data']['reference_id']]) . '">[编辑]</a></div>' . $ctx['data']['content']);
+            $form->hidden('content')->value('@' . $ctx['data']['reference_id']);
+        } else {
+            $e = $form->$editor('content', $meta['comment'] ?: '内容')
+                ->help($meta['help'])
+                ->required(strstr($meta['rules'], 'required'));
+            if ($editor == 'textarea') {
+                $e->rows(10);
+            }
+        }
+    }
+
+    protected function renderAttrField($form, $fieldsInfo)
+    {
+        $names = ['is_recommend' => '推荐', 'is_top' => '置顶', 'is_hot' => '热门'];
+        $attr = [];
+        foreach ($names as $name => $label) {
+            if (in_array($name, $fieldsInfo['field_names'])) {
+                $attr[$name] = $fieldsInfo['fields'][$name]['comment'] ?: $label;
+            }
+        }
+        if (empty($attr)) {
+            return;
+        }
+        $form->checkbox('attr', '属性')->options($attr)
+            ->blockStyle()
+            ->help('推荐：优先在首页显示；置顶：栏目页优先显示；热门：排序无影响，可以在样式上突出显示。');
+    }
+
+    protected function customField($form, $modelField, $isReference, $optionsMap = [])
     {
         $displayer = $modelField['displayer_type'];
         $f = $form->$displayer($modelField['name'], $modelField['comment'])
@@ -562,9 +569,8 @@ class Cmscontent extends Controller
             ->required(strstr($modelField['rules'], 'required'));
 
         if (in_array($displayer, ['radio', 'checkbox', 'tree', 'selecttree', 'transfer', 'select', 'multipleSelect'])) {
-            $field = model\CmsContentField::where('name', $modelField['name'])->find();
-            if (!empty($field) && !empty($field['options'])) {
-                $options = trim($field['options']);
+            if (!empty($optionsMap[$modelField['name']])) {
+                $options = trim($optionsMap[$modelField['name']]);
                 if (in_array($displayer, ['select', 'multipleSelect']) && preg_match('/^api:.+$/is', $options)) {
                     $api = explode(',', str_replace('api:', '', $options));
                     $url = $api[0];
@@ -581,10 +587,27 @@ class Cmscontent extends Controller
                     $f->options($optionsArr);
                 }
             }
-
         }
     }
 
+    //栏目合法性校验（新增/编辑/复制共用）
+    protected function checkChannelAllowed($channel_id, $model_id)
+    {
+        $channel = $this->channelModel->find($channel_id);
+        if (!$channel) {
+            $this->error('栏目不存在');
+        }
+        if ($channel['type'] == 2) {
+            $this->error('所选栏目[' . $channel['name'] . ']是目录，不允许存放内容，请重新选择');
+        }
+        if ($channel['extend_table']) {
+            $this->error('所选栏目[' . $channel['name'] . "]内容类型是[{$channel['extend_table']}]，不允许存放[cms_content]内容，请重新选择");
+        }
+        if (!in_array($model_id, explode(',', $channel['model_ids']))) {
+            $model = CmsContentModel::find($model_id);
+            $this->error('所选栏目[' . $channel['name'] . ']不支持存放[' . ($model ? $model['name'] : '未知') . ']内容，请重新选择');
+        }
+    }
     /**
      * 获取模型字段信息
      * @param int $model_id
@@ -592,11 +615,12 @@ class Cmscontent extends Controller
      */
     protected function getFieldsInfo($model_id)
     {
-        $modelFields = model\CmsContentModelField::where('model_id', $model_id)->cache('cms_content_model_fields_' . $model_id)->select()->toArray();
+        //查询缓存统一挂 cms_content_model_field tag：字段/模型/映射的增删改（含改名、软删）按tag整体失效
+        $modelFields = model\CmsContentModelField::where('model_id', $model_id)->cache('cms_content_model_fields_' . $model_id, null, 'cms_content_model_field')->select()->toArray();
         $modelFieldNames = array_column($modelFields, 'name');
-        $modelMainLeftFieldNames = model\CmsContentModelField::where(['model_id' => $model_id, 'position' => 'main_left'])->cache('cms_content_model_fields_main_left_' . $model_id)->column('name');
-        $modelMainRightFieldNames = model\CmsContentModelField::where(['model_id' => $model_id, 'position' => 'main_right'])->cache('cms_content_model_fields_main_right_' . $model_id)->column('name');
-        $modelExtendFieldNames = model\CmsContentModelField::where(['model_id' => $model_id, 'position' => 'extend'])->cache('cms_content_model_fields_extend_' . $model_id)->column('name');
+        $modelMainLeftFieldNames = model\CmsContentModelField::where(['model_id' => $model_id, 'position' => 'main_left'])->cache('cms_content_model_fields_main_left_' . $model_id, null, 'cms_content_model_field')->column('name');
+        $modelMainRightFieldNames = model\CmsContentModelField::where(['model_id' => $model_id, 'position' => 'main_right'])->cache('cms_content_model_fields_main_right_' . $model_id, null, 'cms_content_model_field')->column('name');
+        $modelExtendFieldNames = model\CmsContentModelField::where(['model_id' => $model_id, 'position' => 'extend'])->cache('cms_content_model_fields_extend_' . $model_id, null, 'cms_content_model_field')->column('name');
 
         $allFields = [];
 
@@ -627,7 +651,7 @@ class Cmscontent extends Controller
             $this->error(__blang('builder_parameter_error'));
         }
 
-        if (!empty($this->postAllowFields) && !in_array($name, $this->postAllowFields)) {
+        if (!in_array($name, $this->postAllowFields) || !is_scalar($value)) {
             $this->error(__blang('builder_field_not_allowed'));
         }
 
@@ -652,7 +676,7 @@ class Cmscontent extends Controller
     {
         $model_id = input('post.model_id/d', 0);
 
-        $modelFields = model\CmsContentModelField::where('model_id', $model_id)->cache('cms_content_model_fields_' . $model_id)->select()->toArray();
+        $modelFields = model\CmsContentModelField::where('model_id', $model_id)->cache('cms_content_model_fields_' . $model_id, null, 'cms_content_model_field')->select()->toArray();
         $modelFieldNames = array_column($modelFields, 'name');
 
         $data = request()->only(array_merge([
@@ -685,20 +709,7 @@ class Cmscontent extends Controller
         }
 
         if ($data['channel_id']) {
-            $channel = $this->channelModel->find($data['channel_id']);
-            if (!$channel) {
-                $this->error('栏目不存在');
-            }
-            if ($channel['type'] == 2) {
-                $this->error('所选栏目[' . $channel['name'] . ']是目录，不允许存放内容，请重新选择');
-            }
-            if ($channel['extend_table']) {
-                $this->error('所选栏目[' . $channel['name'] . "]内容类型是[{$channel['extend_table']}]，不允许存放[cms_content]内容，请重新选择");
-            }
-            if (!in_array($data['model_id'], explode(',', $channel['model_ids']))) {
-                $model = CmsContentModel::find($data['model_id']);
-                $this->error('所选栏目[' . $channel['name'] . ']不支持存放[' . ($model ? $model['name'] : '未知') . ']内容，请重新选择');
-            }
+            $this->checkChannelAllowed($data['channel_id'], $data['model_id']);
         }
 
         if (!$id) {

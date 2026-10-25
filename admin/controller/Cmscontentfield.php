@@ -4,9 +4,11 @@ namespace tpext\cms\admin\controller;
 
 use think\Controller;
 use tpext\cms\common\Module;
+use tpext\cms\common\Cache;
 use tpext\builder\traits\actions;
 use tpext\manager\common\logic\DbLogic;
 use tpext\cms\common\model\CmsContentField as CmsContentFieldModel;
+use tpext\cms\common\model\CmsContentModelField;
 
 /**
  * Undocumented class
@@ -199,10 +201,38 @@ class Cmscontentfield extends Controller
         }
 
         if (in_array($data['COLUMN_NAME'], ['content', 'attachments'])) {
-            $this->error('字段名不能为：' . $data['COLUMN_NAME'] . '，因为它是扩展字段');
+            $this->error('字段名不能是：' . $data['COLUMN_NAME'] . '，因为它是扩展字段');
+        }
+
+        //以下值拼进DDL，白名单收口
+        if (!isset($data['displayer_type']) || !in_array($data['displayer_type'], array_keys(CmsContentFieldModel::$displayerTypes))) {
+            $this->error('控件类型不合法');
+        }
+        $comment = (string) ($data['COLUMN_COMMENT'] ?? '');
+        if (mb_strlen($comment) > 100 || preg_match('/[\'"\\\\;]/', $comment)) {
+            $this->error('注释不合法：最长100字符，不能含引号、反斜杠、分号');
+        }
+        if (strtoupper((string) ($data['COLUMN_DEFAULT'] ?? 'NULL')) != 'NULL') {
+            $default = (string) $data['COLUMN_DEFAULT'];
+            if (mb_strlen($default) > 100 || preg_match('/[\'"\\\\;]/', $default)) {
+                $this->error('默认值不合法：最长100字符，不能含引号、反斜杠、分号');
+            }
+        }
+        if (isset($data['MOVE_AFTER']) && $data['MOVE_AFTER'] !== '' && !preg_match('/^\w+$/', $data['MOVE_AFTER'])) {
+            $this->error('字段位置不合法');
+        }
+        foreach (['LENGTH', 'NUMERIC_SCALE'] as $numKey) {
+            if (isset($data[$numKey]) && $data[$numKey] !== '') {
+                $data[$numKey] = min(1000, max(0, intval($data[$numKey])));
+            }
         }
 
         $data = $this->judgeDataType($data);
+
+        $dataTypes = ['varchar', 'char', 'text', 'mediumtext', 'longtext', 'int', 'tinyint', 'smallint', 'mediumint', 'bigint', 'decimal', 'float', 'double', 'date', 'datetime', 'time', 'timestamp', 'boolean'];
+        if (!in_array($data['DATA_TYPE'], $dataTypes)) {
+            $this->error('数据类型不合法');
+        }
 
         $res = 0;
 
@@ -216,7 +246,8 @@ class Cmscontentfield extends Controller
             $this->error(__blang('builder_save_failed'));
         }
 
-        $fieldExists = CmsContentFieldModel::where('name', $data['COLUMN_NAME'])->find();
+        //编辑时按旧名（$id）查元数据行，改名场景下行原地更新而非新 duplicate 一条
+        $fieldExists = CmsContentFieldModel::where('name', $id ?: $data['COLUMN_NAME'])->find();
         if (!$fieldExists) {
             $fieldExists = new CmsContentFieldModel();
         }
@@ -379,6 +410,11 @@ class Cmscontentfield extends Controller
     {
         $id = input('id');
 
+        //id内插进information_schema查询，仅允许\w
+        if (!is_string($id) || !preg_match('/^\w+$/', $id)) {
+            $this->error('参数有误');
+        }
+
         if (request()->isGet()) {
 
             $builder = $this->builder($this->pageTitle, $this->editText ?: __blang('builder_page_edit_text'), 'edit');
@@ -423,6 +459,10 @@ class Cmscontentfield extends Controller
         foreach ($ids as $id) {
             if ($this->dbLogic->recoveryField($this->tableName, $id)) {
                 $res += 1;
+                //列名已还原（去掉_del_at_后缀），同步元数据行名；映射行在软删时已删，模型中需重新勾选
+                if (preg_match('/^(.+)_del_at_\d+$/', $id, $mch)) {
+                    CmsContentFieldModel::where('name', $id)->update(['name' => $mch[1]]);
+                }
             }
         }
 
@@ -451,7 +491,11 @@ class Cmscontentfield extends Controller
         foreach ($ids as $id) {
             if ($this->dbLogic->dropField($this->tableName, $id)) {
                 $res += 1;
-                $this->dataModel->where('name', $id)->delete();
+                //实例删除触发 onAfterDelete：清模型映射行+缓存tag（Query级delete不触发模型事件）
+                $metaField = CmsContentFieldModel::where('name', $id)->find();
+                if ($metaField) {
+                    $metaField->delete();
+                }
             }
         }
 
@@ -478,10 +522,16 @@ class Cmscontentfield extends Controller
             $field['IS_NULLABLE'] = 1;
             if ($this->dbLogic->changeField($this->tableName, $id, $field)) {
                 $res += 1;
+                //列已改名，同步元数据行名（保留options等配置，避免按新列名重复建行）；
+                //删除模型映射行：表单/保存不得再使用已不存在的旧列名（否则SQL报unknown column）
+                CmsContentFieldModel::where('name', $id)->update(['name' => $field['COLUMN_NAME']]);
+                CmsContentModelField::where('name', $id)->delete();
             }
         }
 
         if ($res) {
+            //上面两处是Query级操作不触发模型事件，缓存tag在此显式失效
+            Cache::deleteTag('cms_content_model_field');
             $this->success(__blang('builder_delete_{:num}_records_succeeded', ['num' => $res]));
         } else {
             $this->error(__blang('builder_delete_failed'));

@@ -14,6 +14,7 @@ namespace tpext\cms\common\model;
 use think\Model;
 use tpext\think\App;
 use tpext\cms\common\Cache;
+use tpext\cms\common\PathGuard;
 use tpext\common\ExtLoader;
 use tpext\cms\common\DirFilter;
 
@@ -57,9 +58,9 @@ class CmsTemplateHtml extends Model
 
     public static function onAfterDelete($data)
     {
-        $file = App::getRootPath() . $data['path'];
+        $file = PathGuard::htmlFile($data['path']);
 
-        if (is_file($file)) {
+        if ($file !== false && is_file($file)) {
             @copy($file, $file . date('YmdHis') . '.del');
             @unlink($file);
         }

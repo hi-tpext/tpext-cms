@@ -32,6 +32,7 @@ class Cmstag extends Controller
     protected function initialize()
     {
         $this->dataModel = new TagModel;
+        $this->postAllowFields = ['is_show'];
 
         $this->pageTitle = '合集管理';
         $this->sortOrder = 'id desc';

@@ -81,7 +81,7 @@ class Render
             return ['code' => 1, 'msg' => 'ok', 'data' => $out];
         } catch (\Throwable $e) {
             trace($e->__toString());
-            return ['code' => 0, 'msg' => '[首页]生成出错，' . str_replace(App::getRootPath(), '', $e->getFile() . '#' . $e->getLine() . '|' . $e->getMessage())];
+            return ['code' => 0, 'msg' => '[首页]生成出错，请检查模板', 'detail' => str_replace(App::getRootPath(), '', $e->getFile() . '#' . $e->getLine() . '|' . $e->getMessage())];
         }
     }
 
@@ -164,8 +164,9 @@ class Render
             }
             return ['code' => 1, 'msg' => 'ok', 'data' => $out];
         } catch (\Throwable $e) {
+            //msg不含文件路径/行号（会经Page::errorPage输出到公开错误页）；detail仅供日志与后台发布进度展示
             trace($e->__toString());
-            return ['code' => 0, 'msg' => '[' . $channel['name'] . ']栏目生成出错，' . str_replace(App::getRootPath(), '', $e->getFile() . '#' . $e->getLine() . '|' . $e->getMessage()) . '。模板文件：' . $tplFile];
+            return ['code' => 0, 'msg' => '[' . $channel['name'] . ']栏目生成出错，请检查模板', 'detail' => str_replace(App::getRootPath(), '', $e->getFile() . '#' . $e->getLine() . '|' . $e->getMessage()) . '。模板文件：' . $tplFile];
         }
     }
 
@@ -247,7 +248,7 @@ class Render
             return ['code' => 1, 'msg' => 'ok', 'data' => $out];
         } catch (\Throwable $e) {
             trace($e->__toString());
-            return ['code' => 0, 'msg' => '[' . ($content['title'] ?? '') . ']内容生成出错，' . str_replace(App::getRootPath(), '', $e->getFile() . '#' . $e->getLine() . '|' . $e->getMessage()) . '。模板文件：' . $tplFile];
+            return ['code' => 0, 'msg' => '[' . ($content['title'] ?? '') . ']内容生成出错，请检查模板', 'detail' => str_replace(App::getRootPath(), '', $e->getFile() . '#' . $e->getLine() . '|' . $e->getMessage()) . '。模板文件：' . $tplFile];
         }
     }
 
@@ -395,7 +396,7 @@ EOT;
             return ['code' => 1, 'msg' => 'ok', 'data' => $out];
         } catch (\Throwable $e) {
             trace($e->__toString());
-            return ['code' => 0, 'msg' => '[页面]生成出错，' . str_replace(App::getRootPath(), '', $e->getFile() . '#' . $e->getLine() . '|' . $e->getMessage())];
+            return ['code' => 0, 'msg' => '[页面]生成出错，请检查模板', 'detail' => str_replace(App::getRootPath(), '', $e->getFile() . '#' . $e->getLine() . '|' . $e->getMessage())];
         }
     }
 

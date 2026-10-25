@@ -4,6 +4,11 @@
 .zcode
 *.zip
 改进计划.md
+安全评估报告-核实版.md
+安全评估报告.md
+CMS设计评估报告-核实版.md
+CMS设计评估报告-核实版复核结论与修复清单.md
+CMS设计评估报告.md
 AGENTS.md
 runtime/
 tests/

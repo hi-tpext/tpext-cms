@@ -13,6 +13,7 @@ namespace tpext\cms\common\model;
 
 use think\Model;
 use tpext\common\ExtLoader;
+use tpext\cms\common\Cache;
 
 class CmsContentField extends Model
 {
@@ -55,9 +56,20 @@ class CmsContentField extends Model
         'none' => '不需要录入'
     ];
 
+    public static function onAfterWrite($data)
+    {
+        //字段改名时同步模型字段映射行的字段名（Query级update不触发映射模型事件，缓存在此一并失效）
+        $origin = $data->getOrigin('name');
+        if ($origin && $origin != $data['name']) {
+            CmsContentModelField::where('name', $origin)->update(['name' => $data['name']]);
+        }
+        Cache::deleteTag('cms_content_model_field');
+    }
+
     public static function onAfterDelete($data)
     {
         CmsContentModelField::where('name', $data['name'])->delete();
+        Cache::deleteTag('cms_content_model_field');
         ExtLoader::trigger('cms_content_field_on_after_delete', $data);
     }
 }

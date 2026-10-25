@@ -41,6 +41,7 @@ class Cmscontentmodel extends Controller
     protected function initialize()
     {
         $this->dataModel = new CmsContentModelModel;
+        $this->postAllowFields = ['sort'];
 
         $this->pageTitle = '内容模型管理';
         $this->sortOrder = 'sort asc,id asc';
