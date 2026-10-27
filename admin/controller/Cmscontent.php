@@ -100,6 +100,10 @@ class Cmscontent extends Controller
             }
         }
 
+        if (!empty($searchData['model_id'])) {
+            $where[] = ['model_id', '=', $searchData['model_id']];
+        }
+
         return $where;
     }
 
@@ -112,12 +116,15 @@ class Cmscontent extends Controller
     {
         $search = $this->search;
 
-        $search->text('title', '标题', 3)->maxlength(50);
-        $search->text('author', '作者', 3)->maxlength(20);
-        $search->select('channel_id', '栏目', 3)->dataUrl(url('/admin/cmschannel/selectPage'));
-        $search->select('is_show', '显示', 3)->options([1 => '是', 0 => '否']);
-        $search->select('tags', '标签', 3)->dataUrl(url('/admin/cmstag/selectPage'));
-        $search->checkbox('attr', '属性', 3)->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶']);
+        $search->defaultDisplayerColSize(3);
+
+        $search->text('title', '标题')->maxlength(50);
+        $search->text('author', '作者')->maxlength(20);
+        $search->select('channel_id', '栏目')->dataUrl(url('/admin/cmschannel/selectPage'));
+        $search->select('is_show', '显示')->options([1 => '是', 0 => '否']);
+        $search->select('tags', '标签')->dataUrl(url('/admin/cmstag/selectPage'));
+        $search->checkbox('attr', '属性')->options(['is_recommend' => '推荐', 'is_hot' => '热门', 'is_top' => '置顶']);
+        $search->select('model_id', '模型')->dataUrl(url('/admin/cmscontentmodel/selectPage'));
     }
 
     /**
@@ -385,32 +392,68 @@ class Cmscontent extends Controller
     protected function builtinFieldSpecs()
     {
         return [
-            'tags' => ['displayer' => 'multipleSelect', 'label' => '合集', 'colSize' => 6, 'extra' => function ($f) {
-                $f->dataUrl(url('/admin/cmstag/selectPage'));
-            }],
+            'tags' => [
+                'displayer' => 'multipleSelect',
+                'label' => '合集',
+                'colSize' => 6,
+                'extra' => function ($f) {
+                    $f->dataUrl(url('/admin/cmstag/selectPage'));
+                }
+            ],
             'keywords' => ['displayer' => 'text', 'label' => '关键字', 'readonly' => true, 'maxlength' => 255, 'helpDefault' => '多个关键字请用英文逗号隔开'],
             'description' => ['displayer' => 'textarea', 'label' => '摘要', 'readonly' => true, 'maxlength' => 255, 'helpDefault' => '留空则自动从内容中提取'],
-            'logo' => ['displayer' => 'image', 'label' => '封面图', 'readonly' => true, 'extra' => function ($f) {
-                $f->mediumSize();
-            }],
-            'author' => ['displayer' => 'text', 'label' => '作者', 'colSize' => 6, 'readonly' => true, 'maxlength' => 32, 'default' => function ($ctx) {
-                $admin = !$ctx['isEdit'] ? (session('admin_user') ?: []) : null;
-                return $admin ? $admin['name'] : '';
-            }],
-            'source' => ['displayer' => 'text', 'label' => '来源', 'colSize' => 6, 'readonly' => true, 'maxlength' => 32, 'default' => function ($ctx) {
-                $admin = !$ctx['isEdit'] ? (session('admin_user') ?: []) : null;
-                return $admin ? AdminGroup::where(['id' => $admin['group_id']])->value('name') : '';
-            }],
-            'is_show' => ['displayer' => 'radio', 'label' => '显示', 'colSize' => 4, 'options' => [1 => '是', 0 => '否'], 'default' => 0, 'skipRequired' => true, 'extra' => function ($f) {
-                $f->blockStyle();
-            }],
+            'logo' => [
+                'displayer' => 'image',
+                'label' => '封面图',
+                'readonly' => true,
+                'extra' => function ($f) {
+                    $f->mediumSize();
+                }
+            ],
+            'author' => [
+                'displayer' => 'text',
+                'label' => '作者',
+                'colSize' => 6,
+                'readonly' => true,
+                'maxlength' => 32,
+                'default' => function ($ctx) {
+                    $admin = !$ctx['isEdit'] ? (session('admin_user') ?: []) : null;
+                    return $admin ? $admin['name'] : '';
+                }
+            ],
+            'source' => [
+                'displayer' => 'text',
+                'label' => '来源',
+                'colSize' => 6,
+                'readonly' => true,
+                'maxlength' => 32,
+                'default' => function ($ctx) {
+                    $admin = !$ctx['isEdit'] ? (session('admin_user') ?: []) : null;
+                    return $admin ? AdminGroup::where(['id' => $admin['group_id']])->value('name') : '';
+                }
+            ],
+            'is_show' => [
+                'displayer' => 'radio',
+                'label' => '显示',
+                'colSize' => 4,
+                'options' => [1 => '是', 0 => '否'],
+                'default' => 0,
+                'skipRequired' => true,
+                'extra' => function ($f) {
+                    $f->blockStyle();
+                }
+            ],
             'click' => ['displayer' => 'number', 'label' => '点击量', 'colSize' => 4, 'default' => 0],
             'sort' => ['displayer' => 'number', 'label' => '排序', 'colSize' => 4, 'default' => 0],
             'publish_time' => ['displayer' => 'datetime', 'label' => '发布时间', 'colSize' => 4, 'alwaysRequired' => true, 'default' => date('Y-m-d H:i:s')],
             'link' => ['displayer' => 'text', 'label' => '跳转链接', 'readonly' => true, 'skipRequired' => true, 'helpOnNull' => '设置后覆盖默认的页面地址'],
-            'mention_ids' => ['displayer' => 'multipleSelect', 'label' => '关联内容', 'extra' => function ($f) {
-                $f->dataUrl(url('/admin/cmscontent/selectPage'), '[{id}]{title}({channel.name})');
-            }],
+            'mention_ids' => [
+                'displayer' => 'multipleSelect',
+                'label' => '关联内容',
+                'extra' => function ($f) {
+                    $f->dataUrl(url('/admin/cmscontent/selectPage'), '[{id}]{title}({channel.name})');
+                }
+            ],
         ];
     }
 
@@ -429,7 +472,7 @@ class Cmscontent extends Controller
                 continue;
             }
             if ($key == '@html') {
-                $form->html('');
+                $form->html('')->showLabel(false)->getWrapper()->addStyle('height:1px;padding:0;margin:0;');
                 continue;
             }
             if ($key == '@times') {

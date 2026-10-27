@@ -3,6 +3,7 @@
 use think\paginator\driver\Bootstrap;
 use tpext\builder\logic\ImageHandler;
 use tpext\cms\common\taglib\Processer;
+use tpext\cms\common\taglib\SqlParser;
 use tpext\cms\common\taglib\Table;
 use tpext\think\App;
 
@@ -117,6 +118,119 @@ if (!function_exists('cms_order_expr')) {
             return new \think\db\Raw($expr);
         }
         return $expr;
+    }
+}
+
+if (!function_exists('cms_where_var')) {
+
+    /**
+     * where整体变量/方法按来源分流：变量值与$__get__包内同名值全等(未经模板改动)→GET来源，
+     * 语法白名单解析+值绑定，失败返回恒假中性条件；值不同→模板已覆盖，模板值优先走sql_guard并trace提示命名冲突。
+     * 方法($name为空串)无法定位参数名，与整个包比对：全等某值→GET路径；包含某值且能整体白名单解析→等价改写为绑定形式
+     * (同字段同值，结构安全)；包含但解析不了(可能是作者复杂条件，不中性化误伤)或不包含→作者路径sql_guard。
+     * 返回['__raw__'=>sql,'__binds__'=>binds]由编译产物转whereRaw，或原值(字符串/数组)走where()。
+     */
+    function cms_where_var($table, $name, $value, $get)
+    {
+        $get = is_array($get) ? $get : [];
+        $gv = $name !== '' ? ($get[$name] ?? null) : null;
+
+        if ($name === '' && is_string($value) && $value !== '') {
+            if (in_array($value, $get, true)) {
+                $gv = $value; //方法原样回传GET参数
+            } else {
+                foreach ($get as $v) {
+                    if (is_string($v) && $v !== '' && strpos($value, $v) !== false) {
+                        $parsed = SqlParser::parseWhereString($table, $value);
+                        if ($parsed !== null) {
+                            return ['__raw__' => $parsed[0], '__binds__' => $parsed[1]];
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ($gv !== null && ($value === null || $value === $gv)) {
+            $parsed = SqlParser::parseWhereString($table, (string) $gv);
+            if ($parsed === null) {
+                return ['__raw__' => '1=0', '__binds__' => []];
+            }
+            return ['__raw__' => $parsed[0], '__binds__' => $parsed[1]];
+        }
+        if ($gv !== null && $value !== null && $value !== $gv) {
+            trace("where变量\${$name}与GET参数同名，模板值优先", 'error');
+        }
+        if (!is_string($value)) {
+            return is_array($value) ? $value : '';
+        }
+        return sql_guard($value);
+    }
+}
+
+if (!function_exists('cms_order_var')) {
+
+    /**
+     * order整体变量/方法按来源分流：变量值与$__get__包内同名值全等(未经模板改动)→GET来源，
+     * 字段白名单校验(字段 [asc|desc]列表)，不合法回退默认排序(方法回传非法串不再触发框架抛异常)；
+     * 值不同→模板值优先原样返回，由框架Builder::parseOrder字段白名单把关。
+     * 方法($name为空串)与整个包比对：全等→GET路径；包含某值且能字段白名单解析→等价改写；否则原样透传。
+     */
+    function cms_order_var($table, $name, $value, $get)
+    {
+        $get = is_array($get) ? $get : [];
+        $gv = $name !== '' ? ($get[$name] ?? null) : null;
+
+        if ($name === '' && is_string($value) && $value !== '') {
+            if (in_array($value, $get, true)) {
+                $gv = $value; //方法原样回传GET参数
+            } else {
+                foreach ($get as $v) {
+                    if (is_string($v) && $v !== '' && strpos($value, $v) !== false) {
+                        $parsed = SqlParser::parseOrderString($table, $value);
+                        if ($parsed !== null) {
+                            return $parsed;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ($gv !== null && ($value === null || $value === $gv)) {
+            $parsed = SqlParser::parseOrderString($table, (string) $gv);
+            if ($parsed === null) {
+                return Table::defaultOrder($table);
+            }
+            return $parsed;
+        }
+        if ($gv !== null && $value !== null && $value !== $gv) {
+            trace("order变量\${$name}与GET参数同名，模板值优先", 'error');
+        }
+        return $value;
+    }
+}
+
+if (!function_exists('cms_order_expr_var')) {
+
+    /**
+     * order函数表达式(如FIELD($x,1,2))内嵌变量按来源分流：变量值与$__get__包内同名值全等→GET来源，
+     * 只放行标识符/数字/逗号列表形态，否则中性为0(保持SQL合法)；值不同→模板值优先走sql_guard。
+     */
+    function cms_order_expr_var($name, $value, $get)
+    {
+        $gv = is_array($get) ? ($get[$name] ?? null) : null;
+        if ($gv !== null && $gv === $value) {
+            if (is_string($gv) && preg_match('/^\w+(?:\s*,\s*\w+)*$/', $gv)) {
+                return $gv;
+            }
+            trace('cms_order_expr_var拒绝GET值(' . $name . '): ' . mb_substr((string) $gv, 0, 50), 'error');
+            return '0';
+        }
+        if ($gv !== null && $value !== $gv && $value !== '') {
+            trace("order变量\${$name}与GET参数同名，模板值优先", 'error');
+        }
+        return sql_guard((string) $value);
     }
 }
 

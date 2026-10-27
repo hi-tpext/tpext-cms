@@ -149,6 +149,7 @@ class Render
                 ];
 
                 $vars = array_merge($vars, $params);
+                $vars['__get__'] = $params;
                 $vars['vars'] = $vars;
                 $config = [
                     'cache_prefix' => $tplHtml['path'],
@@ -223,10 +224,13 @@ class Render
                 ];
 
                 $get = array_filter(request()->get());
+                $params = [];
 
                 if (!empty($get)) {
-                    $vars = array_merge($vars, $this->filterParams($get));
+                    $params = $this->filterParams($get);
+                    $vars = array_merge($vars, $params);
                 }
+                $vars['__get__'] = $params;
 
                 $config = [
                     'cache_prefix' => $tplHtml['path'],
@@ -382,6 +386,7 @@ EOT;
             ];
 
             $vars = array_merge($vars, $params);
+            $vars['__get__'] = $params;
 
             $vars['vars'] = $vars;
             $config = [
@@ -731,6 +736,12 @@ EOT;
         array_walk($params, function (&$value, $key) {
             if (is_array($value)) {
                 $value = implode(',', $value);
+            }
+            //非UTF-8字节(乱码请求)中和为占位串：绑定参数到达MySQL后按utf8mb4与utf8(mb3)表列比较会触发
+            //Illegal mix of collations PDOException→错误页，不能让乱码进SQL
+            if (is_string($value) && $value !== '' && !mb_check_encoding($value, 'UTF-8')) {
+                trace('filterParams中和非UTF-8参数(' . $key . ')', 'error');
+                $value = 'invalid words';
             }
             $value = Processer::sqlGuard($value);
         });

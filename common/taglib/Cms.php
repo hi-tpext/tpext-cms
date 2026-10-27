@@ -59,7 +59,7 @@ class Cms extends TagLib
         $assign = ltrim($assign, '$');
         [$cacheKey, $cacheTime] = $this->parseCache($tag['cache'] ?? '');
         $tagOrder = !empty($tag['order']) ? $tag['order'] : Table::defaultOrder($table);
-        $orderExpr = $this->parseOrder($tagOrder);
+        $orderExpr = $this->parseOrder($tagOrder, $table);
         $fields = $tag['fields'] ?? Table::defaultFields($table);
         $simple = $tag['simple'] ?? 'false';
         $simpleExpr = $this->isVarOrMethod($simple)
@@ -72,7 +72,7 @@ class Cms extends TagLib
             $links = false;
         }
 
-        $parseStr = $this->bindKeyValWhere($tag, 'list');
+        $parseStr = $this->bindKeyValWhere($tag, 'list', $table);
 
         $parseStr .= <<<EOT
         \$__data__ = cms_query_list(
@@ -169,12 +169,12 @@ EOT;
         $assign = ltrim($assign, '$');
         [$cacheKey, $cacheTime] = $this->parseCache($tag['cache'] ?? '');
         $order = $tag['order'] ?? '';
-        $orderExpr = $this->parseOrder($order);
+        $orderExpr = $this->parseOrder($order, $table);
         $fields = $tag['fields'] ?? Table::defaultFields($table);
         $fields = is_array($fields) ? implode(',', $fields) : $fields;
         $scope = Table::defaultScope($table);
 
-        $parseStr = $this->bindKeyValWhere($tag, 'get');
+        $parseStr = $this->bindKeyValWhere($tag, 'get', $table);
 
         $parseStr .= <<<EOT
         \$__detail__ = cms_query_detail(
@@ -245,18 +245,23 @@ EOT;
      * @param string $order
      * @return string
      */
-    protected function parseOrder($order)
+    protected function parseOrder($order, $table = '')
     {
         $order = trim($order);
         if ($this->isVarOrMethod($order)) {
             $order = ltrim($order, ':');
             if ($order[0] == '$') {
-                $order = '(' . $order . " ?? '')";
+                if (preg_match('/^\$([\w]+)/', $order, $m)) {
+                    //变量按来源分流：值与GET包内同名值全等→字段白名单校验(cms_order_var)，其余来源框架parseOrder白名单把关
+                    return "cms_order_var('{$table}', '{$m[1]}', (" . $order . " ?? ''), \$__get__ ?? [])";
+                }
+                return '(' . $order . " ?? '')";
             }
-            return $order;
+            //方法：返回值与GET包比对(全等或包含)后分流，其余原样透传由框架字段白名单把关
+            return "cms_order_var('{$table}', '', (" . $order . " ?? ''), \$__get__ ?? [])";
         }
         if (preg_match('/^[A-Z][A-Z_\d]*\s*\([^\(\)]*\)$/', $order)) {
-            //全大写MySQL函数(如FIELD(sort,1,2,3))：经Expression透传，内嵌变量值经sql_guard过滤后拼接
+            //全大写MySQL函数(如FIELD(sort,1,2,3))：经Expression透传，内嵌变量按来源分流(cms_order_expr_var)
             $parts = preg_split('/(\$[a-zA-Z_][a-zA-Z_\d]*(?:\.[a-zA-Z_][a-zA-Z_\d]*)?)/', $order, -1, PREG_SPLIT_DELIM_CAPTURE);
             $expr = '';
             foreach ($parts as $part) {
@@ -264,7 +269,8 @@ EOT;
                     continue;
                 }
                 if ($part[0] == '$') {
-                    $expr .= ' . sql_guard((string)(' . $this->autoBuildVar($part) . " ?? '')) . ";
+                    preg_match('/^\$([\w]+)/', $part, $pm);
+                    $expr .= " . cms_order_expr_var('{$pm[1]}', (" . $this->autoBuildVar($part) . " ?? ''), \$__get__ ?? []) . ";
                 } else {
                     $expr .= " . '" . addslashes($part) . "'";
                 }
@@ -319,9 +325,10 @@ EOT;
      *
      * @param mixed $tag
      * @param string $type
+     * @param string $table
      * @return string
      */
-    protected function bindKeyValWhere($tag, $type)
+    protected function bindKeyValWhere($tag, $type, $table = '')
     {
         $cid_key = $tag['cid_key'] ?? '';
         $id_key = $tag['id_key'] ?? 'id';
@@ -398,8 +405,15 @@ EOT;
         $whereRaw = '1=1';
         if ($where && $where != '1=1') {
             if ($this->isVarOrMethod($where)) {
-                //where整体是一个变量或方法(如$where)，直接把变量的值作为查询条件(支持字符串或数组)
+                //where整体是一个变量或方法(如$where)，直接把变量/返回值作为查询条件(支持字符串或数组)，按来源分流防护
                 $whereVar = ltrim($where, ':');
+                if (preg_match('/^\$([\w]+)/', $whereVar, $m)) {
+                    //变量：值与GET包内同名值全等→语法白名单+绑定，模板覆盖值→sql_guard兜底
+                    $whereVar = "cms_where_var('{$table}', '{$m[1]}', ({$whereVar} ?? null), \$__get__ ?? [])";
+                } else {
+                    //方法：返回值与GET包比对(全等或包含)后分流，其余sql_guard兜底
+                    $whereVar = "cms_where_var('{$table}', '', {$whereVar}, \$__get__ ?? [])";
+                }
             } else {
                 [$whereRaw, $binds] = $this->parseWhere($where, $cid_key); //解析变量
             }
@@ -410,11 +424,16 @@ EOT;
         <?php
         \$__where__ = cms_build_where('{$cid_key}', {$cid_val}, '{$id_key}', {$id_val});
         \$__where_var__ = {$whereVar};
-        \$__where_var__ = is_string(\$__where_var__) ? sql_guard(\$__where_var__) : \$__where_var__;
         \$__where_raw__ = "{$whereRaw}";
         \$__where_binds__ = [{$binds}];
         \$__where__ = function (\$query) use (\$__where__, \$__where_var__, \$__where_raw__, \$__where_binds__) {
-            \$query->where(\$__where__)->where(\$__where_var__)->whereRaw(\$__where_raw__, \$__where_binds__);
+            \$query->where(\$__where__);
+            if (is_array(\$__where_var__) && isset(\$__where_var__['__raw__'])) {
+                \$query->whereRaw(\$__where_var__['__raw__'], \$__where_var__['__binds__']);
+            } else {
+                \$query->where(\$__where_var__);
+            }
+            \$query->whereRaw(\$__where_raw__, \$__where_binds__);
         };
 
 EOT;
